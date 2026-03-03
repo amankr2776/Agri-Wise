@@ -13,14 +13,16 @@ import wav from 'wav';
 
 const VoiceAssistantGuidanceInputSchema = z.object({
   query: z.string().describe("The farmer's spoken question in their preferred language."),
+  language: z.string().describe("The preferred language of the farmer."),
 });
 export type VoiceAssistantGuidanceInput = z.infer<typeof VoiceAssistantGuidanceInputSchema>;
 
 const VoiceAssistantGuidanceOutputSchema = z.object({
+  text: z.string().describe("The text version of the AI response."),
   audioDataUri: z
     .string()
     .describe(
-      "The audio response from the AI assistant as a data URI that must include a MIME type (audio/wav) and use Base64 encoding. Expected format: 'data:audio/wav;base64,<encoded_audio_data>'."
+      "The audio response from the AI assistant as a data URI that must include a MIME type (audio/wav) and use Base64 encoding. Expected format: 'data:audio/wav;base64,<encoded_audio_data>'"
     ),
 });
 export type VoiceAssistantGuidanceOutput = z.infer<typeof VoiceAssistantGuidanceOutputSchema>;
@@ -38,12 +40,15 @@ const voiceAssistantGuidanceFlow = ai.defineFlow(
     outputSchema: VoiceAssistantGuidanceOutputSchema,
   },
   async input => {
-    // First, generate a text response from the LLM
-    const {output: textResponse} = await ai.generate({
-      prompt: `You are an AI assistant helping farmers with questions related to farming practices, market trends, or pest management.
-Provide a concise and helpful answer to the following question, suitable for verbal delivery.
+    // First, generate a text response from the LLM in the target language
+    const {text: textResponse} = await ai.generate({
+      prompt: `You are an expert agricultural AI assistant. 
+The farmer is asking a question in ${input.language}. 
+PLEASE RESPOND ENTIRELY IN ${input.language}. 
 
-Question: ${input.query}`,
+Farmer's Question: ${input.query}
+
+Provide a concise, helpful, and friendly answer suitable for verbal delivery.`,
       model: 'googleai/gemini-2.5-flash',
     });
 
@@ -77,6 +82,7 @@ Question: ${input.query}`,
     const wavAudioBase64 = await toWav(audioBuffer);
 
     return {
+      text: textResponse,
       audioDataUri: 'data:audio/wav;base64,' + wavAudioBase64,
     };
   }
