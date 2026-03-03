@@ -1,0 +1,35 @@
+
+{
+  "placeholderImages": [
+    {
+      "id": "hero-farmer",
+      "description": "A happy farmer in a lush green field",
+      "imageUrl": "https://picsum.photos/seed/agri1/1200/600",
+      "imageHint": "farmer agriculture"
+    },
+    {
+      "id": "pest-symptom",
+      "description": "Damaged leaf with pest symptoms",
+      "imageUrl": "https://picsum.photos/seed/pest1/400/300",
+      "imageHint": "crop pest"
+    },
+    {
+      "id": "market-prices",
+      "description": "Bustling agricultural market",
+      "imageUrl": "https://picsum.photos/seed/market1/400/300",
+      "imageHint": "market vegetable"
+    },
+    {
+      "id": "logistics-truck",
+      "description": "Truck loaded with agricultural produce",
+      "imageUrl": "https://picsum.photos/seed/logistics1/400/300",
+      "imageHint": "truck transport"
+    },
+    {
+      "id": "community-meeting",
+      "description": "Farmers discussing techniques",
+      "imageUrl": "https://picsum.photos/seed/community1/400/300",
+      "imageHint": "people talking"
+    }
+  ]
+}
