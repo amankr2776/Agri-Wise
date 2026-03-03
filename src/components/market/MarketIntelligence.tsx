@@ -13,6 +13,7 @@ import {
   Calendar
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { 
   Select, 
   SelectContent, 
@@ -31,6 +32,7 @@ import {
   ResponsiveContainer 
 } from "recharts";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { cn } from "@/lib/utils";
 
 const MOCK_DATA = [
   { month: "May", price: 1850 },
