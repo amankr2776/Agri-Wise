@@ -1,11 +1,7 @@
-
 'use client';
 
-import React, { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import React, { useState } from "react";
 import { UserRole, useAppState } from "@/lib/app-state";
-import { useUser, useAuth } from "@/firebase";
-import { signOut } from "firebase/auth";
 import { 
   Leaf, 
   ShieldCheck, 
@@ -19,8 +15,6 @@ import {
   CloudSun,
   TrendingUp,
   ArrowUpRight,
-  LogOut,
-  Loader2,
   Wind,
   Droplets,
   ThermometerSun
@@ -41,8 +35,8 @@ import {
 } from "@/components/ui/sidebar";
 import { DiagnosticTool } from "@/components/diagnostics/DiagnosticTool";
 import { MarketIntelligence } from "@/components/market/MarketIntelligence";
-import { CommunityFeed } from "@/components/social/CommunityFeed";
 import { LogisticsMarket } from "@/components/logistics/LogisticsMarket";
+import { CommunityFeed } from "@/components/social/CommunityFeed";
 import { VoiceAssistant } from "@/components/voice/VoiceAssistant";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { 
@@ -58,46 +52,11 @@ import {
   AvatarImage 
 } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { useToast } from "@/hooks/use-toast";
 
 export default function AgriWiseApp() {
   const { role, setRole, language, setLanguage } = useAppState();
-  const { user, isUserLoading } = useUser();
-  const auth = useAuth();
-  const router = useRouter();
-  const { toast } = useToast();
-  
   const [isAppStarted, setIsAppStarted] = useState(false);
   const [activeTab, setActiveTab] = useState("dashboard");
-
-  // Authentication Guard
-  useEffect(() => {
-    if (!isUserLoading && !user) {
-      router.push("/login");
-    }
-  }, [user, isUserLoading, router]);
-
-  const handleLogout = async () => {
-    try {
-      await signOut(auth);
-      toast({ title: "Signed out", description: "Session ended." });
-    } catch (error) {
-      toast({ variant: "destructive", title: "Logout failed" });
-    }
-  };
-
-  if (isUserLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="text-center space-y-4">
-          <Loader2 className="h-12 w-12 text-primary animate-spin mx-auto" />
-          <p className="text-muted-foreground font-headline animate-pulse">Initializing professional portal...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!user) return null;
 
   if (!isAppStarted) {
     return (
@@ -200,16 +159,9 @@ export default function AgriWiseApp() {
                   <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
                   {role}
                </div>
-               <div className="text-[10px] text-muted-foreground mt-2 truncate max-w-[140px]">{user?.email || user?.phoneNumber}</div>
+               <div className="text-[10px] text-muted-foreground mt-2 truncate max-w-[140px]">Public Access Session</div>
             </div>
             <SidebarMenuButton tooltip="Settings"><Settings /> <span>Settings</span></SidebarMenuButton>
-            <SidebarMenuButton 
-              tooltip="Sign Out" 
-              className="text-destructive hover:text-destructive hover:bg-destructive/10"
-              onClick={handleLogout}
-            >
-              <LogOut /> <span>Sign Out</span>
-            </SidebarMenuButton>
           </SidebarFooter>
         </Sidebar>
 
