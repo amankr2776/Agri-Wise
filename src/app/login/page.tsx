@@ -9,12 +9,13 @@ import {
   createUserWithEmailAndPassword, 
   RecaptchaVerifier, 
   signInWithPhoneNumber, 
-  ConfirmationResult 
+  ConfirmationResult,
+  signInAnonymously
 } from "firebase/auth";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
-import { Leaf, Mail, Phone, Lock, ArrowRight, Loader2, ShieldCheck, AlertCircle } from "lucide-react";
+import { Leaf, Mail, Phone, Lock, ArrowRight, Loader2, ShieldCheck, AlertCircle, UserCircle } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -62,7 +63,6 @@ export default function LoginPage() {
     defaultValues: { phone: "", otp: "" },
   });
 
-  // Re-captcha for phone auth
   useEffect(() => {
     if (typeof window !== "undefined" && !window.recaptchaVerifier) {
       try {
@@ -75,6 +75,20 @@ export default function LoginPage() {
       }
     }
   }, [auth]);
+
+  async function onGuestLogin() {
+    setLoading(true);
+    setAuthError(null);
+    try {
+      await signInAnonymously(auth);
+      toast({ title: "Welcome Guest!", description: "Exploring as a visitor." });
+      router.push("/");
+    } catch (error: any) {
+      setAuthError(error.message);
+    } finally {
+      setLoading(false);
+    }
+  }
 
   async function onEmailSubmit(values: z.infer<typeof emailSchema>) {
     setLoading(true);
@@ -89,17 +103,11 @@ export default function LoginPage() {
       }
       router.push("/");
     } catch (error: any) {
-      console.error("Email auth error:", error);
       let message = error.message;
       if (error.code === 'auth/operation-not-allowed') {
-        message = "Email/Password provider is disabled in Firebase Console.";
+        message = "Email/Password sign-in is disabled in Firebase Console.";
       }
       setAuthError(message);
-      toast({
-        variant: "destructive",
-        title: "Authentication Failed",
-        description: message,
-      });
     } finally {
       setLoading(false);
     }
@@ -122,14 +130,11 @@ export default function LoginPage() {
         console.error("Phone auth error:", error);
         let message = error.message;
         if (error.code === 'auth/operation-not-allowed') {
-          message = "Phone Authentication is disabled in Firebase Console. Please enable it under Authentication > Sign-in method.";
+          message = "Phone Authentication is disabled in Firebase Console.";
+        } else if (error.code === 'auth/billing-not-enabled') {
+          message = "SMS service requires a paid Firebase plan. Please enable billing in Google Cloud or use 'Guest Access' to continue.";
         }
         setAuthError(message);
-        toast({
-          variant: "destructive",
-          title: "SMS Failed",
-          description: message,
-        });
       } finally {
         setLoading(false);
       }
@@ -144,11 +149,6 @@ export default function LoginPage() {
         router.push("/");
       } catch (error: any) {
         setAuthError("The OTP you entered is incorrect or expired.");
-        toast({
-          variant: "destructive",
-          title: "Invalid Code",
-          description: "The OTP you entered is incorrect.",
-        });
       } finally {
         setLoading(false);
       }
@@ -172,7 +172,7 @@ export default function LoginPage() {
         {authError && (
           <Alert variant="destructive" className="bg-destructive/10 text-destructive border-destructive/20">
             <AlertCircle className="h-4 w-4" />
-            <AlertTitle>Error</AlertTitle>
+            <AlertTitle>Auth Issue</AlertTitle>
             <AlertDescription className="text-xs">
               {authError}
             </AlertDescription>
@@ -282,11 +282,6 @@ export default function LoginPage() {
                       {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                       {showOtp ? "Verify & Login" : "Send OTP"} <ArrowRight className="ml-2 h-4 w-4" />
                     </Button>
-                    {showOtp && (
-                      <Button variant="link" className="w-full text-xs" onClick={() => setShowOtp(false)}>
-                        Change Phone Number
-                      </Button>
-                    )}
                   </form>
                 </Form>
               </TabsContent>
@@ -298,17 +293,23 @@ export default function LoginPage() {
                 <span className="w-full border-t" />
               </div>
               <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-background px-2 text-muted-foreground">Or</span>
+                <span className="bg-background px-2 text-muted-foreground">Quick Access</span>
               </div>
             </div>
-            <Button variant="outline" className="w-full" onClick={() => setIsRegistering(!isRegistering)}>
-              {isRegistering ? "Already have an account? Sign in" : "New to AgriWise? Create account"}
+            <Button variant="outline" className="w-full h-11" onClick={onGuestLogin} disabled={loading}>
+              <UserCircle className="mr-2 h-4 w-4" /> Continue as Guest
             </Button>
+            <div className="flex justify-center">
+              <Button variant="link" className="text-xs" onClick={() => setIsRegistering(!isRegistering)}>
+                {isRegistering ? "Already have an account? Sign in" : "New to AgriWise? Create account"}
+              </Button>
+            </div>
           </CardFooter>
         </Card>
         
         <p className="text-center text-[10px] text-muted-foreground">
-          By continuing, you agree to our Terms of Service.
+          Note: Phone login requires Firebase Billing enabled for real SMS. 
+          Use "Guest Access" or "Email" if you haven't enabled it.
         </p>
       </div>
     </div>
