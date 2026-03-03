@@ -13,7 +13,8 @@ import {
   FlaskConical,
   Beaker,
   Info,
-  Loader2
+  Loader2,
+  Filter
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -27,10 +28,13 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { useAppState } from "@/lib/app-state";
 
+const CATEGORIES = ["All", "Grain", "Vegetable", "Fruit", "Oilseed", "Plantation", "Spice", "Cash Crop"];
+
 export function CropDiagnostics() {
   const { firestore } = useFirestore();
   const { role } = useAppState();
   const [search, setSearch] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("All");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [isSpeaking, setIsSpeaking] = useState(false);
 
@@ -43,12 +47,14 @@ export function CropDiagnostics() {
 
   const filteredCrops = useMemo(() => {
     if (!crops) return [];
-    return crops.filter(c => 
-      c.name.toLowerCase().includes(search.toLowerCase()) || 
-      c.category.toLowerCase().includes(search.toLowerCase()) ||
-      c.diseaseName.toLowerCase().includes(search.toLowerCase())
-    );
-  }, [crops, search]);
+    return crops.filter(c => {
+      const matchesSearch = c.name.toLowerCase().includes(search.toLowerCase()) || 
+                          c.category.toLowerCase().includes(search.toLowerCase()) ||
+                          c.diseaseName.toLowerCase().includes(search.toLowerCase());
+      const matchesCategory = selectedCategory === "All" || c.category === selectedCategory;
+      return matchesSearch && matchesCategory;
+    });
+  }, [crops, search, selectedCategory]);
 
   const selectedCrop = useMemo(() => 
     crops?.find(c => c.id === selectedId), 
@@ -81,19 +87,36 @@ export function CropDiagnostics() {
     <div className="h-[calc(100vh-12rem)] grid grid-cols-1 lg:grid-cols-12 gap-6">
       {/* Left Sidebar - Crop List */}
       <Card className="lg:col-span-4 border-none shadow-sm flex flex-col overflow-hidden rounded-3xl bg-white/50 backdrop-blur-sm">
-        <CardHeader className="p-6 border-b">
+        <CardHeader className="p-6 border-b space-y-4">
           <CardTitle className="text-xl font-bold flex items-center gap-2">
             <Bug className="h-6 w-6 text-primary" />
-            Bio-Intelligence
+            Bio-Intelligence Hub
           </CardTitle>
-          <div className="mt-4 relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input 
-              placeholder="Search Paddy, Wheat, Rust..." 
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-9 rounded-full bg-muted/50 border-none focus-visible:ring-primary/20"
-            />
+          <div className="space-y-3">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input 
+                placeholder="Search Paddy, Mango, Tomato..." 
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="pl-9 rounded-full bg-muted/50 border-none focus-visible:ring-primary/20 h-10"
+              />
+            </div>
+            <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+              {CATEGORIES.map((cat) => (
+                <Badge
+                  key={cat}
+                  variant={selectedCategory === cat ? "default" : "outline"}
+                  className={cn(
+                    "cursor-pointer px-3 py-1 text-[10px] font-bold uppercase transition-all whitespace-nowrap",
+                    selectedCategory === cat ? "bg-primary text-white" : "text-muted-foreground hover:bg-primary/10"
+                  )}
+                  onClick={() => setSelectedCategory(cat)}
+                >
+                  {cat}
+                </Badge>
+              ))}
+            </div>
           </div>
         </CardHeader>
         <ScrollArea className="flex-1">
@@ -108,16 +131,16 @@ export function CropDiagnostics() {
                 )}
               >
                 <div className="flex justify-between items-start mb-1">
-                  <span className="font-bold">{c.diseaseName}</span>
+                  <span className="font-bold text-sm">{c.diseaseName}</span>
                   <Badge variant={selectedId === c.id ? "outline" : "secondary"} className={cn(
-                    "text-[10px] uppercase font-bold",
+                    "text-[8px] uppercase font-bold px-1.5 h-4",
                     selectedId === c.id ? "border-white/40 text-white" : ""
                   )}>
                     {c.severity}
                   </Badge>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className={cn("text-[10px] font-bold uppercase tracking-wider", selectedId === c.id ? "text-white/70" : "text-muted-foreground")}>
+                  <span className={cn("text-[9px] font-bold uppercase tracking-wider", selectedId === c.id ? "text-white/70" : "text-muted-foreground")}>
                     {c.name} • {c.category}
                   </span>
                   {c.isCertified && <CheckCircle className={cn("h-3 w-3", selectedId === c.id ? "text-white" : "text-primary")} />}
@@ -158,11 +181,11 @@ export function CropDiagnostics() {
                 </div>
                 <h2 className="text-4xl font-black tracking-tighter">{selectedCrop.diseaseName}</h2>
                 <p className="text-white/70 text-sm font-medium italic max-w-xl line-clamp-2">
-                  {selectedCrop.description}
+                  Knowledge base for {selectedCrop.name}. Identifying common symptoms and providing verified treatments.
                 </p>
               </div>
               <Button 
-                onClick={() => handleReadAloud(`${selectedCrop.diseaseName} treatment. ${selectedCrop.chemicalCure}. ${selectedCrop.desiNuskha}`)}
+                onClick={() => handleReadAloud(`${selectedCrop.diseaseName} treatment for ${selectedCrop.name}. ${selectedCrop.chemicalCure}. ${selectedCrop.desiNuskha}`)}
                 className="absolute top-6 right-6 rounded-full h-14 w-14 bg-white/20 backdrop-blur-md border-white/20 text-white hover:bg-white/40"
               >
                 {isSpeaking ? <VolumeX className="h-6 w-6 animate-pulse" /> : <Volume2 className="h-6 w-6" />}
@@ -205,13 +228,6 @@ export function CropDiagnostics() {
                     </ul>
                   </Card>
                 </div>
-                {(role === 'Expert' || role === 'Authority') && (
-                  <div className="flex gap-4 pt-4">
-                    <Button variant="outline" className="flex-1 rounded-2xl border-primary/20 text-primary font-bold h-12">
-                      Edit Treatment Data
-                    </Button>
-                  </div>
-                )}
               </TabsContent>
 
               <TabsContent value="desi" className="flex-1 space-y-6 animate-in fade-in duration-500">
@@ -236,7 +252,7 @@ export function CropDiagnostics() {
                 <div className="p-6 bg-amber-50 rounded-2xl border border-amber-100 flex gap-4">
                   <Info className="h-6 w-6 text-amber-500 shrink-0" />
                   <p className="text-sm text-amber-800 font-medium leading-relaxed italic">
-                    Note: Desi Nuskhas are regional. Consult with a verified KisanMitra Expert before large-scale application in verified clusters.
+                    Note: Desi Nuskhas are regional. Consult with a verified KisanMitra Expert before large-scale application.
                   </p>
                 </div>
               </TabsContent>
@@ -248,14 +264,14 @@ export function CropDiagnostics() {
               <FlaskConical className="h-16 w-16 text-primary/30" />
             </div>
             <div className="space-y-2">
-              <h3 className="text-2xl font-black tracking-tight">Intelligence Node Inactive</h3>
+              <h3 className="text-2xl font-black tracking-tight">Agri-Registry Inactive</h3>
               <p className="text-muted-foreground max-w-sm mx-auto font-medium">
-                Select a crop profile from the bio-intelligence registry to load specific pathogen diagnostics and verified treatments.
+                Select a crop, fruit, or vegetable profile from the bio-intelligence registry to load diagnostics and verified treatments.
               </p>
             </div>
             <div className="flex gap-2">
-              <Badge variant="outline" className="opacity-40">40+ Registered Crops</Badge>
-              <Badge variant="outline" className="opacity-40">120+ Verified Remedies</Badge>
+              <Badge variant="outline" className="opacity-40">{crops?.length || 0} Registered Profiles</Badge>
+              <Badge variant="outline" className="opacity-40">Verified Remedies</Badge>
             </div>
           </div>
         )}
