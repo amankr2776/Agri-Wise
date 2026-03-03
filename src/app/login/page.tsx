@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/firebase";
 import { 
@@ -54,6 +54,7 @@ export default function LoginPage() {
   const [showOtp, setShowOtp] = useState(false);
   const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
   const [authError, setAuthError] = useState<string | null>(null);
+  const recaptchaRef = useRef<HTMLDivElement>(null);
 
   const emailForm = useForm<z.infer<typeof emailSchema>>({
     resolver: zodResolver(emailSchema),
@@ -66,9 +67,9 @@ export default function LoginPage() {
   });
 
   useEffect(() => {
-    if (typeof window !== "undefined" && !window.recaptchaVerifier && auth) {
+    if (typeof window !== "undefined" && !window.recaptchaVerifier && auth && recaptchaRef.current) {
       try {
-        window.recaptchaVerifier = new RecaptchaVerifier(auth, 'invisible-recaptcha', {
+        window.recaptchaVerifier = new RecaptchaVerifier(auth, recaptchaRef.current, {
           'size': 'invisible',
         });
       } catch (e) {
@@ -97,6 +98,7 @@ export default function LoginPage() {
       setLoading(true);
       try {
         const appVerifier = window.recaptchaVerifier;
+        if (!appVerifier) throw new Error("Verifier not ready");
         const result = await signInWithPhoneNumber(auth, `+91${values.phone}`, appVerifier);
         setConfirmationResult(result);
         setShowOtp(true);
@@ -125,7 +127,7 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
-      <div id="invisible-recaptcha"></div>
+      <div ref={recaptchaRef}></div>
       <div className="max-w-md w-full space-y-8">
         <div className="text-center space-y-2">
           <div className="flex justify-center mb-6">
