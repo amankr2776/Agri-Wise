@@ -55,63 +55,7 @@ import { Badge } from "@/components/ui/badge";
 
 export default function AgriWiseApp() {
   const { role, setRole, language, setLanguage } = useAppState();
-  const [isAppStarted, setIsAppStarted] = useState(false);
   const [activeTab, setActiveTab] = useState("dashboard");
-
-  if (!isAppStarted) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
-        <div className="max-w-4xl w-full space-y-8 animate-in fade-in zoom-in duration-500">
-          <div className="text-center space-y-2">
-            <div className="flex justify-center mb-4">
-              <div className="p-4 bg-primary rounded-2xl shadow-xl shadow-primary/20">
-                <Leaf className="h-12 w-12 text-white" />
-              </div>
-            </div>
-            <h1 className="text-6xl font-headline font-bold text-primary tracking-tighter">AgriWise</h1>
-            <p className="text-muted-foreground max-w-xl mx-auto text-xl font-medium">
-              The Intelligent Ecosystem for Agri-Experts, Logistics, and Authorities.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-3xl mx-auto">
-            {ROLES.map((r) => (
-              <Card 
-                key={r.id} 
-                className={`cursor-pointer transition-all hover:scale-105 border-2 overflow-hidden ${role === r.id ? 'border-primary ring-4 ring-primary/10' : 'border-transparent shadow-md'}`}
-                onClick={() => setRole(r.id)}
-              >
-                <CardContent className="p-8 flex flex-col items-center text-center space-y-4">
-                  <div className={`p-5 rounded-3xl ${r.color} text-white shadow-xl`}>
-                    <r.icon className="h-10 w-10" />
-                  </div>
-                  <div className="space-y-1">
-                    <h3 className="font-bold text-xl">{r.title}</h3>
-                    <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold">Professional Access</p>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-
-          <div className="flex flex-col items-center gap-6">
-            <Button 
-              size="lg" 
-              className="h-16 px-20 text-xl font-bold rounded-full bg-primary hover:bg-primary/90 shadow-2xl shadow-primary/30 transition-all hover:translate-y-[-4px]"
-              onClick={() => setIsAppStarted(true)}
-            >
-              Enter Dashboard <ChevronRight className="ml-2 h-6 w-6" />
-            </Button>
-
-            <div className="flex items-center gap-4 text-sm text-muted-foreground bg-white/80 px-6 py-3 rounded-full backdrop-blur-md border shadow-sm">
-              <Accessibility className="h-4 w-4 text-primary" />
-              <span>Multi-lingual AI Assistance enabled for <b>{language}</b></span>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <SidebarProvider>
@@ -155,11 +99,20 @@ export default function AgriWiseApp() {
           <SidebarFooter className="p-4 space-y-4">
             <div className="bg-primary/5 p-3 rounded-xl group-data-[collapsible=icon]:hidden">
                <div className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest mb-1">Active Role</div>
-               <div className="text-sm font-bold text-primary flex items-center gap-2">
-                  <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
-                  {role}
-               </div>
-               <div className="text-[10px] text-muted-foreground mt-2 truncate max-w-[140px]">Public Access Session</div>
+               <Select value={role} onValueChange={(val) => setRole(val as UserRole)}>
+                 <SelectTrigger className="h-8 bg-transparent border-none p-0 text-primary font-bold shadow-none hover:bg-transparent">
+                   <div className="flex items-center gap-2">
+                     <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
+                     <SelectValue />
+                   </div>
+                 </SelectTrigger>
+                 <SelectContent>
+                   <SelectItem value="Expert">Agri Expert</SelectItem>
+                   <SelectItem value="Authority">Gov Authority</SelectItem>
+                   <SelectItem value="Logistics">Logistics Provider</SelectItem>
+                 </SelectContent>
+               </Select>
+               <div className="text-[10px] text-muted-foreground mt-2 truncate max-w-[140px]">Open Access Session</div>
             </div>
             <SidebarMenuButton tooltip="Settings"><Settings /> <span>Settings</span></SidebarMenuButton>
           </SidebarFooter>
@@ -209,10 +162,10 @@ export default function AgriWiseApp() {
                       </div>
                       <CardContent className="p-10 space-y-8 relative z-10">
                         <div className="space-y-4">
-                          <Badge className="bg-white/10 text-white border-white/20 px-4 py-1 rounded-full backdrop-blur-md">Verified System {role}</Badge>
+                          <Badge className="bg-white/10 text-white border-white/20 px-4 py-1 rounded-full backdrop-blur-md">Verified Intelligence Interface</Badge>
                           <h2 className="text-5xl font-bold font-headline tracking-tight leading-none">Global Agri-Intelligence Dashboard</h2>
                           <p className="max-w-xl text-slate-300 text-xl font-medium leading-relaxed">
-                            Real-time monitoring of regional crop health, market shifts, and logistics efficiency.
+                            Real-time monitoring of regional crop health, market shifts, and logistics efficiency. Access restricted to verified partners.
                           </p>
                         </div>
                         <div className="flex flex-wrap gap-4">
@@ -354,9 +307,3 @@ export default function AgriWiseApp() {
     </SidebarProvider>
   );
 }
-
-const ROLES: { id: UserRole; title: string; icon: any; color: string }[] = [
-  { id: "Expert", title: "Agri Expert", icon: ShieldCheck, color: "bg-blue-600" },
-  { id: "Authority", title: "Gov / Admin", icon: BarChart3, color: "bg-slate-700" },
-  { id: "Logistics", title: "Logistics", icon: Truck, color: "bg-orange-600" },
-];
