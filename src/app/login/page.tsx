@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useEffect } from "react";
@@ -9,15 +8,12 @@ import {
   createUserWithEmailAndPassword, 
   RecaptchaVerifier, 
   signInWithPhoneNumber, 
-  ConfirmationResult,
-  signInAnonymously,
-  GoogleAuthProvider,
-  signInWithPopup
+  ConfirmationResult
 } from "firebase/auth";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
-import { Leaf, Mail, Phone, Lock, ArrowRight, Loader2, ShieldCheck, AlertCircle, UserCircle, Chrome } from "lucide-react";
+import { Leaf, Mail, Phone, Lock, ArrowRight, Loader2, ShieldCheck, AlertCircle } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -27,7 +23,6 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-  FormDescription,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -37,7 +32,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 // Extend window interface for Recaptcha
 declare global {
-  interface Window {
+  interface window {
     recaptchaVerifier: RecaptchaVerifier;
   }
 }
@@ -73,46 +68,20 @@ export default function LoginPage() {
   });
 
   useEffect(() => {
+    // Initialize invisible recaptcha
     if (typeof window !== "undefined" && !window.recaptchaVerifier) {
       try {
-        window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+        window.recaptchaVerifier = new RecaptchaVerifier(auth, 'invisible-recaptcha', {
           'size': 'invisible',
-          'callback': () => {}
+          'callback': () => {
+            // reCAPTCHA solved
+          }
         });
       } catch (e) {
         console.error("Recaptcha initialization failed:", e);
       }
     }
   }, [auth]);
-
-  async function onGoogleLogin() {
-    setLoading(true);
-    setAuthError(null);
-    try {
-      const provider = new GoogleAuthProvider();
-      await signInWithPopup(auth, provider);
-      toast({ title: "Welcome!", description: "Successfully logged in with Google." });
-      router.push("/");
-    } catch (error: any) {
-      setAuthError(error.message);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function onGuestLogin() {
-    setLoading(true);
-    setAuthError(null);
-    try {
-      await signInAnonymously(auth);
-      toast({ title: "Welcome Guest!", description: "Exploring as a visitor." });
-      router.push("/");
-    } catch (error: any) {
-      setAuthError(error.message);
-    } finally {
-      setLoading(false);
-    }
-  }
 
   async function onEmailSubmit(values: z.infer<typeof emailSchema>) {
     setLoading(true);
@@ -149,7 +118,7 @@ export default function LoginPage() {
       } catch (error: any) {
         let message = error.message;
         if (error.code === 'auth/billing-not-enabled') {
-          message = "SMS requires a paid plan. Please use Google Login or Guest access to continue testing.";
+          message = "Mobile OTP requires a billing account. Please use Email login or add a test number in Firebase Console.";
         }
         setAuthError(message);
       } finally {
@@ -174,7 +143,7 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen bg-muted/30 flex items-center justify-center p-4">
-      <div id="recaptcha-container"></div>
+      <div id="invisible-recaptcha"></div>
       <div className="max-w-md w-full space-y-8">
         <div className="text-center space-y-2">
           <div className="flex justify-center mb-6">
@@ -204,28 +173,10 @@ export default function LoginPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="mt-[-20px] bg-white rounded-t-[30px] pt-8 space-y-6">
-            <div className="grid grid-cols-2 gap-3">
-              <Button variant="outline" className="h-12 border-primary/20 hover:bg-primary/5" onClick={onGoogleLogin} disabled={loading}>
-                <Chrome className="mr-2 h-4 w-4 text-red-500" /> Google
-              </Button>
-              <Button variant="outline" className="h-12 border-primary/20 hover:bg-primary/5" onClick={onGuestLogin} disabled={loading}>
-                <UserCircle className="mr-2 h-4 w-4 text-primary" /> Guest
-              </Button>
-            </div>
-
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-white px-2 text-muted-foreground">Or continue with</span>
-              </div>
-            </div>
-
             <Tabs defaultValue="email" className="w-full">
               <TabsList className="grid w-full grid-cols-2 mb-6">
                 <TabsTrigger value="email">Email</TabsTrigger>
-                <TabsTrigger value="phone">Mobile</TabsTrigger>
+                <TabsTrigger value="phone">Mobile OTP</TabsTrigger>
               </TabsList>
 
               <TabsContent value="email">
@@ -236,7 +187,7 @@ export default function LoginPage() {
                       name="email"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Email</FormLabel>
+                          <FormLabel>Email Address</FormLabel>
                           <FormControl>
                             <div className="relative">
                               <Mail className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -265,7 +216,7 @@ export default function LoginPage() {
                     />
                     <Button type="submit" className="w-full h-11 font-bold" disabled={loading}>
                       {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                      {isRegistering ? "Create Account" : "Sign In"} <ArrowRight className="ml-2 h-4 w-4" />
+                      {isRegistering ? "Register Now" : "Sign In"} <ArrowRight className="ml-2 h-4 w-4" />
                     </Button>
                   </form>
                 </Form>
@@ -296,7 +247,7 @@ export default function LoginPage() {
                         name="otp"
                         render={({ field }) => (
                           <FormItem className="animate-in fade-in slide-in-from-top-2">
-                            <FormLabel>Verification Code</FormLabel>
+                            <FormLabel>Verification Code (OTP)</FormLabel>
                             <FormControl>
                               <div className="relative">
                                 <ShieldCheck className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -310,7 +261,7 @@ export default function LoginPage() {
                     )}
                     <Button type="submit" className="w-full h-11 font-bold" disabled={loading}>
                       {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                      {showOtp ? "Verify OTP" : "Send OTP"} <ArrowRight className="ml-2 h-4 w-4" />
+                      {showOtp ? "Verify & Login" : "Send OTP Code"} <ArrowRight className="ml-2 h-4 w-4" />
                     </Button>
                   </form>
                 </Form>
@@ -319,7 +270,7 @@ export default function LoginPage() {
           </CardContent>
           <CardFooter className="bg-white pb-6 pt-0">
             <Button variant="link" className="w-full text-xs text-muted-foreground" onClick={() => setIsRegistering(!isRegistering)}>
-              {isRegistering ? "Back to Login" : "Don't have an account? Sign up"}
+              {isRegistering ? "Already have an account? Sign in" : "New farmer? Create an account"}
             </Button>
           </CardFooter>
         </Card>
