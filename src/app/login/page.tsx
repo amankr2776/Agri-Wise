@@ -10,12 +10,14 @@ import {
   RecaptchaVerifier, 
   signInWithPhoneNumber, 
   ConfirmationResult,
-  signInAnonymously
+  signInAnonymously,
+  GoogleAuthProvider,
+  signInWithPopup
 } from "firebase/auth";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
-import { Leaf, Mail, Phone, Lock, ArrowRight, Loader2, ShieldCheck, AlertCircle, UserCircle } from "lucide-react";
+import { Leaf, Mail, Phone, Lock, ArrowRight, Loader2, ShieldCheck, AlertCircle, UserCircle, Chrome } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -32,6 +34,13 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+
+// Extend window interface for Recaptcha
+declare global {
+  interface Window {
+    recaptchaVerifier: RecaptchaVerifier;
+  }
+}
 
 const emailSchema = z.object({
   email: z.string().email({ message: "Please enter a valid email address." }),
@@ -76,6 +85,21 @@ export default function LoginPage() {
     }
   }, [auth]);
 
+  async function onGoogleLogin() {
+    setLoading(true);
+    setAuthError(null);
+    try {
+      const provider = new GoogleAuthProvider();
+      await signInWithPopup(auth, provider);
+      toast({ title: "Welcome!", description: "Successfully logged in with Google." });
+      router.push("/");
+    } catch (error: any) {
+      setAuthError(error.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
   async function onGuestLogin() {
     setLoading(true);
     setAuthError(null);
@@ -103,11 +127,7 @@ export default function LoginPage() {
       }
       router.push("/");
     } catch (error: any) {
-      let message = error.message;
-      if (error.code === 'auth/operation-not-allowed') {
-        message = "Email/Password sign-in is disabled in Firebase Console.";
-      }
-      setAuthError(message);
+      setAuthError(error.message);
     } finally {
       setLoading(false);
     }
@@ -127,12 +147,9 @@ export default function LoginPage() {
         setShowOtp(true);
         toast({ title: "OTP Sent", description: "Verification code sent to your mobile." });
       } catch (error: any) {
-        console.error("Phone auth error:", error);
         let message = error.message;
-        if (error.code === 'auth/operation-not-allowed') {
-          message = "Phone Authentication is disabled in Firebase Console.";
-        } else if (error.code === 'auth/billing-not-enabled') {
-          message = "SMS service requires a paid Firebase plan. Please enable billing in Google Cloud or use 'Guest Access' to continue.";
+        if (error.code === 'auth/billing-not-enabled') {
+          message = "SMS requires a paid plan. Please use Google Login or Guest access to continue testing.";
         }
         setAuthError(message);
       } finally {
@@ -148,7 +165,7 @@ export default function LoginPage() {
         toast({ title: "Success!", description: "Logged in with phone number." });
         router.push("/");
       } catch (error: any) {
-        setAuthError("The OTP you entered is incorrect or expired.");
+        setAuthError("Incorrect OTP. Please check and try again.");
       } finally {
         setLoading(false);
       }
@@ -166,27 +183,45 @@ export default function LoginPage() {
             </div>
           </div>
           <h1 className="text-3xl font-bold font-headline text-primary">AgriWise</h1>
-          <p className="text-muted-foreground">Digital intelligence for the modern farmer.</p>
+          <p className="text-muted-foreground">Modern tools for modern farmers.</p>
         </div>
 
         {authError && (
-          <Alert variant="destructive" className="bg-destructive/10 text-destructive border-destructive/20">
+          <Alert variant="destructive" className="animate-in fade-in slide-in-from-top-2">
             <AlertCircle className="h-4 w-4" />
-            <AlertTitle>Auth Issue</AlertTitle>
+            <AlertTitle>Sign-in Issue</AlertTitle>
             <AlertDescription className="text-xs">
               {authError}
             </AlertDescription>
           </Alert>
         )}
 
-        <Card className="border-none shadow-2xl">
-          <CardHeader className="space-y-1">
-            <CardTitle className="text-xl">{isRegistering ? "Create an account" : "Sign in"}</CardTitle>
+        <Card className="border-none shadow-2xl overflow-hidden">
+          <CardHeader className="bg-primary/5 pb-8">
+            <CardTitle className="text-xl">{isRegistering ? "Create an account" : "Welcome Back"}</CardTitle>
             <CardDescription>
-              Choose your preferred method to access your dashboard.
+              Fastest access to your agricultural data.
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="mt-[-20px] bg-white rounded-t-[30px] pt-8 space-y-6">
+            <div className="grid grid-cols-2 gap-3">
+              <Button variant="outline" className="h-12 border-primary/20 hover:bg-primary/5" onClick={onGoogleLogin} disabled={loading}>
+                <Chrome className="mr-2 h-4 w-4 text-red-500" /> Google
+              </Button>
+              <Button variant="outline" className="h-12 border-primary/20 hover:bg-primary/5" onClick={onGuestLogin} disabled={loading}>
+                <UserCircle className="mr-2 h-4 w-4 text-primary" /> Guest
+              </Button>
+            </div>
+
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-white px-2 text-muted-foreground">Or continue with</span>
+              </div>
+            </div>
+
             <Tabs defaultValue="email" className="w-full">
               <TabsList className="grid w-full grid-cols-2 mb-6">
                 <TabsTrigger value="email">Email</TabsTrigger>
@@ -201,11 +236,11 @@ export default function LoginPage() {
                       name="email"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Email Address</FormLabel>
+                          <FormLabel>Email</FormLabel>
                           <FormControl>
                             <div className="relative">
                               <Mail className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                              <Input placeholder="farmer@example.com" className="pl-9" {...field} />
+                              <Input placeholder="farmer@example.com" className="pl-9 h-11" {...field} />
                             </div>
                           </FormControl>
                           <FormMessage />
@@ -221,14 +256,14 @@ export default function LoginPage() {
                           <FormControl>
                             <div className="relative">
                               <Lock className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                              <Input type="password" placeholder="••••••••" className="pl-9" {...field} />
+                              <Input type="password" placeholder="••••••••" className="pl-9 h-11" {...field} />
                             </div>
                           </FormControl>
                           <FormMessage />
                         </FormItem>
                       )}
                     />
-                    <Button type="submit" className="w-full h-11" disabled={loading}>
+                    <Button type="submit" className="w-full h-11 font-bold" disabled={loading}>
                       {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                       {isRegistering ? "Create Account" : "Sign In"} <ArrowRight className="ml-2 h-4 w-4" />
                     </Button>
@@ -246,15 +281,11 @@ export default function LoginPage() {
                         <FormItem>
                           <FormLabel>Mobile Number</FormLabel>
                           <FormControl>
-                            <div className="relative">
-                              <Phone className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                              <div className="flex gap-2">
-                                <span className="flex items-center px-3 border rounded-md bg-muted text-sm font-bold text-muted-foreground">+91</span>
-                                <Input placeholder="9876543210" className="flex-1" disabled={showOtp} {...field} />
-                              </div>
+                            <div className="flex gap-2">
+                              <span className="flex items-center px-3 border rounded-md bg-muted text-sm font-bold">+91</span>
+                              <Input placeholder="9876543210" className="flex-1 h-11" disabled={showOtp} {...field} />
                             </div>
                           </FormControl>
-                          <FormDescription>Enter your 10-digit mobile number.</FormDescription>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -265,52 +296,33 @@ export default function LoginPage() {
                         name="otp"
                         render={({ field }) => (
                           <FormItem className="animate-in fade-in slide-in-from-top-2">
-                            <FormLabel>Verification Code (OTP)</FormLabel>
+                            <FormLabel>Verification Code</FormLabel>
                             <FormControl>
                               <div className="relative">
                                 <ShieldCheck className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                                <Input placeholder="Enter 6-digit code" className="pl-9" {...field} />
+                                <Input placeholder="6-digit OTP" className="pl-9 h-11" {...field} />
                               </div>
                             </FormControl>
-                            <FormDescription>Code sent via SMS.</FormDescription>
                             <FormMessage />
                           </FormItem>
                         )}
                       />
                     )}
-                    <Button type="submit" className="w-full h-11" disabled={loading}>
+                    <Button type="submit" className="w-full h-11 font-bold" disabled={loading}>
                       {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                      {showOtp ? "Verify & Login" : "Send OTP"} <ArrowRight className="ml-2 h-4 w-4" />
+                      {showOtp ? "Verify OTP" : "Send OTP"} <ArrowRight className="ml-2 h-4 w-4" />
                     </Button>
                   </form>
                 </Form>
               </TabsContent>
             </Tabs>
           </CardContent>
-          <CardFooter className="flex flex-col space-y-4">
-            <div className="relative w-full">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-background px-2 text-muted-foreground">Quick Access</span>
-              </div>
-            </div>
-            <Button variant="outline" className="w-full h-11" onClick={onGuestLogin} disabled={loading}>
-              <UserCircle className="mr-2 h-4 w-4" /> Continue as Guest
+          <CardFooter className="bg-white pb-6 pt-0">
+            <Button variant="link" className="w-full text-xs text-muted-foreground" onClick={() => setIsRegistering(!isRegistering)}>
+              {isRegistering ? "Back to Login" : "Don't have an account? Sign up"}
             </Button>
-            <div className="flex justify-center">
-              <Button variant="link" className="text-xs" onClick={() => setIsRegistering(!isRegistering)}>
-                {isRegistering ? "Already have an account? Sign in" : "New to AgriWise? Create account"}
-              </Button>
-            </div>
           </CardFooter>
         </Card>
-        
-        <p className="text-center text-[10px] text-muted-foreground">
-          Note: Phone login requires Firebase Billing enabled for real SMS. 
-          Use "Guest Access" or "Email" if you haven't enabled it.
-        </p>
       </div>
     </div>
   );
