@@ -1,13 +1,20 @@
+
 'use client';
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/firebase";
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword, RecaptchaVerifier, signInWithPhoneNumber, ConfirmationResult } from "firebase/auth";
+import { 
+  signInWithEmailAndPassword, 
+  createUserWithEmailAndPassword, 
+  RecaptchaVerifier, 
+  signInWithPhoneNumber, 
+  ConfirmationResult 
+} from "firebase/auth";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
-import { Leaf, Mail, Phone, Lock, ArrowRight, Loader2, ShieldCheck } from "lucide-react";
+import { Leaf, Mail, Phone, Lock, ArrowRight, Loader2, ShieldCheck, AlertCircle } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -23,6 +30,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const emailSchema = z.object({
   email: z.string().email({ message: "Please enter a valid email address." }),
@@ -42,6 +50,7 @@ export default function LoginPage() {
   const [isRegistering, setIsRegistering] = useState(false);
   const [showOtp, setShowOtp] = useState(false);
   const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
+  const [authError, setAuthError] = useState<string | null>(null);
 
   const emailForm = useForm<z.infer<typeof emailSchema>>({
     resolver: zodResolver(emailSchema),
@@ -56,15 +65,20 @@ export default function LoginPage() {
   // Re-captcha for phone auth
   useEffect(() => {
     if (typeof window !== "undefined" && !window.recaptchaVerifier) {
-      window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
-        'size': 'invisible',
-        'callback': () => {}
-      });
+      try {
+        window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+          'size': 'invisible',
+          'callback': () => {}
+        });
+      } catch (e) {
+        console.error("Recaptcha initialization failed:", e);
+      }
     }
   }, [auth]);
 
   async function onEmailSubmit(values: z.infer<typeof emailSchema>) {
     setLoading(true);
+    setAuthError(null);
     try {
       if (isRegistering) {
         await createUserWithEmailAndPassword(auth, values.email, values.password);
@@ -75,10 +89,16 @@ export default function LoginPage() {
       }
       router.push("/");
     } catch (error: any) {
+      console.error("Email auth error:", error);
+      let message = error.message;
+      if (error.code === 'auth/operation-not-allowed') {
+        message = "Email/Password provider is disabled in Firebase Console.";
+      }
+      setAuthError(message);
       toast({
         variant: "destructive",
         title: "Authentication Failed",
-        description: error.message || "Invalid credentials. Please try again.",
+        description: message,
       });
     } finally {
       setLoading(false);
@@ -86,20 +106,29 @@ export default function LoginPage() {
   }
 
   async function onPhoneSubmit(values: z.infer<typeof phoneSchema>) {
+    setAuthError(null);
     if (!showOtp) {
       setLoading(true);
       try {
         const appVerifier = window.recaptchaVerifier;
+        if (!appVerifier) throw new Error("Recaptcha not initialized");
+        
         const phoneNumber = `+91${values.phone}`;
         const result = await signInWithPhoneNumber(auth, phoneNumber, appVerifier);
         setConfirmationResult(result);
         setShowOtp(true);
         toast({ title: "OTP Sent", description: "Verification code sent to your mobile." });
       } catch (error: any) {
+        console.error("Phone auth error:", error);
+        let message = error.message;
+        if (error.code === 'auth/operation-not-allowed') {
+          message = "Phone Authentication is disabled in Firebase Console. Please enable it under Authentication > Sign-in method.";
+        }
+        setAuthError(message);
         toast({
           variant: "destructive",
           title: "SMS Failed",
-          description: error.message || "Could not send OTP. Please check your number.",
+          description: message,
         });
       } finally {
         setLoading(false);
@@ -114,6 +143,7 @@ export default function LoginPage() {
         toast({ title: "Success!", description: "Logged in with phone number." });
         router.push("/");
       } catch (error: any) {
+        setAuthError("The OTP you entered is incorrect or expired.");
         toast({
           variant: "destructive",
           title: "Invalid Code",
@@ -138,6 +168,16 @@ export default function LoginPage() {
           <h1 className="text-3xl font-bold font-headline text-primary">AgriWise</h1>
           <p className="text-muted-foreground">Digital intelligence for the modern farmer.</p>
         </div>
+
+        {authError && (
+          <Alert variant="destructive" className="bg-destructive/10 text-destructive border-destructive/20">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Error</AlertTitle>
+            <AlertDescription className="text-xs">
+              {authError}
+            </AlertDescription>
+          </Alert>
+        )}
 
         <Card className="border-none shadow-2xl">
           <CardHeader className="space-y-1">
@@ -214,6 +254,7 @@ export default function LoginPage() {
                               </div>
                             </div>
                           </FormControl>
+                          <FormDescription>Enter your 10-digit mobile number.</FormDescription>
                           <FormMessage />
                         </FormItem>
                       )}

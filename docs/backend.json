@@ -1,3 +1,4 @@
+
 {
   "entities": {
     "User": {
@@ -704,7 +705,8 @@
   "auth": {
     "providers": [
       "password",
-      "anonymous"
+      "anonymous",
+      "phone"
     ]
   },
   "firestore": {
@@ -1023,5 +1025,12 @@
       }
     ],
     "reasoning": "The Firestore structure for AgriWise prioritizes Authorization Independence (CRITICAL), ensuring robust and debuggable security rules. This is achieved primarily through a strategic denormalization of authorization context and a clear structural segregation of data based on its security posture.\n\n**Authorization Independence (Strategy A - Denormalization):**\n1.  **Role-Based Access Control (DBAC):** Instead of relying on a `role` field within the main `/users/{userId}` document (which would require a `get()` call in security rules, violating authorization independence), dedicated top-level collections like `/roles_experts/{userId}`, `/roles_governmentAuthorities/{userId}`, and `/roles_logisticsProviders/{userId}` are introduced. The mere *existence* of a document at these paths signifies that `request.auth.uid` holds that specific role. This allows for simple `exists()` checks in security rules, eliminating cross-document `get()` dependencies for role verification.\n2.  **Nested Data Ownership:** For subcollections where access depends on the parent document's owner, the owner's `userId` is explicitly denormalized into the subcollection's documents. For example:\n    *   `DiagnosticSuggestion` documents (nested under `/users/{farmerId}/diagnosticRequests/{diagnosticRequestId}/suggestions`) will include a `farmerId` field. This allows rules to check `request.auth.uid == resource.data.farmerId` directly, without needing to `get()` the parent `DiagnosticRequest` document.\n    *   `TransportVehicle` documents (nested under `/logisticsProviderProfiles/{logisticsProviderProfileId}/vehicles`) will include a `logisticsProviderUserId` field. This enables direct checks like `request.auth.uid == resource.data.logisticsProviderUserId`, bypassing the need to `get()` the parent `LogisticsProviderProfile`.\n    *   `LogisticsProviderProfile` documents themselves will contain a `userId` field to link directly to the authenticated user for ownership checks.\n\nThis denormalization strategy ensures that security rules for a given document can be evaluated atomically, relying only on the data within that document (`resource.data`) and the authenticated user's ID (`request.auth.uid`), preventing complex and error-prone `get()` operations.\n\n**Structural Segregation (Strategy B - Homogeneous Security Posture) & QAPs:**\nAll documents within a collection share the same security requirements, simplifying security rules and enabling efficient Query Access Patterns (QAPs):\n*   **Public Reference Data:** Collections like `/crops`, `/pests`, `/symptoms`, `/remedies`, `/marketPriceRecords`, and `/marketTrends` are designed for public read access. Rules for these collections can simply allow `read: if true;`, facilitating secure `list` queries without complex filtering logic.\n*   **User-Owned Private Data:** Data strictly owned and managed by individual users (e.g., `/users/{userId}/diagnosticRequests`, `/users/{userId}/nuskhaVotes`) is nested under the `/users/{userId}` path. This naturally enforces `request.auth.uid == userId` for all operations, making `list` queries for a user's own data inherently secure.\n*   **Collaborative/Role-Restricted Data:**\n    *   `/priceAlerts` are accessible only to `Government Authorities`, leveraging the `/roles_governmentAuthorities/{userId}` collection for DBAC. Listing all alerts is secure because all documents within this collection are intended for this role.\n    *   `/socialPosts` and `/socialPosts/{postId}/comments` are publicly readable, enabling a dynamic community feed. Authors retain write/delete access to their own content through `resource.data.authorId` checks.\n    *   `/logisticsProviderProfiles` and their nested `/vehicles` are publicly readable for discovery but restrict write access to the specific `Logistics Provider` who owns the profile, verified via the denormalized `userId`.\n\nThis design inherently supports QAPs because `list` operations will either retrieve publicly accessible data, data explicitly owned by the requesting user (enforced by the path), or data accessible to a specific role (enforced by the role collection existence check), without requiring the rules engine to act as a filter that might return partial results or incur high costs."
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous",
+      "phone"
+    ]
   }
 }
