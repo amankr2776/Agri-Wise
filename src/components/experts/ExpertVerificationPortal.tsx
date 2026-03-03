@@ -1,5 +1,5 @@
 
-"use client";
+'use client';
 
 import React, { useState } from "react";
 import { 
@@ -12,16 +12,24 @@ import {
   ClipboardCheck,
   Loader2,
   Plus,
-  ArrowRight
+  ArrowRight,
+  Database
 } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useFirestore, useCollection, useUser, useMemoFirebase } from "@/firebase";
-import { collection, query, where, doc, addDoc } from "firebase/firestore";
+import { collection, query, where, doc, addDoc, getDocs } from "firebase/firestore";
 import { updateDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAppState } from "@/lib/app-state";
+
+const DEFAULT_CROPS = [
+  { name: "Paddy", category: "Kharif", diseaseName: "Rice Blast", severity: "High", chemicalCure: "Tricyclazole 75% WP", chemicalDosage: "0.6g / L", desiNuskha: "Neem oil spray (3%) mixed with cow urine.", isCertified: false, imageUrl: "https://picsum.photos/seed/paddy1/800/400" },
+  { name: "Wheat", category: "Rabi", diseaseName: "Brown Rust", severity: "High", chemicalCure: "Propiconazole 25% EC", chemicalDosage: "1ml / L", desiNuskha: "Butter milk spray after fermentation for 3 days.", isCertified: false, imageUrl: "https://picsum.photos/seed/wheat1/800/400" },
+  { name: "Cotton", category: "Cash Crop", diseaseName: "Pink Bollworm", severity: "Critical", chemicalCure: "Profenophos 50% EC", chemicalDosage: "2ml / L", desiNuskha: "Pheromone traps and light traps at night.", isCertified: false, imageUrl: "https://picsum.photos/seed/cotton1/800/400" },
+  { name: "Mustard", category: "Oilseed", diseaseName: "Alternaria Blight", severity: "Medium", chemicalCure: "Mancozeb 75% WP", chemicalDosage: "2.5g / L", desiNuskha: "Ginger-Garlic-Chili extract spray.", isCertified: false, imageUrl: "https://picsum.photos/seed/mustard1/800/400" },
+];
 
 export function ExpertVerificationPortal() {
   const { firestore } = useFirestore();
@@ -32,7 +40,7 @@ export function ExpertVerificationPortal() {
   const pendingCertsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
     return query(
-      collection(firestore, "cropCertifications"),
+      collection(firestore, "crops"),
       where("isCertified", "==", false)
     );
   }, [firestore]);
@@ -41,7 +49,7 @@ export function ExpertVerificationPortal() {
 
   const handleVerify = (certId: string) => {
     if (!firestore || !certId || !user) return;
-    const docRef = doc(firestore, "cropCertifications", certId);
+    const docRef = doc(firestore, "crops", certId);
     
     updateDocumentNonBlocking(docRef, {
       isCertified: true,
@@ -50,18 +58,16 @@ export function ExpertVerificationPortal() {
     });
   };
 
-  const seedSampleData = async () => {
+  const seedDatabase = async () => {
     if (!firestore) return;
     setSeeding(true);
-    const samples = [
-      { cropName: "Kharif Wheat", majorPest: "Brown Rust", traditionalRemedy: "Neem Oil Spray (3%) mixed with soap water.", isCertified: false, region: "Punjab" },
-      { cropName: "Basmati Rice", majorPest: "Stem Borer", traditionalRemedy: "Trichogramma Egg Parasitoids released at 5 points per acre.", isCertified: false, region: "Haryana" },
-      { cropName: "Desi Cotton", majorPest: "Pink Bollworm", traditionalRemedy: "Pheromone Trapping using sticky traps every 10 meters.", isCertified: false, region: "Gujarat" },
-    ];
-
     try {
-      for (const sample of samples) {
-        await addDoc(collection(firestore, "cropCertifications"), sample);
+      const colRef = collection(firestore, "crops");
+      const existing = await getDocs(colRef);
+      if (existing.empty) {
+        for (const crop of DEFAULT_CROPS) {
+          await addDoc(colRef, crop);
+        }
       }
     } finally {
       setSeeding(false);
@@ -75,7 +81,7 @@ export function ExpertVerificationPortal() {
           <AlertCircle className="h-10 w-10" />
         </div>
         <h3 className="text-2xl font-black">Restricted Access</h3>
-        <p className="text-muted-foreground max-w-sm">This portal is exclusively for verified agricultural scientists and experts.</p>
+        <p className="text-muted-foreground max-w-sm">This portal is exclusively for verified agricultural scientists and NGO experts.</p>
       </div>
     );
   }
@@ -98,17 +104,19 @@ export function ExpertVerificationPortal() {
             <FlaskConical className="h-8 w-8 text-primary" />
             Scientist Verification Hub
           </h2>
-          <p className="text-muted-foreground font-medium mt-1 italic">Certifying traditional 'Desi Nuskhas' for regional efficacy.</p>
+          <p className="text-muted-foreground font-medium mt-1 italic">Certifying 'Desi Nuskhas' and Chemical treatments for regional efficacy.</p>
         </div>
-        <Button 
-          variant="outline" 
-          onClick={seedSampleData} 
-          disabled={seeding}
-          className="rounded-full border-primary/20 text-primary hover:bg-primary/5 font-bold px-6"
-        >
-          {seeding ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Plus className="h-4 w-4 mr-2" />}
-          Import Pending Cases
-        </Button>
+        <div className="flex gap-3">
+          <Button 
+            variant="outline" 
+            onClick={seedDatabase} 
+            disabled={seeding}
+            className="rounded-full border-primary/20 text-primary hover:bg-primary/5 font-bold px-6"
+          >
+            {seeding ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Database className="h-4 w-4 mr-2" />}
+            Sync Database
+          </Button>
+        </div>
       </div>
 
       {!pendingCerts || pendingCerts.length === 0 ? (
@@ -118,7 +126,7 @@ export function ExpertVerificationPortal() {
           </div>
           <h3 className="text-2xl font-black text-slate-800">Queue is Cleared</h3>
           <p className="text-muted-foreground max-w-sm mx-auto mt-4 font-medium leading-relaxed">
-            All submitted remedies have been processed. New cases will appear here upon submission from the cluster networks.
+            All submitted remedies have been processed. New cases will appear here upon submission from the field diagnostic teams.
           </p>
         </Card>
       ) : (
@@ -128,29 +136,30 @@ export function ExpertVerificationPortal() {
               <CardHeader className="bg-muted/30 border-b p-8">
                 <div className="flex justify-between items-start mb-4">
                   <Badge variant="outline" className="bg-white border-primary/20 text-primary text-[10px] font-black uppercase tracking-widest px-3">
-                    {cert.region}
+                    {cert.category}
                   </Badge>
                   <div className="h-10 w-10 bg-amber-100 rounded-xl flex items-center justify-center text-amber-600 shadow-sm">
                     <AlertCircle className="h-5 w-5" />
                   </div>
                 </div>
-                <CardTitle className="text-2xl font-black text-slate-900">{cert.cropName}</CardTitle>
+                <CardTitle className="text-2xl font-black text-slate-900">{cert.name}</CardTitle>
+                <p className="text-xs font-bold text-muted-foreground uppercase">{cert.diseaseName}</p>
               </CardHeader>
               <CardContent className="p-8 space-y-6">
                 <div className="space-y-3">
                   <div className="flex items-center gap-2 text-[10px] font-black text-destructive uppercase tracking-widest">
-                    <Bug className="h-4 w-4" /> Targeted Pathogen
+                    <Bug className="h-4 w-4" /> Recommended Chemical
                   </div>
                   <p className="text-sm font-bold text-slate-700 bg-destructive/5 p-4 rounded-2xl border border-destructive/10">
-                    {cert.majorPest}
+                    {cert.chemicalCure} ({cert.chemicalDosage})
                   </p>
                 </div>
                 <div className="space-y-3">
                   <div className="flex items-center gap-2 text-[10px] font-black text-primary uppercase tracking-widest">
-                    <Leaf className="h-4 w-4" /> Suggested Remedy
+                    <Leaf className="h-4 w-4" /> Traditional Nuskha
                   </div>
                   <p className="text-sm font-medium text-slate-600 bg-primary/5 p-4 rounded-2xl border border-primary/10 italic leading-relaxed">
-                    "{cert.traditionalRemedy}"
+                    "{cert.desiNuskha}"
                   </p>
                 </div>
               </CardContent>

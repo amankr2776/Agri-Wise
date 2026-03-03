@@ -5,45 +5,33 @@
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "User",
       "type": "object",
-      "description": "Represents a user of the AgriWise application, encompassing various roles such as Farmer, Expert, Government Authority, or Logistics Provider.",
+      "description": "Represents a user of the AgriWise application.",
       "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the User entity."
-        },
-        "email": {
-          "type": "string",
-          "description": "The user's email address, used for identification and communication.",
-          "format": "email"
-        },
-        "mobileNumber": {
-          "type": "string",
-          "description": "The user's mobile phone number."
-        },
-        "firstName": {
-          "type": "string",
-          "description": "The first name of the user."
-        },
-        "lastName": {
-          "type": "string",
-          "description": "The last name of the user."
-        },
-        "role": {
-          "type": "string",
-          "description": "The primary role of the user (e.g., Farmer, Expert, Authority, Logistics).",
-          "enum": ["Expert", "Authority", "Logistics"]
-        },
-        "preferredLanguage": {
-          "type": "string",
-          "description": "The user's preferred language (e.g., English, Hindi, Punjabi, Bengali)."
-        },
-        "registrationDate": {
-          "type": "string",
-          "description": "Registration date.",
-          "format": "date-time"
-        }
+        "id": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "firstName": { "type": "string" },
+        "lastName": { "type": "string" },
+        "role": { "type": "string", "enum": ["Expert", "Authority", "Logistics"] },
+        "preferredLanguage": { "type": "string" }
       },
-      "required": ["id", "role", "preferredLanguage"]
+      "required": ["id", "role"]
+    },
+    "Crop": {
+      "title": "Crop",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "category": { "type": "string" },
+        "imageUrl": { "type": "string" },
+        "diseaseName": { "type": "string" },
+        "severity": { "type": "string", "enum": ["Low", "Medium", "High", "Critical"] },
+        "description": { "type": "string" },
+        "chemicalCure": { "type": "string" },
+        "chemicalDosage": { "type": "string" },
+        "desiNuskha": { "type": "string" },
+        "isCertified": { "type": "boolean" }
+      }
     },
     "PestOutbreak": {
       "title": "Pest Outbreak",
@@ -57,7 +45,7 @@
         "longitude": { "type": "number" },
         "state": { "type": "string" },
         "reportedAt": { "type": "string", "format": "date-time" },
-        "predictedMovementVector": { "type": "string", "description": "AI predicted direction of spread (e.g., 'North-West')" }
+        "predictedMovementVector": { "type": "string" }
       }
     },
     "CropCertification": {
@@ -66,67 +54,49 @@
       "properties": {
         "id": { "type": "string" },
         "cropName": { "type": "string" },
-        "majorPest": { "type": "string", "description": "The primary pest affecting this crop." },
-        "traditionalRemedy": { "type": "string", "description": "The traditional 'Desi Nuskha' suggested for this crop." },
-        "isCertified": { "type": "boolean", "description": "Whether the solution has been verified by an expert." },
+        "majorPest": { "type": "string" },
+        "traditionalRemedy": { "type": "string" },
+        "isCertified": { "type": "boolean" },
         "region": { "type": "string" },
-        "expertId": { "type": "string", "description": "ID of the scientist who certified the crop." }
+        "expertId": { "type": "string" }
       }
     },
     "SoilData": {
       "title": "Soil Data",
       "type": "object",
-      "description": "Records of soil pH and moisture levels for localized fertilizer recommendations.",
       "properties": {
         "id": { "type": "string" },
         "userId": { "type": "string" },
-        "phLevel": { "type": "number", "minimum": 0, "maximum": 14 },
-        "moisturePercentage": { "type": "number", "minimum": 0, "maximum": 100 },
+        "phLevel": { "type": "number" },
+        "moisturePercentage": { "type": "number" },
         "recordedAt": { "type": "string", "format": "date-time" }
       }
     }
   },
   "auth": {
-    "providers": [
-      "password",
-      "phone"
-    ]
+    "providers": ["password", "phone"]
   },
   "firestore": {
     "structure": [
       {
         "path": "/users/{userId}",
-        "definition": {
-          "entityName": "User",
-          "schema": {
-            "$ref": "#/backend/entities/User"
-          },
-          "description": "User profile data."
-        }
+        "definition": { "entityName": "User", "schema": { "$ref": "#/backend/entities/User" }, "description": "User profile data." }
+      },
+      {
+        "path": "/crops/{cropId}",
+        "definition": { "entityName": "Crop", "schema": { "$ref": "#/backend/entities/Crop" }, "description": "Base crop data with treatments." }
       },
       {
         "path": "/pestOutbreaks/{outbreakId}",
-        "definition": {
-          "entityName": "PestOutbreak",
-          "schema": { "$ref": "#/backend/entities/PestOutbreak" },
-          "description": "Real-time pest outbreak reports with geographic coordinates and predicted spread vectors."
-        }
+        "definition": { "entityName": "PestOutbreak", "schema": { "$ref": "#/backend/entities/PestOutbreak" }, "description": "Real-time pest outbreak reports." }
       },
       {
         "path": "/cropCertifications/{certId}",
-        "definition": {
-          "entityName": "CropCertification",
-          "schema": { "$ref": "#/backend/entities/CropCertification" },
-          "description": "Records of crop certification status across India."
-        }
+        "definition": { "entityName": "CropCertification", "schema": { "$ref": "#/backend/entities/CropCertification" }, "description": "Records of crop certification status." }
       },
       {
         "path": "/users/{userId}/soilHealth/{dataId}",
-        "definition": {
-          "entityName": "SoilData",
-          "schema": { "$ref": "#/backend/entities/SoilData" },
-          "description": "Historical soil health records for a specific user cluster."
-        }
+        "definition": { "entityName": "SoilData", "schema": { "$ref": "#/backend/entities/SoilData" }, "description": "Soil health records." }
       }
     ]
   }
