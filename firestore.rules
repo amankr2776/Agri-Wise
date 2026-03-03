@@ -55,8 +55,9 @@ service cloud.firestore {
 
     match /crops/{id} { 
       allow get, list: if true; 
-      // Allow creation if signed in (for prototype seeding) or if user is an expert.
-      allow create, update: if isSignedIn(); 
+      // Allow creation for everyone to facilitate prototype seeding without mandatory auth.
+      allow create: if true; 
+      allow update: if isSignedIn(); 
       allow delete: if false; 
     }
     
