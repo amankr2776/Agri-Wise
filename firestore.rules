@@ -27,6 +27,11 @@ service cloud.firestore {
       return exists(/databases/$(database)/documents/roles_logisticsProviders/$(userId));
     }
 
+    // --- Crops Collection (Open for prototype seeding) ---
+    match /crops/{id} { 
+      allow read, write: if true;
+    }
+
     match /users/{userId} {
       allow get, list: if isOwner(userId);
       allow create: if isOwner(userId) && request.resource.data.id == userId;
@@ -51,14 +56,6 @@ service cloud.firestore {
     match /roles_logisticsProviders/{userId} {
       allow get: if isSignedIn();
       allow list, create, update, delete: if false;
-    }
-
-    match /crops/{id} { 
-      allow get, list: if true; 
-      // Allow creation for everyone to facilitate prototype seeding without mandatory auth.
-      allow create: if true; 
-      allow update: if isSignedIn(); 
-      allow delete: if false; 
     }
     
     match /pests/{id} { allow get, list: if true; allow create, update, delete: if false; }

@@ -131,8 +131,9 @@ export function ExpertVerificationPortal() {
               count++;
             })
             .catch(async (serverError) => {
+              // Detailed diagnostic reporting with a placeholder ID for rule matching visualization
               const permissionError = new FirestorePermissionError({
-                path: colRef.path,
+                path: `${colRef.path}/_auto_generated_id_`,
                 operation: 'create',
                 requestResourceData: crop,
               } satisfies SecurityRuleContext);
@@ -155,8 +156,6 @@ export function ExpertVerificationPortal() {
         });
       }
     } catch (error: any) {
-      // If the top-level getDocs fails, it might be a standard error.
-      // We don't log to console.error as per guidelines.
       toast({
         variant: "destructive",
         title: "Sync Failed",
