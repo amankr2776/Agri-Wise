@@ -4,26 +4,26 @@
 
 @layer base {
   :root {
-    --background: 160 30% 5%; /* Very deep forest green */
-    --foreground: 0 0% 100%;
-    --card: 160 20% 10% / 0.4;
-    --card-foreground: 0 0% 100%;
-    --popover: 160 20% 10%;
-    --popover-foreground: 0 0% 100%;
-    --primary: 142 70% 45%; /* Vibrant leaf green */
-    --primary-foreground: 0 0% 100%;
-    --secondary: 160 20% 15% / 0.6;
-    --secondary-foreground: 142 70% 80%;
-    --muted: 160 10% 20% / 0.5;
-    --muted-foreground: 160 10% 70%;
-    --accent: 180 80% 50%; /* Electric cyan/teal for focus */
-    --accent-foreground: 0 0% 100%;
+    --background: 142 20% 98%;
+    --foreground: 142 50% 10%;
+    --card: 0 0% 100%;
+    --card-foreground: 142 50% 10%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 142 50% 10%;
+    --primary: 142 45% 44%; /* Earthy Sage Green */
+    --primary-foreground: 142 10% 98%;
+    --secondary: 142 20% 90%;
+    --secondary-foreground: 142 50% 20%;
+    --muted: 142 10% 94%;
+    --muted-foreground: 142 20% 40%;
+    --accent: 38 92% 50%; /* Harvest Gold/Orange */
+    --accent-foreground: 142 10% 98%;
     --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 160 20% 30% / 0.3;
-    --input: 160 20% 20% / 0.5;
-    --ring: 142 70% 45%;
-    --radius: 1.25rem;
+    --destructive-foreground: 142 10% 98%;
+    --border: 142 20% 88%;
+    --input: 142 20% 88%;
+    --ring: 142 45% 44%;
+    --radius: 1rem;
   }
 }
 
@@ -32,28 +32,14 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground overflow-x-hidden;
-    background-image: 
-      radial-gradient(circle at 0% 0%, hsla(142, 70%, 15%, 0.4) 0%, transparent 50%),
-      radial-gradient(circle at 100% 100%, hsla(160, 80%, 10%, 0.4) 0%, transparent 50%),
-      url('https://images.unsplash.com/photo-1500382017468-9049fed747ef?q=80&w=2560&auto=format&fit=crop');
-    background-attachment: fixed;
-    background-size: cover;
-    background-position: center;
+    @apply bg-background text-foreground font-sans;
   }
 }
 
-@layer components {
-  .glass {
-    @apply bg-white/5 backdrop-blur-xl border border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.37)];
-  }
-  .glass-card {
-    @apply glass hover:bg-white/10 transition-all duration-300;
-  }
-  .vivid-glow-green {
-    @apply shadow-[0_0_15px_rgba(34,197,94,0.5)];
-  }
-  .vivid-glow-red {
-    @apply shadow-[0_0_15px_rgba(239,68,68,0.5)];
-  }
+.earthy-gradient {
+  background: linear-gradient(135deg, hsl(142 45% 44% / 0.1) 0%, hsl(142 45% 44% / 0.02) 100%);
+}
+
+.touch-target {
+  @apply min-h-[44px] min-w-[44px] flex items-center justify-center;
 }
