@@ -15,13 +15,15 @@ import {
   BarChart3,
   PieChart as PieIcon,
   ChevronRight,
-  Navigation
+  Navigation,
+  Leaf
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { 
   BarChart, 
   Bar, 
@@ -34,6 +36,7 @@ import {
   Pie,
   Cell
 } from "recharts";
+import { cn } from "@/lib/utils";
 
 const PEST_DATA = [
   { region: "Bathinda", count: 24 },
