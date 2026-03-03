@@ -17,7 +17,8 @@ import {
   Wind, 
   Droplets, 
   ThermometerSun,
-  Globe
+  Globe,
+  FlaskConical
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -39,6 +40,7 @@ import { LogisticsMarket } from "@/components/logistics/LogisticsMarket";
 import { CommunityFeed } from "@/components/social/CommunityFeed";
 import { VoiceAssistant } from "@/components/voice/VoiceAssistant";
 import { MinistryIntelligence } from "@/components/gov/MinistryIntelligence";
+import { ExpertVerificationPortal } from "@/components/experts/ExpertVerificationPortal";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { 
   Select, 
@@ -82,9 +84,16 @@ export default function AgriWiseApp() {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               )}
+              {role === "Expert" && (
+                <SidebarMenuItem>
+                  <SidebarMenuButton isActive={activeTab === 'verification'} onClick={() => setActiveTab('verification')} tooltip="Verification Portal">
+                    <FlaskConical /> <span>Verification Portal</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )}
               <SidebarMenuItem>
-                <SidebarMenuButton isActive={activeTab === 'diagnostics'} onClick={() => setActiveTab('diagnostics')} tooltip="Expert Review">
-                  <ShieldCheck /> <span>Expert Diagnostics</span>
+                <SidebarMenuButton isActive={activeTab === 'diagnostics'} onClick={() => setActiveTab('diagnostics')} tooltip="AI Diagnostics">
+                  <ShieldCheck /> <span>AI Diagnostics</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
@@ -107,7 +116,10 @@ export default function AgriWiseApp() {
           <SidebarFooter className="p-4 space-y-4">
             <div className="bg-primary/5 p-3 rounded-xl group-data-[collapsible=icon]:hidden">
                <div className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest mb-1">Active Role</div>
-               <Select value={role} onValueChange={(val) => setRole(val as UserRole)}>
+               <Select value={role} onValueChange={(val) => {
+                 setRole(val as UserRole);
+                 setActiveTab('dashboard');
+               }}>
                  <SelectTrigger className="h-8 bg-transparent border-none p-0 text-primary font-bold shadow-none hover:bg-transparent">
                    <div className="flex items-center gap-2">
                      <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
@@ -133,6 +145,7 @@ export default function AgriWiseApp() {
               <div className="h-8 w-px bg-border hidden sm:block" />
               <h1 className="text-2xl font-bold font-headline capitalize tracking-tight text-slate-800">
                 {activeTab === 'dashboard' ? 'Professional Intelligence' : 
+                 activeTab === 'verification' ? 'Expert Verification' : 
                  activeTab === 'ministry' ? 'Ministry Hub' : activeTab}
               </h1>
             </div>
@@ -173,11 +186,13 @@ export default function AgriWiseApp() {
                         <div className="space-y-4">
                           <Badge className="bg-white/10 text-white border-white/20 px-4 py-1 rounded-full backdrop-blur-md">Verified Intelligence Interface</Badge>
                           <h2 className="text-5xl font-bold font-headline tracking-tight leading-none">
-                            {role === "Authority" ? "Ministry Oversight Portal" : "Global Agri-Intelligence Dashboard"}
+                            {role === "Authority" ? "Ministry Oversight Portal" : role === "Expert" ? "Expert Verification Command" : "Global Agri-Intelligence Dashboard"}
                           </h2>
                           <p className="max-w-xl text-slate-300 text-xl font-medium leading-relaxed">
                             {role === "Authority" 
                               ? "Comprehensive national monitoring of pest outbreaks, market deviations, and supply chain integrity." 
+                              : role === "Expert" 
+                              ? "Review, verify and certify agricultural solutions and crop health diagnostics from across the network."
                               : "Real-time monitoring of regional crop health, market shifts, and logistics efficiency. Access restricted to verified partners."}
                           </p>
                         </div>
@@ -186,9 +201,13 @@ export default function AgriWiseApp() {
                             <Button size="lg" className="bg-white text-primary hover:bg-slate-100 font-bold px-8 rounded-full shadow-xl" onClick={() => setActiveTab('ministry')}>
                               Ministry Oversight Hub
                             </Button>
+                          ) : role === "Expert" ? (
+                            <Button size="lg" className="bg-white text-primary hover:bg-slate-100 font-bold px-8 rounded-full shadow-xl" onClick={() => setActiveTab('verification')}>
+                              Go to Verification Portal
+                            </Button>
                           ) : (
                             <Button size="lg" className="bg-white text-primary hover:bg-slate-100 font-bold px-8 rounded-full shadow-xl" onClick={() => setActiveTab('diagnostics')}>
-                              Manage Critical Cases
+                              Monitor Case Logs
                             </Button>
                           )}
                           <Button size="lg" variant="outline" className="border-white/30 text-white hover:bg-white/10 rounded-full font-bold px-8 backdrop-blur-sm" onClick={() => setActiveTab('market')}>
@@ -316,6 +335,7 @@ export default function AgriWiseApp() {
               </div>
             )}
 
+            {activeTab === 'verification' && <ExpertVerificationPortal />}
             {activeTab === 'ministry' && <MinistryIntelligence />}
             {activeTab === 'diagnostics' && <DiagnosticTool />}
             {activeTab === 'market' && <MarketIntelligence />}

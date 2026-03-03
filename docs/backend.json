@@ -65,9 +65,11 @@
       "properties": {
         "id": { "type": "string" },
         "cropName": { "type": "string" },
-        "isCertified": { "type": "boolean" },
+        "majorPest": { "type": "string", "description": "The primary pest affecting this crop." },
+        "traditionalRemedy": { "type": "string", "description": "The traditional 'Desi Nuskha' suggested for this crop." },
+        "isCertified": { "type": "boolean", "description": "Whether the solution has been verified by an expert." },
         "region": { "type": "string" },
-        "expertId": { "type": "string" }
+        "expertId": { "type": "string", "description": "ID of the scientist who certified the crop." }
       }
     }
   },
