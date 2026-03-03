@@ -14,7 +14,8 @@ import {
   Info,
   ShieldAlert,
   Droplets,
-  AlertTriangle
+  AlertTriangle,
+  Database
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -146,9 +147,12 @@ export function CropDiagnostics() {
               </button>
             ))}
             {filteredCrops.length === 0 && (
-              <div className="text-center py-12 opacity-50">
-                <Search className="h-8 w-8 mx-auto mb-2" />
-                <p className="text-xs font-bold uppercase">No results found</p>
+              <div className="text-center py-24 opacity-50 flex flex-col items-center gap-4">
+                <Database className="h-12 w-12 text-muted-foreground/30" />
+                <div className="space-y-1">
+                  <p className="text-xs font-black uppercase tracking-widest">Registry Empty</p>
+                  <p className="text-[10px] max-w-[200px] mx-auto leading-relaxed">Switch identity to 'Expert' and use the 'Populate' tool in the portal to seed the diagnostic data.</p>
+                </div>
               </div>
             )}
           </div>
