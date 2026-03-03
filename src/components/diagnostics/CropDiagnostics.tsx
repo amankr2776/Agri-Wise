@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useMemo } from "react";
@@ -31,7 +32,7 @@ import { cn } from "@/lib/utils";
 const CATEGORIES = ["All", "Grain", "Vegetable", "Fruit", "Oilseed", "Plantation", "Spice", "Cash Crop"];
 
 export function CropDiagnostics() {
-  const { firestore } = useFirestore();
+  const firestore = useFirestore();
   const [search, setSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [selectedId, setSelectedId] = useState<string | null>(null);

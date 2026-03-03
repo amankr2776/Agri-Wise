@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState } from "react";
@@ -67,7 +68,7 @@ const DEFAULT_CROPS = [
 ];
 
 export function ExpertVerificationPortal() {
-  const { firestore } = useFirestore();
+  const firestore = useFirestore();
   const { role } = useAppState();
   const { user } = useUser();
   const { toast } = useToast();

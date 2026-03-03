@@ -23,7 +23,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useAppState } from "@/lib/app-state";
 
 export function MinistryIntelligence() {
-  const { firestore } = useFirestore();
+  const firestore = useFirestore();
   const { role } = useAppState();
 
   const outbreaksQuery = useMemoFirebase(() => {
