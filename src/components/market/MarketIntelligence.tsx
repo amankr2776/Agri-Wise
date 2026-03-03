@@ -8,8 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { marketPriceTrendAnalysis, MarketPriceTrendAnalysisOutput } from "@/ai/flows/market-price-trend-analysis";
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from "recharts";
+import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid } from "recharts";
 
 const MOCK_MARKETS = [
   { crop: "Wheat", state: "Punjab", price: 2150, prevPrice: 1800, data: [{date: "01/01", price: 1800}, {date: "02/01", price: 1900}, {date: "03/01", price: 2150}] },
@@ -17,6 +17,13 @@ const MOCK_MARKETS = [
   { crop: "Onion", state: "Maharashtra", price: 3500, prevPrice: 2000, data: [{date: "01/01", price: 1500}, {date: "02/01", price: 2000}, {date: "03/01", price: 3500}] },
   { crop: "Cotton", state: "Gujarat", price: 6500, prevPrice: 6600, data: [{date: "01/01", price: 6700}, {date: "02/01", price: 6600}, {date: "03/01", price: 6500}] },
 ];
+
+const chartConfig = {
+  price: {
+    label: "Price (₹)",
+    color: "hsl(var(--primary))",
+  },
+} satisfies ChartConfig;
 
 export function MarketIntelligence() {
   const [selectedCrop, setSelectedCrop] = useState("Onion");
@@ -78,15 +85,21 @@ export function MarketIntelligence() {
         </CardHeader>
         <CardContent>
           <div className="h-[250px] mb-6">
-            <ResponsiveContainer width="100%" height="100%">
+            <ChartContainer config={chartConfig}>
               <LineChart data={MOCK_MARKETS.find(m => m.crop === selectedCrop)?.data}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
                 <XAxis dataKey="date" />
                 <YAxis />
                 <ChartTooltip content={<ChartTooltipContent />} />
-                <Line type="monotone" dataKey="price" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 4 }} />
+                <Line 
+                  type="monotone" 
+                  dataKey="price" 
+                  stroke="var(--color-price)" 
+                  strokeWidth={2} 
+                  dot={{ r: 4 }} 
+                />
               </LineChart>
-            </ResponsiveContainer>
+            </ChartContainer>
           </div>
           
           {loading ? (
