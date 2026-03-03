@@ -3,7 +3,7 @@
 
 import { create } from "zustand";
 
-export type UserRole = "Farmer" | "Expert" | "Authority" | "Logistics";
+export type UserRole = "Expert" | "Authority" | "Logistics";
 
 interface AppState {
   role: UserRole;
@@ -15,7 +15,7 @@ interface AppState {
 }
 
 export const useAppState = create<AppState>((set) => ({
-  role: "Farmer",
+  role: "Expert",
   setRole: (role) => set({ role }),
   language: "English",
   setLanguage: (language) => set({ language }),
