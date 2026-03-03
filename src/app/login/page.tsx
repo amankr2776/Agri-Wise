@@ -1,9 +1,9 @@
 'use client';
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/firebase";
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from "firebase/auth";
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword, RecaptchaVerifier, signInWithPhoneNumber, ConfirmationResult } from "firebase/auth";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
@@ -41,6 +41,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [isRegistering, setIsRegistering] = useState(false);
   const [showOtp, setShowOtp] = useState(false);
+  const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
 
   const emailForm = useForm<z.infer<typeof emailSchema>>({
     resolver: zodResolver(emailSchema),
@@ -51,6 +52,16 @@ export default function LoginPage() {
     resolver: zodResolver(phoneSchema),
     defaultValues: { phone: "", otp: "" },
   });
+
+  // Re-captcha for phone auth
+  useEffect(() => {
+    if (typeof window !== "undefined" && !window.recaptchaVerifier) {
+      window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+        'size': 'invisible',
+        'callback': () => {}
+      });
+    }
+  }, [auth]);
 
   async function onEmailSubmit(values: z.infer<typeof emailSchema>) {
     setLoading(true);
@@ -77,26 +88,46 @@ export default function LoginPage() {
   async function onPhoneSubmit(values: z.infer<typeof phoneSchema>) {
     if (!showOtp) {
       setLoading(true);
-      // Simulate OTP sending
-      setTimeout(() => {
-        setLoading(false);
+      try {
+        const appVerifier = window.recaptchaVerifier;
+        const phoneNumber = `+91${values.phone}`;
+        const result = await signInWithPhoneNumber(auth, phoneNumber, appVerifier);
+        setConfirmationResult(result);
         setShowOtp(true);
-        toast({ title: "OTP Sent", description: "In a real app, you'd receive an SMS code." });
-      }, 1500);
+        toast({ title: "OTP Sent", description: "Verification code sent to your mobile." });
+      } catch (error: any) {
+        toast({
+          variant: "destructive",
+          title: "SMS Failed",
+          description: error.message || "Could not send OTP. Please check your number.",
+        });
+      } finally {
+        setLoading(false);
+      }
       return;
     }
 
-    setLoading(true);
-    // Simulate OTP verification and login
-    setTimeout(() => {
-      setLoading(false);
-      toast({ title: "Success!", description: "Logged in with phone number." });
-      router.push("/");
-    }, 1000);
+    if (values.otp && confirmationResult) {
+      setLoading(true);
+      try {
+        await confirmationResult.confirm(values.otp);
+        toast({ title: "Success!", description: "Logged in with phone number." });
+        router.push("/");
+      } catch (error: any) {
+        toast({
+          variant: "destructive",
+          title: "Invalid Code",
+          description: "The OTP you entered is incorrect.",
+        });
+      } finally {
+        setLoading(false);
+      }
+    }
   }
 
   return (
     <div className="min-h-screen bg-muted/30 flex items-center justify-center p-4">
+      <div id="recaptcha-container"></div>
       <div className="max-w-md w-full space-y-8">
         <div className="text-center space-y-2">
           <div className="flex justify-center mb-6">
@@ -104,7 +135,7 @@ export default function LoginPage() {
               <Leaf className="h-10 w-10 text-white" />
             </div>
           </div>
-          <h1 className="text-3xl font-bold font-headline text-primary">Welcome to AgriWise</h1>
+          <h1 className="text-3xl font-bold font-headline text-primary">AgriWise</h1>
           <p className="text-muted-foreground">Digital intelligence for the modern farmer.</p>
         </div>
 
@@ -112,7 +143,7 @@ export default function LoginPage() {
           <CardHeader className="space-y-1">
             <CardTitle className="text-xl">{isRegistering ? "Create an account" : "Sign in"}</CardTitle>
             <CardDescription>
-              Choose your preferred method to access your farm dashboard.
+              Choose your preferred method to access your dashboard.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -200,7 +231,7 @@ export default function LoginPage() {
                                 <Input placeholder="Enter 6-digit code" className="pl-9" {...field} />
                               </div>
                             </FormControl>
-                            <FormDescription>Code sent to your mobile number.</FormDescription>
+                            <FormDescription>Code sent via SMS.</FormDescription>
                             <FormMessage />
                           </FormItem>
                         )}
@@ -236,7 +267,7 @@ export default function LoginPage() {
         </Card>
         
         <p className="text-center text-[10px] text-muted-foreground">
-          By continuing, you agree to AgriWise's Terms of Service and Privacy Policy.
+          By continuing, you agree to our Terms of Service.
         </p>
       </div>
     </div>
