@@ -26,6 +26,7 @@ import {
   SelectValue 
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { cn } from "@/lib/utils";
 
 const VEHICLES = [
   { id: 1, name: "Kisan Express", provider: "Rural Freight Co.", type: "Mini Truck", capacity: "2 Tons", rate: 15, rating: 4.8, status: "Available" },
