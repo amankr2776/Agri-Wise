@@ -12,7 +12,6 @@ import {
   Users, 
   Bot, 
   Settings, 
-  Menu,
   ChevronRight,
   Accessibility
 } from "lucide-react";
@@ -36,13 +35,18 @@ import { CommunityFeed } from "@/components/social/CommunityFeed";
 import { LogisticsMarket } from "@/components/logistics/LogisticsMarket";
 import { VoiceAssistant } from "@/components/voice/VoiceAssistant";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-
-const ROLES: { id: UserRole; title: string; icon: any; color: string }[] = [
-  { id: "Farmer", title: "Farmer", icon: UserCircle, color: "bg-primary" },
-  { id: "Expert", title: "Expert", icon: ShieldCheck, color: "bg-blue-600" },
-  { id: "Authority", title: "Authority", icon: BarChart3, color: "bg-red-600" },
-  { id: "Logistics", title: "Logistics", icon: Truck, color: "bg-orange-600" },
-];
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from "@/components/ui/select";
+import { 
+  Avatar, 
+  AvatarFallback, 
+  AvatarImage 
+} from "@/components/ui/avatar";
 
 export default function AgriWiseApp() {
   const { role, setRole, language, setLanguage } = useAppState();
@@ -226,5 +230,11 @@ export default function AgriWiseApp() {
   );
 }
 
-// Support for Lucide types missing in provided snippets
+const ROLES: { id: UserRole; title: string; icon: any; color: string }[] = [
+  { id: "Farmer", title: "Farmer", icon: UserCircle, color: "bg-primary" },
+  { id: "Expert", title: "Expert", icon: ShieldCheck, color: "bg-blue-600" },
+  { id: "Authority", title: "Authority", icon: BarChart3, color: "bg-red-600" },
+  { id: "Logistics", title: "Logistics", icon: Truck, color: "bg-orange-600" },
+];
+
 const TrendingUp = ({className}: {className?: string}) => <BarChart3 className={className} />;
