@@ -32,7 +32,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 // Extend window interface for Recaptcha
 declare global {
-  interface window {
+  interface Window {
     recaptchaVerifier: RecaptchaVerifier;
   }
 }
@@ -74,14 +74,17 @@ export default function LoginPage() {
         window.recaptchaVerifier = new RecaptchaVerifier(auth, 'invisible-recaptcha', {
           'size': 'invisible',
           'callback': () => {
-            // reCAPTCHA solved
+            // reCAPTCHA solved - will proceed with signInWithPhoneNumber automatically
+          },
+          'expired-callback': () => {
+            toast({ variant: "destructive", title: "reCAPTCHA Expired", description: "Please try again." });
           }
         });
       } catch (e) {
         console.error("Recaptcha initialization failed:", e);
       }
     }
-  }, [auth]);
+  }, [auth, toast]);
 
   async function onEmailSubmit(values: z.infer<typeof emailSchema>) {
     setLoading(true);
@@ -151,76 +154,33 @@ export default function LoginPage() {
               <Leaf className="h-10 w-10 text-white" />
             </div>
           </div>
-          <h1 className="text-3xl font-bold font-headline text-primary">AgriWise</h1>
-          <p className="text-muted-foreground">Modern tools for modern farmers.</p>
+          <h1 className="text-3xl font-bold font-headline text-primary tracking-tight">AgriWise</h1>
+          <p className="text-muted-foreground">The digital companion for every Indian farmer.</p>
         </div>
 
         {authError && (
           <Alert variant="destructive" className="animate-in fade-in slide-in-from-top-2">
             <AlertCircle className="h-4 w-4" />
-            <AlertTitle>Sign-in Issue</AlertTitle>
+            <AlertTitle>Authentication Issue</AlertTitle>
             <AlertDescription className="text-xs">
               {authError}
             </AlertDescription>
           </Alert>
         )}
 
-        <Card className="border-none shadow-2xl overflow-hidden">
+        <Card className="border-none shadow-2xl overflow-hidden bg-white">
           <CardHeader className="bg-primary/5 pb-8">
-            <CardTitle className="text-xl">{isRegistering ? "Create an account" : "Welcome Back"}</CardTitle>
+            <CardTitle className="text-xl">{isRegistering ? "Register Account" : "Farmer Login"}</CardTitle>
             <CardDescription>
-              Fastest access to your agricultural data.
+              Select your preferred method to access your dashboard.
             </CardDescription>
           </CardHeader>
           <CardContent className="mt-[-20px] bg-white rounded-t-[30px] pt-8 space-y-6">
-            <Tabs defaultValue="email" className="w-full">
+            <Tabs defaultValue="phone" className="w-full">
               <TabsList className="grid w-full grid-cols-2 mb-6">
-                <TabsTrigger value="email">Email</TabsTrigger>
                 <TabsTrigger value="phone">Mobile OTP</TabsTrigger>
+                <TabsTrigger value="email">Email</TabsTrigger>
               </TabsList>
-
-              <TabsContent value="email">
-                <Form {...emailForm}>
-                  <form onSubmit={emailForm.handleSubmit(onEmailSubmit)} className="space-y-4">
-                    <FormField
-                      control={emailForm.control}
-                      name="email"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Email Address</FormLabel>
-                          <FormControl>
-                            <div className="relative">
-                              <Mail className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                              <Input placeholder="farmer@example.com" className="pl-9 h-11" {...field} />
-                            </div>
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={emailForm.control}
-                      name="password"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Password</FormLabel>
-                          <FormControl>
-                            <div className="relative">
-                              <Lock className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                              <Input type="password" placeholder="••••••••" className="pl-9 h-11" {...field} />
-                            </div>
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <Button type="submit" className="w-full h-11 font-bold" disabled={loading}>
-                      {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                      {isRegistering ? "Register Now" : "Sign In"} <ArrowRight className="ml-2 h-4 w-4" />
-                    </Button>
-                  </form>
-                </Form>
-              </TabsContent>
 
               <TabsContent value="phone">
                 <Form {...phoneForm}>
@@ -247,11 +207,11 @@ export default function LoginPage() {
                         name="otp"
                         render={({ field }) => (
                           <FormItem className="animate-in fade-in slide-in-from-top-2">
-                            <FormLabel>Verification Code (OTP)</FormLabel>
+                            <FormLabel>6-Digit OTP</FormLabel>
                             <FormControl>
                               <div className="relative">
                                 <ShieldCheck className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                                <Input placeholder="6-digit OTP" className="pl-9 h-11" {...field} />
+                                <Input placeholder="Enter OTP" className="pl-9 h-11" {...field} />
                               </div>
                             </FormControl>
                             <FormMessage />
@@ -259,9 +219,52 @@ export default function LoginPage() {
                         )}
                       />
                     )}
-                    <Button type="submit" className="w-full h-11 font-bold" disabled={loading}>
+                    <Button type="submit" className="w-full h-11 font-bold rounded-lg" disabled={loading}>
                       {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                      {showOtp ? "Verify & Login" : "Send OTP Code"} <ArrowRight className="ml-2 h-4 w-4" />
+                      {showOtp ? "Verify & Login" : "Send OTP"} <ArrowRight className="ml-2 h-4 w-4" />
+                    </Button>
+                  </form>
+                </Form>
+              </TabsContent>
+
+              <TabsContent value="email">
+                <Form {...emailForm}>
+                  <form onSubmit={emailForm.handleSubmit(onEmailSubmit)} className="space-y-4">
+                    <FormField
+                      control={emailForm.control}
+                      name="email"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Email ID</FormLabel>
+                          <FormControl>
+                            <div className="relative">
+                              <Mail className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                              <Input placeholder="farmer@example.com" className="pl-9 h-11" {...field} />
+                            </div>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={emailForm.control}
+                      name="password"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Password</FormLabel>
+                          <FormControl>
+                            <div className="relative">
+                              <Lock className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                              <Input type="password" placeholder="••••••••" className="pl-9 h-11" {...field} />
+                            </div>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <Button type="submit" className="w-full h-11 font-bold rounded-lg" disabled={loading}>
+                      {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                      {isRegistering ? "Create Account" : "Sign In"} <ArrowRight className="ml-2 h-4 w-4" />
                     </Button>
                   </form>
                 </Form>
@@ -270,10 +273,14 @@ export default function LoginPage() {
           </CardContent>
           <CardFooter className="bg-white pb-6 pt-0">
             <Button variant="link" className="w-full text-xs text-muted-foreground" onClick={() => setIsRegistering(!isRegistering)}>
-              {isRegistering ? "Already have an account? Sign in" : "New farmer? Create an account"}
+              {isRegistering ? "Already registered? Login here" : "New to AgriWise? Register now"}
             </Button>
           </CardFooter>
         </Card>
+        
+        <p className="text-center text-[10px] text-muted-foreground">
+          Note: For testing Phone Auth, use test numbers provided in Firebase Console.
+        </p>
       </div>
     </div>
   );
