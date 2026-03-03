@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState } from "react";
@@ -10,14 +11,13 @@ import {
   Users, 
   Bot, 
   Settings, 
-  ChevronRight,
-  Accessibility,
-  CloudSun,
-  TrendingUp,
-  ArrowUpRight,
-  Wind,
-  Droplets,
-  ThermometerSun
+  CloudSun, 
+  TrendingUp, 
+  ArrowUpRight, 
+  Wind, 
+  Droplets, 
+  ThermometerSun,
+  Globe
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -38,6 +38,7 @@ import { MarketIntelligence } from "@/components/market/MarketIntelligence";
 import { LogisticsMarket } from "@/components/logistics/LogisticsMarket";
 import { CommunityFeed } from "@/components/social/CommunityFeed";
 import { VoiceAssistant } from "@/components/voice/VoiceAssistant";
+import { MinistryIntelligence } from "@/components/gov/MinistryIntelligence";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { 
   Select, 
@@ -74,6 +75,13 @@ export default function AgriWiseApp() {
                   <BarChart3 /> <span>System Overview</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
+              {role === "Authority" && (
+                <SidebarMenuItem>
+                  <SidebarMenuButton isActive={activeTab === 'ministry'} onClick={() => setActiveTab('ministry')} tooltip="Ministry Hub">
+                    <Globe /> <span>Ministry Intelligence</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )}
               <SidebarMenuItem>
                 <SidebarMenuButton isActive={activeTab === 'diagnostics'} onClick={() => setActiveTab('diagnostics')} tooltip="Expert Review">
                   <ShieldCheck /> <span>Expert Diagnostics</span>
@@ -124,7 +132,8 @@ export default function AgriWiseApp() {
               <SidebarTrigger className="h-10 w-10" />
               <div className="h-8 w-px bg-border hidden sm:block" />
               <h1 className="text-2xl font-bold font-headline capitalize tracking-tight text-slate-800">
-                {activeTab === 'dashboard' ? 'Professional Intelligence' : activeTab}
+                {activeTab === 'dashboard' ? 'Professional Intelligence' : 
+                 activeTab === 'ministry' ? 'Ministry Hub' : activeTab}
               </h1>
             </div>
             <div className="flex items-center gap-6">
@@ -163,15 +172,25 @@ export default function AgriWiseApp() {
                       <CardContent className="p-10 space-y-8 relative z-10">
                         <div className="space-y-4">
                           <Badge className="bg-white/10 text-white border-white/20 px-4 py-1 rounded-full backdrop-blur-md">Verified Intelligence Interface</Badge>
-                          <h2 className="text-5xl font-bold font-headline tracking-tight leading-none">Global Agri-Intelligence Dashboard</h2>
+                          <h2 className="text-5xl font-bold font-headline tracking-tight leading-none">
+                            {role === "Authority" ? "Ministry Oversight Portal" : "Global Agri-Intelligence Dashboard"}
+                          </h2>
                           <p className="max-w-xl text-slate-300 text-xl font-medium leading-relaxed">
-                            Real-time monitoring of regional crop health, market shifts, and logistics efficiency. Access restricted to verified partners.
+                            {role === "Authority" 
+                              ? "Comprehensive national monitoring of pest outbreaks, market deviations, and supply chain integrity." 
+                              : "Real-time monitoring of regional crop health, market shifts, and logistics efficiency. Access restricted to verified partners."}
                           </p>
                         </div>
                         <div className="flex flex-wrap gap-4">
-                          <Button size="lg" className="bg-white text-primary hover:bg-slate-100 font-bold px-8 rounded-full shadow-xl" onClick={() => setActiveTab('diagnostics')}>
-                            Manage Critical Cases
-                          </Button>
+                          {role === "Authority" ? (
+                            <Button size="lg" className="bg-white text-primary hover:bg-slate-100 font-bold px-8 rounded-full shadow-xl" onClick={() => setActiveTab('ministry')}>
+                              Ministry Oversight Hub
+                            </Button>
+                          ) : (
+                            <Button size="lg" className="bg-white text-primary hover:bg-slate-100 font-bold px-8 rounded-full shadow-xl" onClick={() => setActiveTab('diagnostics')}>
+                              Manage Critical Cases
+                            </Button>
+                          )}
                           <Button size="lg" variant="outline" className="border-white/30 text-white hover:bg-white/10 rounded-full font-bold px-8 backdrop-blur-sm" onClick={() => setActiveTab('market')}>
                             Economic Analytics
                           </Button>
@@ -297,6 +316,7 @@ export default function AgriWiseApp() {
               </div>
             )}
 
+            {activeTab === 'ministry' && <MinistryIntelligence />}
             {activeTab === 'diagnostics' && <DiagnosticTool />}
             {activeTab === 'market' && <MarketIntelligence />}
             {activeTab === 'logistics' && <LogisticsMarket />}

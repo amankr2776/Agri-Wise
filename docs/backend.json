@@ -1,3 +1,4 @@
+
 {
   "entities": {
     "User": {
@@ -43,6 +44,31 @@
         }
       },
       "required": ["id", "role", "preferredLanguage"]
+    },
+    "PestOutbreak": {
+      "title": "Pest Outbreak",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "pestName": { "type": "string" },
+        "cropType": { "type": "string" },
+        "severity": { "type": "string", "enum": ["Low", "Medium", "High", "Critical"] },
+        "latitude": { "type": "number" },
+        "longitude": { "type": "number" },
+        "state": { "type": "string" },
+        "reportedAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "CropCertification": {
+      "title": "Crop Certification",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "cropName": { "type": "string" },
+        "isCertified": { "type": "boolean" },
+        "region": { "type": "string" },
+        "expertId": { "type": "string" }
+      }
     }
   },
   "auth": {
@@ -61,6 +87,22 @@
             "$ref": "#/backend/entities/User"
           },
           "description": "User profile data."
+        }
+      },
+      {
+        "path": "/pestOutbreaks/{outbreakId}",
+        "definition": {
+          "entityName": "PestOutbreak",
+          "schema": { "$ref": "#/backend/entities/PestOutbreak" },
+          "description": "Real-time pest outbreak reports with geographic coordinates."
+        }
+      },
+      {
+        "path": "/cropCertifications/{certId}",
+        "definition": {
+          "entityName": "CropCertification",
+          "schema": { "$ref": "#/backend/entities/CropCertification" },
+          "description": "Records of crop certification status across India."
         }
       }
     ]
