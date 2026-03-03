@@ -12,12 +12,11 @@ import {
   FlaskConical,
   Beaker,
   Info,
-  Loader2,
-  Filter,
   ShieldAlert,
-  Droplets
+  Droplets,
+  AlertTriangle
 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -27,13 +26,11 @@ import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
 import { query, collection } from "firebase/firestore";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
-import { useAppState } from "@/lib/app-state";
 
 const CATEGORIES = ["All", "Grain", "Vegetable", "Fruit", "Oilseed", "Plantation", "Spice", "Cash Crop"];
 
 export function CropDiagnostics() {
   const { firestore } = useFirestore();
-  const { role } = useAppState();
   const [search, setSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [selectedId, setSelectedId] = useState<string | null>(null);

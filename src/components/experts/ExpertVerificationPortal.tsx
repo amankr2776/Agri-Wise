@@ -10,8 +10,6 @@ import {
   Bug, 
   ClipboardCheck,
   Loader2,
-  Plus,
-  ArrowRight,
   Database
 } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
@@ -24,38 +22,47 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useAppState } from "@/lib/app-state";
 
 const DEFAULT_CROPS = [
-  // Cereals & Grains
+  // Grains
   { name: "Paddy", category: "Grain", diseaseName: "Rice Blast", severity: "High", chemicalCure: "Tricyclazole 75% WP", chemicalDosage: "0.6g / L", desiNuskha: "Neem oil spray (3%) mixed with cow urine.", isCertified: false, imageUrl: "https://picsum.photos/seed/paddy1/800/400" },
   { name: "Wheat", category: "Grain", diseaseName: "Brown Rust", severity: "High", chemicalCure: "Propiconazole 25% EC", chemicalDosage: "1ml / L", desiNuskha: "Butter milk spray after fermentation for 3 days.", isCertified: false, imageUrl: "https://picsum.photos/seed/wheat1/800/400" },
   { name: "Maize", category: "Grain", diseaseName: "Fall Armyworm", severity: "Critical", chemicalCure: "Spinetoram 11.7% SC", chemicalDosage: "0.5ml / L", desiNuskha: "Sand and lime mixture in the whorls.", isCertified: false, imageUrl: "https://picsum.photos/seed/maize1/800/400" },
-  
+  { name: "Bajra", category: "Grain", diseaseName: "Downy Mildew", severity: "High", chemicalCure: "Metalaxyl 35% WS", chemicalDosage: "6g / kg seed", desiNuskha: "Salt water seed treatment (20% salt solution).", isCertified: false, imageUrl: "https://picsum.photos/seed/bajra1/800/400" },
+
   // Vegetables
   { name: "Tomato", category: "Vegetable", diseaseName: "Early Blight", severity: "Medium", chemicalCure: "Mancozeb 75% WP", chemicalDosage: "2.5g / L", desiNuskha: "Baking soda and soap water spray.", isCertified: false, imageUrl: "https://picsum.photos/seed/tomato1/800/400" },
   { name: "Potato", category: "Vegetable", diseaseName: "Late Blight", severity: "Critical", chemicalCure: "Metalaxyl 8% + Mancozeb 64%", chemicalDosage: "2g / L", desiNuskha: "Wood ash dusting on damp leaves.", isCertified: false, imageUrl: "https://picsum.photos/seed/potato1/800/400" },
   { name: "Onion", category: "Vegetable", diseaseName: "Purple Blotch", severity: "Medium", chemicalCure: "Tebuconazole 25.9% EC", chemicalDosage: "1ml / L", desiNuskha: "Onion peel extract fermented for 48 hours.", isCertified: false, imageUrl: "https://picsum.photos/seed/onion1/800/400" },
   { name: "Chili", category: "Vegetable", diseaseName: "Leaf Curl", severity: "High", chemicalCure: "Imidacloprid 17.8% SL", chemicalDosage: "0.5ml / L", desiNuskha: "Sour buttermilk spray (5 days old).", isCertified: false, imageUrl: "https://picsum.photos/seed/chili1/800/400" },
-  { name: "Brinjal", category: "Vegetable", diseaseName: "Little Leaf", severity: "High", chemicalCure: "Dimethoate 30% EC", chemicalDosage: "2ml / L", desiNuskha: "Removal of infected plants and marigold intercropping.", isCertified: false, imageUrl: "https://picsum.photos/seed/brinjal1/800/400" },
+  { name: "Brinjal", category: "Vegetable", diseaseName: "Shoot & Fruit Borer", severity: "High", chemicalCure: "Chlorantraniliprole 18.5% SC", chemicalDosage: "0.4ml / L", desiNuskha: "Ginger-Garlic-Chili paste mixed with water.", isCertified: false, imageUrl: "https://picsum.photos/seed/brinjal1/800/400" },
+  { name: "Cabbage", category: "Vegetable", diseaseName: "Diamondback Moth", severity: "High", chemicalCure: "Spinosad 45% SC", chemicalDosage: "0.3ml / L", desiNuskha: "Mustard intercropping as trap crop.", isCertified: false, imageUrl: "https://picsum.photos/seed/cabbage1/800/400" },
+  { name: "Cauliflower", category: "Vegetable", diseaseName: "Downy Mildew", severity: "Medium", chemicalCure: "Ridomil Gold", chemicalDosage: "2g / L", desiNuskha: "Cow dung and urine extract spray.", isCertified: false, imageUrl: "https://picsum.photos/seed/cauliflower1/800/400" },
 
   // Fruits
   { name: "Mango", category: "Fruit", diseaseName: "Anthracnose", severity: "High", chemicalCure: "Carbendazim 50% WP", chemicalDosage: "1g / L", desiNuskha: "Pruning and copper oxychloride paste on cuts.", isCertified: false, imageUrl: "https://picsum.photos/seed/mango1/800/400" },
   { name: "Banana", category: "Fruit", diseaseName: "Panama Wilt", severity: "Critical", chemicalCure: "Carbendazim injection", chemicalDosage: "3ml / plant", desiNuskha: "Crop rotation with paddy and liming of soil.", isCertified: false, imageUrl: "https://picsum.photos/seed/banana1/800/400" },
   { name: "Grapes", category: "Fruit", diseaseName: "Downy Mildew", severity: "High", chemicalCure: "Bordeaux Mixture 1%", chemicalDosage: "10g / L", desiNuskha: "Garlic and cinnamon oil emulsion.", isCertified: false, imageUrl: "https://picsum.photos/seed/grapes1/800/400" },
-  { name: "Apple", category: "Fruit", diseaseName: "Scab", severity: "High", chemicalCure: "Captan 50% WP", chemicalDosage: "2.5g / L", desiNuskha: "Urea spray (5%) after leaf fall to accelerate decomposition.", isCertified: false, imageUrl: "https://picsum.photos/seed/apple1/800/400" },
+  { name: "Apple", category: "Fruit", diseaseName: "Scab", severity: "High", chemicalCure: "Captan 50% WP", chemicalDosage: "2.5g / L", desiNuskha: "Urea spray (5%) after leaf fall.", isCertified: false, imageUrl: "https://picsum.photos/seed/apple1/800/400" },
+  { name: "Guava", category: "Fruit", diseaseName: "Wilt", severity: "Critical", chemicalCure: "Benomyl soil drench", chemicalDosage: "2g / L", desiNuskha: "Application of Aspergillus niger in soil.", isCertified: false, imageUrl: "https://picsum.photos/seed/guava1/800/400" },
+  { name: "Pomegranate", category: "Fruit", diseaseName: "Bacterial Blight", severity: "Critical", chemicalCure: "Streptocycline + Copper Oxychloride", chemicalDosage: "0.5g + 2.5g / L", desiNuskha: "Garlic extract and neem oil mixture.", isCertified: false, imageUrl: "https://picsum.photos/seed/pom1/800/400" },
 
-  // Oilseeds & Seeds
+  // Oilseeds
   { name: "Mustard", category: "Oilseed", diseaseName: "Alternaria Blight", severity: "Medium", chemicalCure: "Mancozeb 75% WP", chemicalDosage: "2.5g / L", desiNuskha: "Ginger-Garlic-Chili extract spray.", isCertified: false, imageUrl: "https://picsum.photos/seed/mustard1/800/400" },
   { name: "Sunflower", category: "Oilseed", diseaseName: "Head Rot", severity: "High", chemicalCure: "Sulfur 80% WP", chemicalDosage: "3g / L", desiNuskha: "Application of Trichoderma viride in soil.", isCertified: false, imageUrl: "https://picsum.photos/seed/sunflower1/800/400" },
   { name: "Groundnut", category: "Oilseed", diseaseName: "Tikka Disease", severity: "High", chemicalCure: "Chlorothalonil 75% WP", chemicalDosage: "2g / L", desiNuskha: "Seed treatment with Bijamrita.", isCertified: false, imageUrl: "https://picsum.photos/seed/groundnut1/800/400" },
+  { name: "Soybean", category: "Oilseed", diseaseName: "Yellow Mosaic", severity: "High", chemicalCure: "Thiamethoxam 25% WG", chemicalDosage: "0.5g / L", desiNuskha: "Removal of infected plants and neem oil spray.", isCertified: false, imageUrl: "https://picsum.photos/seed/soy1/800/400" },
 
   // Plantation & Spices
   { name: "Coffee", category: "Plantation", diseaseName: "Leaf Rust", severity: "High", chemicalCure: "Hexaconazole 5% EC", chemicalDosage: "1ml / L", desiNuskha: "Providing shade and improving air circulation.", isCertified: false, imageUrl: "https://picsum.photos/seed/coffee1/800/400" },
   { name: "Tea", category: "Plantation", diseaseName: "Blister Blight", severity: "High", chemicalCure: "Copper Oxychloride + Nickel Chloride", chemicalDosage: "2g + 1g / L", desiNuskha: "Removal of shade trees and early pruning.", isCertified: false, imageUrl: "https://picsum.photos/seed/tea1/800/400" },
   { name: "Turmeric", category: "Spice", diseaseName: "Leaf Spot", severity: "Medium", chemicalCure: "Propiconazole 25% EC", chemicalDosage: "1ml / L", desiNuskha: "Rhizome treatment with cow dung slurry.", isCertified: false, imageUrl: "https://picsum.photos/seed/turmeric1/800/400" },
-  { name: "Ginger", category: "Spice", diseaseName: "Soft Rot", severity: "Critical", chemicalCure: "Metalaxyl-M 4% + Mancozeb 64%", chemicalDosage: "2.5g / L", desiNuskha: "Proper drainage and crop rotation with non-host crops.", isCertified: false, imageUrl: "https://picsum.photos/seed/ginger1/800/400" },
+  { name: "Ginger", category: "Spice", diseaseName: "Soft Rot", severity: "Critical", chemicalCure: "Metalaxyl-M 4% + Mancozeb 64%", chemicalDosage: "2.5g / L", desiNuskha: "Proper drainage and crop rotation.", isCertified: false, imageUrl: "https://picsum.photos/seed/ginger1/800/400" },
+  { name: "Black Pepper", category: "Spice", diseaseName: "Quick Wilt", severity: "Critical", chemicalCure: "Potassium Phosphonate", chemicalDosage: "3ml / L", desiNuskha: "Trichoderma harzianum soil application.", isCertified: false, imageUrl: "https://picsum.photos/seed/pepper1/800/400" },
+  { name: "Cardamom", category: "Spice", diseaseName: "Katte Disease", severity: "High", chemicalCure: "Monocrotophos 36% SL", chemicalDosage: "1.5ml / L", desiNuskha: "Rogue out infected plants immediately.", isCertified: false, imageUrl: "https://picsum.photos/seed/card1/800/400" },
 
   // Cash Crops
-  { name: "Cotton", category: "Cash Crop", diseaseName: "Pink Bollworm", severity: "Critical", chemicalCure: "Profenophos 50% EC", chemicalDosage: "2ml / L", desiNuskha: "Pheromone traps and light traps at night.", isCertified: false, imageUrl: "https://picsum.photos/seed/cotton1/800/400" },
-  { name: "Sugarcane", category: "Cash Crop", diseaseName: "Red Rot", severity: "Critical", chemicalCure: "Carbendazim 50% WP (Sett treatment)", chemicalDosage: "1g / L", desiNuskha: "Use of healthy setts and avoiding ratoon crop in infected fields.", isCertified: false, imageUrl: "https://picsum.photos/seed/sugarcane1/800/400" },
+  { name: "Cotton", category: "Cash Crop", diseaseName: "Pink Bollworm", severity: "Critical", chemicalCure: "Profenophos 50% EC", chemicalDosage: "2ml / L", desiNuskha: "Pheromone traps and light traps.", isCertified: false, imageUrl: "https://picsum.photos/seed/cotton1/800/400" },
+  { name: "Sugarcane", category: "Cash Crop", diseaseName: "Red Rot", severity: "Critical", chemicalCure: "Carbendazim 50% WP", chemicalDosage: "1g / L", desiNuskha: "Use of healthy setts and soil liming.", isCertified: false, imageUrl: "https://picsum.photos/seed/sugarcane1/800/400" },
+  { name: "Jute", category: "Cash Crop", diseaseName: "Stem Rot", severity: "High", chemicalCure: "Carbendazim 50% WP", chemicalDosage: "2g / L", desiNuskha: "Seed treatment with Garlic extract (2%).", isCertified: false, imageUrl: "https://picsum.photos/seed/jute1/800/400" },
 ];
 
 export function ExpertVerificationPortal() {
@@ -124,7 +131,7 @@ export function ExpertVerificationPortal() {
   }
 
   return (
-    <div className="space-y-8 max-w-7xl mx-auto">
+    <div className="space-y-8 max-w-7xl mx-auto pb-12">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
           <h2 className="text-3xl font-black tracking-tight flex items-center gap-3">
@@ -138,7 +145,7 @@ export function ExpertVerificationPortal() {
             variant="outline" 
             onClick={seedDatabase} 
             disabled={seeding}
-            className="rounded-full border-primary/20 text-primary hover:bg-primary/5 font-bold px-6"
+            className="rounded-full border-primary/20 text-primary hover:bg-primary/5 font-bold px-6 shadow-sm"
           >
             {seeding ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Database className="h-4 w-4 mr-2" />}
             Populate Agri-Registry
@@ -153,7 +160,7 @@ export function ExpertVerificationPortal() {
           </div>
           <h3 className="text-2xl font-black text-slate-800">No Pending Items</h3>
           <p className="text-muted-foreground max-w-sm mx-auto mt-4 font-medium leading-relaxed">
-            All submitted remedies have been processed. Use the "Populate Agri-Registry" button to seed default professional data.
+            All submitted remedies have been processed. Use the "Populate Agri-Registry" button to seed professional data if the registry is empty.
           </p>
         </Card>
       ) : (
