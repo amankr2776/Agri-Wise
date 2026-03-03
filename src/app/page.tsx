@@ -51,6 +51,7 @@ import {
   AvatarFallback, 
   AvatarImage 
 } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 
 export default function AgriWiseApp() {
   const { role, setRole, language, setLanguage } = useAppState();
