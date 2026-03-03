@@ -1,0 +1,223 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    /**
+     * AgriWise Security Rules
+     *
+     * CORE PHILOSOPHY:
+     * This ruleset implements a robust "Authorization Independence" model. We prioritize 
+     * performance and security by denormalizing ownership data and roles directly into 
+     * collections or through marker collections, avoiding expensive cross-document lookups 
+     * (get() calls) where possible.
+     *
+     * DATA STRUCTURE:
+     * - User-specific private data (DiagnosticRequests, Votes) is nested under /users/{userId}.
+     * - Public reference data (Crops, Pests, Remedies) is top-level and read-only.
+     * - Role-based access (Experts, Government, Logistics) is managed via "marker collections" 
+     *   (/roles_{roleName}/{userId}) which allow for O(1) existence checks.
+     * - Collaborative/Social data (Posts, Comments) uses field-based ownership (authorId).
+     *
+     * KEY SECURITY DECISIONS:
+     * - Prototyping Mode: We strictly enforce "Who" can write (authorization) and "Relational 
+     *   Integrity" (ID matching), but we do not enforce strict data schemas/types for rapid iteration.
+     * - Marker Collections: Roles are verified using `exists()` on specific paths rather than 
+     *   reading the user profile document.
+     * - Denormalization: Critical IDs (like farmerId or authorId) are stored on child documents 
+     *   to allow child rules to validate access without querying parent documents.
+     */
+
+    // --- Helper Functions ---
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isExistingOwner(ownerId) {
+      return resource != null && isSignedIn() && request.auth.uid == ownerId;
+    }
+
+    function isExpert(userId) {
+      return exists(/databases/$(database)/documents/roles_experts/$(userId));
+    }
+
+    function isGov(userId) {
+      return exists(/databases/$(database)/documents/roles_governmentAuthorities/$(userId));
+    }
+
+    function isLogistics(userId) {
+      return exists(/databases/$(database)/documents/roles_logisticsProviders/$(userId));
+    }
+
+    // --- Rules ---
+
+    /**
+     * @description Rules for user profile documents. Ensures users can only manage their own profile.
+     * @path /users/{userId}
+     * @allow (get, list, create, update) if the authenticated user's UID matches {userId}.
+     * @deny (create) if the user ID in the document data doesn't match the path/auth.uid.
+     * @principle Enforces strict document ownership and relational integrity for root user data.
+     */
+    match /users/{userId} {
+      allow get, list: if isOwner(userId);
+      allow create: if isOwner(userId) && request.resource.data.id == userId;
+      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
+      allow delete: if isExistingOwner(userId);
+
+      /**
+       * @description Private diagnostic requests for a farmer.
+       * @path /users/{userId}/diagnosticRequests/{diagnosticRequestId}
+       * @allow (read, write) if user is the farmer (owner).
+       * @deny (all) for any other user.
+       * @principle Uses path-based ownership for private user subcollections.
+       */
+      match /diagnosticRequests/{diagnosticRequestId} {
+        // The parent path variable is 'userId', not 'farmerId'.
+        allow get, list: if isOwner(userId);
+        allow create: if isOwner(userId) && request.resource.data.farmerId == userId;
+        allow update: if isExistingOwner(userId) && request.resource.data.farmerId == resource.data.farmerId;
+        allow delete: if isExistingOwner(userId);
+
+        /**
+         * @description AI suggestions for diagnostic requests. Farmers read theirs; Experts manage certification.
+         * @path /users/{userId}/diagnosticRequests/{diagnosticRequestId}/suggestions/{suggestionId}
+         * @allow (get, list) if user is the farmer OR an expert.
+         * @allow (create, update) if user is an expert.
+         * @deny (create) if an expert tries to create for a farmer they don't have access to (though here, any expert can help).
+         * @principle Role-based access for experts combined with owner-based read access.
+         */
+        match /suggestions/{suggestionId} {
+          // The parent path variable is 'userId', not 'farmerId'.
+          allow get, list: if isOwner(userId) || isExpert(request.auth.uid);
+          allow create: if isExpert(request.auth.uid) && request.resource.data.farmerId == userId;
+          allow update: if isExpert(request.auth.uid) && resource != null && request.resource.data.farmerId == resource.data.farmerId;
+          allow delete: if isExpert(request.auth.uid) && resource != null;
+        }
+      }
+
+      /**
+       * @description User's personal votes on remedies.
+       * @path /users/{userId}/nuskhaVotes/{remedyId}
+       * @allow (read, write) if the user is the owner of the path.
+       * @deny (all) if the user tries to vote as someone else.
+       * @principle Path-based ownership for user-specific interactions.
+       */
+      match /nuskhaVotes/{remedyId} {
+        allow get, list: if isOwner(userId);
+        allow create: if isOwner(userId) && request.resource.data.userId == userId;
+        allow update: if isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
+        allow delete: if isExistingOwner(userId);
+      }
+    }
+
+    /**
+     * @description Marker collections for roles. These are read-only for the app and managed by backend/admin.
+     * @path /roles_experts/{userId}, /roles_governmentAuthorities/{userId}, /roles_logisticsProviders/{userId}
+     * @allow (get) for signed-in users to verify roles.
+     * @deny (write, list) to prevent role harvesting.
+     * @principle Uses marker documents for high-performance role checks (DBAC).
+     */
+    match /roles_experts/{userId} {
+      allow get: if isSignedIn();
+      allow list, create, update, delete: if false;
+    }
+    match /roles_governmentAuthorities/{userId} {
+      allow get: if isSignedIn();
+      allow list, create, update, delete: if false;
+    }
+    match /roles_logisticsProviders/{userId} {
+      allow get: if isSignedIn();
+      allow list, create, update, delete: if false;
+    }
+
+    /**
+     * @description Public reference data. Read-only for all users.
+     * @path /crops, /pests, /symptoms, /remedies, /marketPriceRecords, /marketTrends
+     * @allow (get, list) for any user (public).
+     * @deny (write) for all users via client SDK.
+     * @principle Public read access for global application state/master data.
+     */
+    match /crops/{id} { allow get, list: if true; allow create, update, delete: if false; }
+    match /pests/{id} { allow get, list: if true; allow create, update, delete: if false; }
+    match /symptoms/{id} { allow get, list: if true; allow create, update, delete: if false; }
+    match /remedies/{id} { allow get, list: if true; allow create, update, delete: if false; }
+    match /marketPriceRecords/{id} { allow get, list: if true; allow create, update, delete: if false; }
+    match /marketTrends/{id} { allow get, list: if true; allow create, update, delete: if false; }
+
+    /**
+     * @description Price alerts for significant deviations. Only accessible by government authorities.
+     * @path /priceAlerts/{alertId}
+     * @allow (read, update) if user has the GovernmentAuthority role.
+     * @deny (all) for farmers, experts, or logistics providers.
+     * @principle Restricts sensitive data to specific organizational roles.
+     */
+    match /priceAlerts/{alertId} {
+      allow get, list: if isGov(request.auth.uid);
+      allow create: if false; // System generated
+      allow update: if isGov(request.auth.uid) && resource != null;
+      allow delete: if false;
+    }
+
+    /**
+     * @description Logistics profiles. Publicly readable, but only the specific provider can edit.
+     * @path /logisticsProviderProfiles/{profileId}
+     * @allow (get, list) for everyone.
+     * @allow (create, update, delete) if the user has the Logistics role and owns the profile.
+     * @deny (write) if the userId in data doesn't match the authenticated user.
+     * @principle Public discovery with owner-only management.
+     */
+    match /logisticsProviderProfiles/{profileId} {
+      allow get, list: if true;
+      allow create: if isLogistics(request.auth.uid) && request.resource.data.userId == request.auth.uid;
+      allow update: if isLogistics(request.auth.uid) && isExistingOwner(resource.data.userId) && request.resource.data.userId == resource.data.userId;
+      allow delete: if isLogistics(request.auth.uid) && isExistingOwner(resource.data.userId);
+
+      /**
+       * @description Vehicles belonging to a logistics provider.
+       * @path /logisticsProviderProfiles/{profileId}/vehicles/{vehicleId}
+       * @allow (get, list) for everyone.
+       * @allow (create, update, delete) if the user owns the parent profile.
+       * @principle Denormalized owner ID (logisticsProviderUserId) ensures atomic authorization.
+       */
+      match /vehicles/{vehicleId} {
+        allow get, list: if true;
+        allow create: if isLogistics(request.auth.uid) && request.resource.data.logisticsProviderUserId == request.auth.uid;
+        allow update: if isLogistics(request.auth.uid) && isExistingOwner(resource.data.logisticsProviderUserId) && request.resource.data.logisticsProviderUserId == resource.data.logisticsProviderUserId;
+        allow delete: if isLogistics(request.auth.uid) && isExistingOwner(resource.data.logisticsProviderUserId);
+      }
+    }
+
+    /**
+     * @description Social network posts for the community.
+     * @path /socialPosts/{postId}
+     * @allow (get, list) for everyone.
+     * @allow (create) if the authorId matches the authenticated user.
+     * @allow (update, delete) if the user is the original author.
+     * @principle Public-read, Owner-write model for social features.
+     */
+    match /socialPosts/{postId} {
+      allow get, list: if true;
+      allow create: if isSignedIn() && request.resource.data.authorId == request.auth.uid;
+      allow update: if isExistingOwner(resource.data.authorId) && request.resource.data.authorId == resource.data.authorId;
+      allow delete: if isExistingOwner(resource.data.authorId);
+
+      /**
+       * @description Comments on social posts.
+       * @path /socialPosts/{postId}/comments/{commentId}
+       * @allow (get, list) for everyone.
+       * @allow (create, update, delete) based on commenter ownership.
+       * @principle Hierarchical data with independent authorization via authorId.
+       */
+      match /comments/{commentId} {
+        allow get, list: if true;
+        allow create: if isSignedIn() && request.resource.data.authorId == request.auth.uid;
+        allow update: if isExistingOwner(resource.data.authorId) && request.resource.data.authorId == resource.data.authorId;
+        allow delete: if isExistingOwner(resource.data.authorId);
+      }
+    }
+  }
+}
