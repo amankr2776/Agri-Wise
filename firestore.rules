@@ -53,7 +53,13 @@ service cloud.firestore {
       allow list, create, update, delete: if false;
     }
 
-    match /crops/{id} { allow get, list: if true; allow create, update, delete: if false; }
+    match /crops/{id} { 
+      allow get, list: if true; 
+      // Allow creation if signed in (for prototype seeding) or if user is an expert.
+      allow create, update: if isSignedIn(); 
+      allow delete: if false; 
+    }
+    
     match /pests/{id} { allow get, list: if true; allow create, update, delete: if false; }
     match /symptoms/{id} { allow get, list: if true; allow create, update, delete: if false; }
     match /remedies/{id} { allow get, list: if true; allow create, update, delete: if false; }

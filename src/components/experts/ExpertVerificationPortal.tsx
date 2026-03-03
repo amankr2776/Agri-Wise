@@ -22,6 +22,8 @@ import { updateDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAppState } from "@/lib/app-state";
 import { useToast } from "@/hooks/use-toast";
+import { errorEmitter } from "@/firebase/error-emitter";
+import { FirestorePermissionError, type SecurityRuleContext } from "@/firebase/errors";
 
 const DEFAULT_CROPS = [
   // Grains
@@ -116,20 +118,36 @@ export function ExpertVerificationPortal() {
       description: "Populating the agricultural registry with expert data...",
     });
 
+    const colRef = collection(firestore, "crops");
+    
     try {
-      const colRef = collection(firestore, "crops");
       const existing = await getDocs(colRef);
       
       if (existing.empty) {
         let count = 0;
-        for (const crop of DEFAULT_CROPS) {
-          await addDoc(colRef, crop);
-          count++;
-        }
-        toast({
-          title: "Database Synced",
-          description: `Successfully added ${count} professional crop profiles.`,
+        const promises = DEFAULT_CROPS.map(async (crop) => {
+          return addDoc(colRef, crop)
+            .then(() => {
+              count++;
+            })
+            .catch(async (serverError) => {
+              const permissionError = new FirestorePermissionError({
+                path: colRef.path,
+                operation: 'create',
+                requestResourceData: crop,
+              } satisfies SecurityRuleContext);
+              errorEmitter.emit('permission-error', permissionError);
+            });
         });
+
+        await Promise.all(promises);
+
+        if (count > 0) {
+          toast({
+            title: "Database Synced",
+            description: `Successfully added ${count} professional crop profiles.`,
+          });
+        }
       } else {
         toast({
           title: "Registry Active",
@@ -137,11 +155,19 @@ export function ExpertVerificationPortal() {
         });
       }
     } catch (error: any) {
+      // If the top-level getDocs fails, it might be a standard error.
+      // We don't log to console.error as per guidelines.
       toast({
         variant: "destructive",
         title: "Sync Failed",
-        description: error.message || "An error occurred while seeding the database.",
+        description: "Missing or insufficient permissions. Triggering detailed diagnostic...",
       });
+      
+      const permissionError = new FirestorePermissionError({
+        path: colRef.path,
+        operation: 'list',
+      } satisfies SecurityRuleContext);
+      errorEmitter.emit('permission-error', permissionError);
     } finally {
       setSeeding(false);
     }
