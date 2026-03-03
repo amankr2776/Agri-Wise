@@ -18,7 +18,8 @@ import {
   Droplets, 
   ThermometerSun,
   Globe,
-  FlaskConical
+  FlaskConical,
+  LayoutGrid
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -37,6 +38,7 @@ import {
 import { DiagnosticTool } from "@/components/diagnostics/DiagnosticTool";
 import { MarketIntelligence } from "@/components/market/MarketIntelligence";
 import { LogisticsMarket } from "@/components/logistics/LogisticsMarket";
+import { FleetManagement } from "@/components/logistics/FleetManagement";
 import { CommunityFeed } from "@/components/social/CommunityFeed";
 import { VoiceAssistant } from "@/components/voice/VoiceAssistant";
 import { MinistryIntelligence } from "@/components/gov/MinistryIntelligence";
@@ -88,6 +90,13 @@ export default function AgriWiseApp() {
                 <SidebarMenuItem>
                   <SidebarMenuButton isActive={activeTab === 'verification'} onClick={() => setActiveTab('verification')} tooltip="Verification Portal">
                     <FlaskConical /> <span>Verification Portal</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )}
+              {role === "Logistics" && (
+                <SidebarMenuItem>
+                  <SidebarMenuButton isActive={activeTab === 'fleet'} onClick={() => setActiveTab('fleet')} tooltip="Fleet Control">
+                    <LayoutGrid /> <span>My Fleet</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               )}
@@ -146,7 +155,8 @@ export default function AgriWiseApp() {
               <h1 className="text-2xl font-bold font-headline capitalize tracking-tight text-slate-800">
                 {activeTab === 'dashboard' ? 'Professional Intelligence' : 
                  activeTab === 'verification' ? 'Expert Verification' : 
-                 activeTab === 'ministry' ? 'Ministry Hub' : activeTab}
+                 activeTab === 'ministry' ? 'Ministry Hub' : 
+                 activeTab === 'fleet' ? 'Fleet Management' : activeTab}
               </h1>
             </div>
             <div className="flex items-center gap-6">
@@ -186,13 +196,15 @@ export default function AgriWiseApp() {
                         <div className="space-y-4">
                           <Badge className="bg-white/10 text-white border-white/20 px-4 py-1 rounded-full backdrop-blur-md">Verified Intelligence Interface</Badge>
                           <h2 className="text-5xl font-bold font-headline tracking-tight leading-none">
-                            {role === "Authority" ? "Ministry Oversight Portal" : role === "Expert" ? "Expert Verification Command" : "Global Agri-Intelligence Dashboard"}
+                            {role === "Authority" ? "Ministry Oversight Portal" : role === "Expert" ? "Expert Verification Command" : role === "Logistics" ? "Express Mandi Logistics" : "Global Agri-Intelligence Dashboard"}
                           </h2>
                           <p className="max-w-xl text-slate-300 text-xl font-medium leading-relaxed">
                             {role === "Authority" 
                               ? "Comprehensive national monitoring of pest outbreaks, market deviations, and supply chain integrity." 
                               : role === "Expert" 
                               ? "Review, verify and certify agricultural solutions and crop health diagnostics from across the network."
+                              : role === "Logistics"
+                              ? "Manage your fleet, update service rates, and monitor regional transport demand in real-time."
                               : "Real-time monitoring of regional crop health, market shifts, and logistics efficiency. Access restricted to verified partners."}
                           </p>
                         </div>
@@ -204,6 +216,10 @@ export default function AgriWiseApp() {
                           ) : role === "Expert" ? (
                             <Button size="lg" className="bg-white text-primary hover:bg-slate-100 font-bold px-8 rounded-full shadow-xl" onClick={() => setActiveTab('verification')}>
                               Go to Verification Portal
+                            </Button>
+                          ) : role === "Logistics" ? (
+                            <Button size="lg" className="bg-white text-primary hover:bg-slate-100 font-bold px-8 rounded-full shadow-xl" onClick={() => setActiveTab('fleet')}>
+                              Manage My Fleet
                             </Button>
                           ) : (
                             <Button size="lg" className="bg-white text-primary hover:bg-slate-100 font-bold px-8 rounded-full shadow-xl" onClick={() => setActiveTab('diagnostics')}>
@@ -340,6 +356,7 @@ export default function AgriWiseApp() {
             {activeTab === 'diagnostics' && <DiagnosticTool />}
             {activeTab === 'market' && <MarketIntelligence />}
             {activeTab === 'logistics' && <LogisticsMarket />}
+            {activeTab === 'fleet' && <FleetManagement />}
             {activeTab === 'social' && <CommunityFeed />}
           </main>
         </SidebarInset>
