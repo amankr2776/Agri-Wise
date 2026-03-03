@@ -9,7 +9,8 @@ import {
   Bug, 
   ClipboardCheck,
   Loader2,
-  Database
+  Database,
+  CheckCircle2
 } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -19,6 +20,7 @@ import { collection, query, where, doc, addDoc, getDocs } from "firebase/firesto
 import { updateDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAppState } from "@/lib/app-state";
+import { useToast } from "@/hooks/use-toast";
 
 const DEFAULT_CROPS = [
   // Grains
@@ -68,6 +70,7 @@ export function ExpertVerificationPortal() {
   const { firestore } = useFirestore();
   const { role } = useAppState();
   const { user } = useUser();
+  const { toast } = useToast();
   const [seeding, setSeeding] = useState(false);
 
   const pendingCertsQuery = useMemoFirebase(() => {
@@ -89,19 +92,55 @@ export function ExpertVerificationPortal() {
       expertId: user.uid,
       verifiedAt: new Date().toISOString()
     });
+
+    toast({
+      title: "Certification Successful",
+      description: "The remedy has been verified and added to the public registry.",
+    });
   };
 
   const seedDatabase = async () => {
-    if (!firestore) return;
+    if (!firestore) {
+      toast({
+        variant: "destructive",
+        title: "Connection Error",
+        description: "Firestore instance is not available. Please check your connection.",
+      });
+      return;
+    }
+
     setSeeding(true);
+    toast({
+      title: "Seeding Started",
+      description: "Populating the agricultural registry with expert data...",
+    });
+
     try {
       const colRef = collection(firestore, "crops");
       const existing = await getDocs(colRef);
+      
       if (existing.empty) {
+        let count = 0;
         for (const crop of DEFAULT_CROPS) {
           await addDoc(colRef, crop);
+          count++;
         }
+        toast({
+          title: "Database Synced",
+          description: `Successfully added ${count} professional crop profiles.`,
+        });
+      } else {
+        toast({
+          title: "Registry Active",
+          description: "Agricultural database is already populated with expert protocols.",
+        });
       }
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Sync Failed",
+        description: error.message || "An error occurred while seeding the database.",
+      });
     } finally {
       setSeeding(false);
     }
@@ -144,10 +183,19 @@ export function ExpertVerificationPortal() {
             variant="outline" 
             onClick={seedDatabase} 
             disabled={seeding}
-            className="rounded-full border-primary/20 text-primary hover:bg-primary/5 font-bold px-6 shadow-sm"
+            className="rounded-full border-primary/20 text-primary hover:bg-primary/5 font-bold px-6 shadow-sm h-12"
           >
-            {seeding ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Database className="h-4 w-4 mr-2" />}
-            Populate Agri-Registry
+            {seeding ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                Seeding...
+              </>
+            ) : (
+              <>
+                <Database className="h-4 w-4 mr-2" />
+                Populate Agri-Registry
+              </>
+            )}
           </Button>
         </div>
       </div>
@@ -159,7 +207,7 @@ export function ExpertVerificationPortal() {
           </div>
           <h3 className="text-2xl font-black text-slate-800">No Pending Items</h3>
           <p className="text-muted-foreground max-w-sm mx-auto mt-4 font-medium leading-relaxed">
-            All submitted remedies have been processed. Use the "Populate Agri-Registry" button to seed professional data if the registry is empty.
+            All submitted remedies have been processed. Use the "Populate Agri-Registry" button above to seed professional data if the registry is empty.
           </p>
         </Card>
       ) : (
