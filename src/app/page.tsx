@@ -1,7 +1,10 @@
 'use client';
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { UserRole, useAppState } from "@/lib/app-state";
+import { useUser, useAuth } from "@/firebase";
+import { signOut } from "firebase/auth";
 import { 
   Leaf, 
   UserCircle, 
@@ -17,7 +20,9 @@ import {
   TrendingUp,
   TrendingDown,
   AlertTriangle,
-  ArrowUpRight
+  ArrowUpRight,
+  LogOut,
+  Loader2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -52,11 +57,46 @@ import {
   AvatarImage 
 } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/hooks/use-toast";
 
 export default function AgriWiseApp() {
   const { role, setRole, language, setLanguage } = useAppState();
+  const { user, isUserLoading } = useUser();
+  const auth = useAuth();
+  const router = useRouter();
+  const { toast } = useToast();
+  
   const [isAppStarted, setIsAppStarted] = useState(false);
   const [activeTab, setActiveTab] = useState("dashboard");
+
+  // Authentication Guard
+  useEffect(() => {
+    if (!isUserLoading && !user) {
+      router.push("/login");
+    }
+  }, [user, isUserLoading, router]);
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      toast({ title: "Signed out", description: "Come back soon!" });
+    } catch (error) {
+      toast({ variant: "destructive", title: "Logout failed" });
+    }
+  };
+
+  if (isUserLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center space-y-4">
+          <Loader2 className="h-12 w-12 text-primary animate-spin mx-auto" />
+          <p className="text-muted-foreground font-headline animate-pulse">Syncing farm data...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) return null; // Guard will redirect
 
   if (!isAppStarted) {
     return (
@@ -97,7 +137,7 @@ export default function AgriWiseApp() {
               className="h-16 px-16 text-xl font-bold rounded-full bg-primary hover:bg-primary/90 shadow-xl shadow-primary/30 transition-all hover:translate-y-[-2px]"
               onClick={() => setIsAppStarted(true)}
             >
-              Get Started <ChevronRight className="ml-2 h-6 w-6" />
+              Enter Dashboard <ChevronRight className="ml-2 h-6 w-6" />
             </Button>
 
             <div className="flex items-center gap-4 text-sm text-muted-foreground bg-white/50 px-4 py-2 rounded-full backdrop-blur-sm">
@@ -149,11 +189,19 @@ export default function AgriWiseApp() {
               </SidebarMenuItem>
             </SidebarMenu>
           </SidebarContent>
-          <SidebarFooter className="p-4">
-            <div className="flex flex-col gap-2 group-data-[collapsible=icon]:hidden">
+          <SidebarFooter className="p-4 space-y-2">
+            <div className="flex flex-col gap-1 group-data-[collapsible=icon]:hidden mb-2">
                <div className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest px-2 opacity-70">Role: {role}</div>
-               <SidebarMenuButton tooltip="Settings"><Settings /> <span>Settings</span></SidebarMenuButton>
+               <div className="text-[10px] text-primary font-bold px-2 truncate">{user?.email || user?.phoneNumber}</div>
             </div>
+            <SidebarMenuButton tooltip="Settings"><Settings /> <span>Settings</span></SidebarMenuButton>
+            <SidebarMenuButton 
+              tooltip="Sign Out" 
+              className="text-destructive hover:text-destructive hover:bg-destructive/10"
+              onClick={handleLogout}
+            >
+              <LogOut /> <span>Sign Out</span>
+            </SidebarMenuButton>
           </SidebarFooter>
         </Sidebar>
 
@@ -165,7 +213,7 @@ export default function AgriWiseApp() {
             </div>
             <div className="flex items-center gap-4">
               <div className="hidden sm:flex items-center gap-2">
-                <span className="text-xs font-bold text-muted-foreground">App Language:</span>
+                <span className="text-xs font-bold text-muted-foreground">Language:</span>
                 <Select value={language} onValueChange={setLanguage}>
                   <SelectTrigger className="w-[120px] h-8 text-xs rounded-full">
                     <SelectValue />
