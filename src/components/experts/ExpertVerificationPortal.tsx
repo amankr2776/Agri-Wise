@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState } from "react";
@@ -108,8 +107,8 @@ export function ExpertVerificationPortal() {
         <div className="h-20 w-20 bg-destructive/10 rounded-full flex items-center justify-center text-destructive">
           <AlertCircle className="h-10 w-10" />
         </div>
-        <h3 className="text-2xl font-black">Restricted Access</h3>
-        <p className="text-muted-foreground max-w-sm">This portal is exclusively for verified agricultural scientists and NGO experts.</p>
+        <h3 className="text-2xl font-black">Expert Access Required</h3>
+        <p className="text-muted-foreground max-w-sm">This portal is reserved for certified agricultural scientists to verify regional remedies.</p>
       </div>
     );
   }
@@ -130,9 +129,9 @@ export function ExpertVerificationPortal() {
         <div>
           <h2 className="text-3xl font-black tracking-tight flex items-center gap-3">
             <FlaskConical className="h-8 w-8 text-primary" />
-            Scientist Verification Hub
+            Verification Queue
           </h2>
-          <p className="text-muted-foreground font-medium mt-1 italic">Certifying 'Desi Nuskhas' and Chemical treatments for regional efficacy.</p>
+          <p className="text-muted-foreground font-medium mt-1 italic">Review and certify regional treatments for the national registry.</p>
         </div>
         <div className="flex gap-3">
           <Button 
@@ -142,7 +141,7 @@ export function ExpertVerificationPortal() {
             className="rounded-full border-primary/20 text-primary hover:bg-primary/5 font-bold px-6"
           >
             {seeding ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Database className="h-4 w-4 mr-2" />}
-            Sync Database
+            Populate Agri-Registry
           </Button>
         </div>
       </div>
@@ -152,9 +151,9 @@ export function ExpertVerificationPortal() {
           <div className="bg-primary/10 h-24 w-24 rounded-full flex items-center justify-center mx-auto mb-8 shadow-inner">
             <ClipboardCheck className="h-12 w-12 text-primary opacity-50" />
           </div>
-          <h3 className="text-2xl font-black text-slate-800">Queue is Cleared</h3>
+          <h3 className="text-2xl font-black text-slate-800">No Pending Items</h3>
           <p className="text-muted-foreground max-w-sm mx-auto mt-4 font-medium leading-relaxed">
-            All submitted remedies have been processed. New cases will appear here upon submission from the field diagnostic teams.
+            All submitted remedies have been processed. Use the "Populate Agri-Registry" button to seed default professional data.
           </p>
         </Card>
       ) : (
@@ -176,15 +175,15 @@ export function ExpertVerificationPortal() {
               <CardContent className="p-8 space-y-6">
                 <div className="space-y-3">
                   <div className="flex items-center gap-2 text-[10px] font-black text-destructive uppercase tracking-widest">
-                    <Bug className="h-4 w-4" /> Recommended Chemical
+                    <Bug className="h-4 w-4" /> Target Pathogen
                   </div>
                   <p className="text-sm font-bold text-slate-700 bg-destructive/5 p-4 rounded-2xl border border-destructive/10">
-                    {cert.chemicalCure} ({cert.chemicalDosage})
+                    {cert.diseaseName}
                   </p>
                 </div>
                 <div className="space-y-3">
                   <div className="flex items-center gap-2 text-[10px] font-black text-primary uppercase tracking-widest">
-                    <Leaf className="h-4 w-4" /> Traditional Nuskha
+                    <Leaf className="h-4 w-4" /> Desi Nuskha
                   </div>
                   <p className="text-sm font-medium text-slate-600 bg-primary/5 p-4 rounded-2xl border border-primary/10 italic leading-relaxed">
                     "{cert.desiNuskha}"
@@ -197,7 +196,7 @@ export function ExpertVerificationPortal() {
                   onClick={() => handleVerify(cert.id)}
                 >
                   <ShieldCheck className="h-5 w-5" />
-                  Issue Professional Certification
+                  Certify Professional Protocol
                 </Button>
               </CardFooter>
             </Card>

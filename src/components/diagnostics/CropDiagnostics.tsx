@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useMemo } from "react";
@@ -14,7 +13,9 @@ import {
   Beaker,
   Info,
   Loader2,
-  Filter
+  Filter,
+  ShieldAlert,
+  Droplets
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -90,7 +91,7 @@ export function CropDiagnostics() {
         <CardHeader className="p-6 border-b space-y-4">
           <CardTitle className="text-xl font-bold flex items-center gap-2">
             <Bug className="h-6 w-6 text-primary" />
-            Bio-Intelligence Hub
+            Agri-Health Registry
           </CardTitle>
           <div className="space-y-3">
             <div className="relative">
@@ -127,7 +128,7 @@ export function CropDiagnostics() {
                 onClick={() => setSelectedId(c.id)}
                 className={cn(
                   "w-full text-left p-4 rounded-2xl transition-all border border-transparent group",
-                  selectedId === c.id ? "bg-primary text-white shadow-lg shadow-primary/20" : "hover:bg-muted/50"
+                  selectedId === c.id ? "bg-primary text-white shadow-lg shadow-primary/20" : "hover:bg-muted/50 border-border/50 bg-white"
                 )}
               >
                 <div className="flex justify-between items-start mb-1">
@@ -168,95 +169,129 @@ export function CropDiagnostics() {
                 className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-              <div className="absolute bottom-0 left-0 p-8 text-white space-y-2">
-                <div className="flex items-center gap-2">
-                  <Badge className="bg-primary hover:bg-primary border-none text-[10px] font-black uppercase tracking-widest">
-                    {selectedCrop.category}
-                  </Badge>
-                  {selectedCrop.isCertified && (
-                    <Badge variant="outline" className="border-primary/50 text-primary bg-primary/10 text-[10px] font-black uppercase tracking-widest flex items-center gap-1">
-                      <ShieldCheck className="h-3 w-3" /> Expert Verified
+              <div className="absolute bottom-0 left-0 p-8 text-white space-y-2 w-full">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Badge className="bg-primary hover:bg-primary border-none text-[10px] font-black uppercase tracking-widest">
+                      {selectedCrop.category}
                     </Badge>
-                  )}
+                    {selectedCrop.isCertified && (
+                      <Badge variant="outline" className="border-primary/50 text-primary bg-primary/10 text-[10px] font-black uppercase tracking-widest flex items-center gap-1">
+                        <ShieldCheck className="h-3 w-3" /> Expert Verified
+                      </Badge>
+                    )}
+                  </div>
+                  <Button 
+                    variant="ghost"
+                    onClick={() => handleReadAloud(`${selectedCrop.diseaseName} treatment for ${selectedCrop.name}. ${selectedCrop.chemicalCure}. ${selectedCrop.desiNuskha}`)}
+                    className="rounded-full h-12 w-12 bg-white/20 backdrop-blur-md border-white/20 text-white hover:bg-white/40"
+                  >
+                    {isSpeaking ? <VolumeX className="h-6 w-6 animate-pulse" /> : <Volume2 className="h-6 w-6" />}
+                  </Button>
                 </div>
                 <h2 className="text-4xl font-black tracking-tighter">{selectedCrop.diseaseName}</h2>
-                <p className="text-white/70 text-sm font-medium italic max-w-xl line-clamp-2">
-                  Knowledge base for {selectedCrop.name}. Identifying common symptoms and providing verified treatments.
+                <p className="text-white/70 text-sm font-medium italic">
+                  Critical diagnostic profile for {selectedCrop.name} crop.
                 </p>
               </div>
-              <Button 
-                onClick={() => handleReadAloud(`${selectedCrop.diseaseName} treatment for ${selectedCrop.name}. ${selectedCrop.chemicalCure}. ${selectedCrop.desiNuskha}`)}
-                className="absolute top-6 right-6 rounded-full h-14 w-14 bg-white/20 backdrop-blur-md border-white/20 text-white hover:bg-white/40"
-              >
-                {isSpeaking ? <VolumeX className="h-6 w-6 animate-pulse" /> : <Volume2 className="h-6 w-6" />}
-              </Button>
             </div>
 
-            <Tabs defaultValue="chemical" className="flex-1 flex flex-col p-8">
-              <TabsList className="bg-muted rounded-full p-1 h-12 mb-8 w-fit shadow-inner">
-                <TabsTrigger value="chemical" className="rounded-full px-8 h-10 data-[state=active]:bg-white data-[state=active]:text-primary font-black text-xs uppercase tracking-widest transition-all">
-                  <Beaker className="h-4 w-4 mr-2" /> Chemical Cure
-                </TabsTrigger>
-                <TabsTrigger value="desi" className="rounded-full px-8 h-10 data-[state=active]:bg-white data-[state=active]:text-primary font-black text-xs uppercase tracking-widest transition-all">
-                  <Leaf className="h-4 w-4 mr-2" /> Desi Nuskha
-                </TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="chemical" className="flex-1 space-y-6 animate-in fade-in duration-500">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <Card className="border-none bg-muted/30 p-8 rounded-[2rem] shadow-inner">
-                    <h4 className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-6">Prescription Protocol</h4>
-                    <div className="space-y-4">
-                      <div>
-                        <p className="text-2xl font-black text-primary">{selectedCrop.chemicalCure || 'Scanning...'}</p>
-                        <p className="text-xs font-bold text-muted-foreground mt-1">Primary Active Agent</p>
-                      </div>
-                      <div className="pt-4 border-t flex justify-between items-center">
-                        <span className="text-[10px] font-black uppercase text-muted-foreground">Dosage</span>
-                        <span className="font-bold text-slate-800">{selectedCrop.chemicalDosage || '2.5g / Litre'}</span>
-                      </div>
-                    </div>
-                  </Card>
-                  <Card className="border-none bg-muted/30 p-8 rounded-[2rem] shadow-inner">
-                    <h4 className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-6">Safety Directives</h4>
-                    <ul className="space-y-3">
-                      {['Wear Protective Gear', 'Spray during calm winds', 'Early morning application'].map((s, i) => (
-                        <li key={i} className="flex items-center gap-3 text-sm font-bold text-slate-700">
-                          <CheckCircle className="h-4 w-4 text-primary shrink-0" /> {s}
-                        </li>
-                      ))}
-                    </ul>
-                  </Card>
-                </div>
-              </TabsContent>
-
-              <TabsContent value="desi" className="flex-1 space-y-6 animate-in fade-in duration-500">
-                <div className="bg-primary/5 p-10 rounded-[2.5rem] border border-primary/10 relative overflow-hidden">
-                  <Leaf className="absolute -top-10 -right-10 h-40 w-40 text-primary/5 rotate-12" />
-                  <div className="relative z-10">
-                    <div className="flex justify-between items-start mb-8">
-                      <div>
-                        <h4 className="text-2xl font-black text-primary mb-1">Traditional Remediation</h4>
-                        <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Heritage-Based Solution</p>
-                      </div>
-                      {selectedCrop.isCertified && (
-                        <Badge className="bg-primary/20 text-primary border-none font-bold px-4 py-1">Verified Efficacy</Badge>
-                      )}
-                    </div>
-                    
-                    <p className="text-lg font-medium leading-relaxed text-slate-700 italic border-l-4 border-primary/20 pl-6 py-2">
-                      "{selectedCrop.desiNuskha || 'No traditional remedy recorded for this specific variant.'}"
-                    </p>
+            <ScrollArea className="flex-1">
+              <div className="p-8 space-y-8">
+                {/* Pathogen Profile */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="p-4 bg-muted/30 rounded-2xl space-y-1 border border-border/50">
+                    <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">Target Pathogen/Pest</p>
+                    <p className="text-sm font-bold flex items-center gap-2"><Bug className="h-4 w-4 text-primary" /> {selectedCrop.diseaseName}</p>
+                  </div>
+                  <div className="p-4 bg-muted/30 rounded-2xl space-y-1 border border-border/50">
+                    <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">Crop Category</p>
+                    <p className="text-sm font-bold flex items-center gap-2"><Leaf className="h-4 w-4 text-primary" /> {selectedCrop.category}</p>
+                  </div>
+                  <div className="p-4 bg-muted/30 rounded-2xl space-y-1 border border-border/50">
+                    <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">Biosecurity Severity</p>
+                    <Badge variant={selectedCrop.severity === 'Critical' ? 'destructive' : 'default'} className="text-[10px] h-5 px-2 uppercase font-black">
+                      {selectedCrop.severity}
+                    </Badge>
                   </div>
                 </div>
-                <div className="p-6 bg-amber-50 rounded-2xl border border-amber-100 flex gap-4">
-                  <Info className="h-6 w-6 text-amber-500 shrink-0" />
-                  <p className="text-sm text-amber-800 font-medium leading-relaxed italic">
-                    Note: Desi Nuskhas are regional. Consult with a verified KisanMitra Expert before large-scale application.
-                  </p>
-                </div>
-              </TabsContent>
-            </Tabs>
+
+                <Tabs defaultValue="chemical" className="w-full">
+                  <TabsList className="bg-muted rounded-full p-1 h-12 mb-8 w-fit shadow-inner">
+                    <TabsTrigger value="chemical" className="rounded-full px-8 h-10 data-[state=active]:bg-white data-[state=active]:text-primary font-black text-xs uppercase tracking-widest transition-all">
+                      <Beaker className="h-4 w-4 mr-2" /> Chemical Protocol
+                    </TabsTrigger>
+                    <TabsTrigger value="desi" className="rounded-full px-8 h-10 data-[state=active]:bg-white data-[state=active]:text-primary font-black text-xs uppercase tracking-widest transition-all">
+                      <Leaf className="h-4 w-4 mr-2" /> Heritage Wisdom
+                    </TabsTrigger>
+                  </TabsList>
+
+                  <TabsContent value="chemical" className="animate-in fade-in duration-500 space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <Card className="border-none bg-primary/5 p-8 rounded-[2rem] shadow-sm">
+                        <h4 className="text-[10px] font-black text-primary uppercase tracking-widest mb-6 flex items-center gap-2">
+                          <ShieldAlert className="h-4 w-4" /> Active Treatment Agent
+                        </h4>
+                        <div className="space-y-4">
+                          <div>
+                            <p className="text-2xl font-black text-slate-900">{selectedCrop.chemicalCure || 'Scanning...'}</p>
+                            <p className="text-xs font-bold text-muted-foreground mt-1 uppercase tracking-tight">Main Pesticide/Fungicide</p>
+                          </div>
+                          <div className="pt-4 border-t flex justify-between items-center">
+                            <span className="text-[10px] font-black uppercase text-muted-foreground">Standard Dosage</span>
+                            <Badge variant="outline" className="font-bold border-primary/20 text-primary text-sm px-3 h-8 bg-white">
+                              {selectedCrop.chemicalDosage || 'Consult Expert'}
+                            </Badge>
+                          </div>
+                        </div>
+                      </Card>
+                      
+                      <Card className="border-none bg-slate-50 p-8 rounded-[2rem] shadow-sm border border-slate-100">
+                        <h4 className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-6">Application Directives</h4>
+                        <ul className="space-y-3">
+                          {[
+                            'Apply during low wind speeds',
+                            'Use certified spray equipment',
+                            'Maintain 7-10 day interval if re-applying',
+                            'Wear PPE during formulation'
+                          ].map((s, i) => (
+                            <li key={i} className="flex items-center gap-3 text-sm font-bold text-slate-700">
+                              <CheckCircle className="h-4 w-4 text-primary shrink-0" /> {s}
+                            </li>
+                          ))}
+                        </ul>
+                      </Card>
+                    </div>
+                  </TabsContent>
+
+                  <TabsContent value="desi" className="animate-in fade-in duration-500 space-y-6">
+                    <div className="bg-amber-50/50 p-10 rounded-[2.5rem] border border-amber-100 relative overflow-hidden shadow-inner">
+                      <div className="relative z-10">
+                        <div className="flex justify-between items-start mb-8">
+                          <div>
+                            <h4 className="text-2xl font-black text-amber-900 mb-1">Traditional Desi Nuskha</h4>
+                            <p className="text-xs font-bold text-amber-700/60 uppercase tracking-widest">Heritage-Based Solution</p>
+                          </div>
+                          {selectedCrop.isCertified && (
+                            <Badge className="bg-amber-100 text-amber-700 border-amber-200 font-bold px-4 py-1">Verified Remedy</Badge>
+                          )}
+                        </div>
+                        
+                        <p className="text-xl font-medium leading-relaxed text-slate-800 italic border-l-4 border-amber-200 pl-6 py-2 bg-white/40 rounded-r-2xl">
+                          "{selectedCrop.desiNuskha || 'No traditional remedy recorded for this specific variant.'}"
+                        </p>
+                      </div>
+                    </div>
+                    <div className="p-6 bg-primary/5 rounded-2xl border border-primary/10 flex gap-4">
+                      <Info className="h-6 w-6 text-primary shrink-0" />
+                      <p className="text-sm text-slate-600 font-medium leading-relaxed">
+                        Desi Nuskhas are regional. For precision results, combine with optimized irrigation and soil management practices.
+                      </p>
+                    </div>
+                  </TabsContent>
+                </Tabs>
+              </div>
+            </ScrollArea>
           </>
         ) : (
           <div className="flex-1 flex flex-col items-center justify-center text-center p-12 space-y-6 bg-muted/10">
@@ -264,13 +299,13 @@ export function CropDiagnostics() {
               <FlaskConical className="h-16 w-16 text-primary/30" />
             </div>
             <div className="space-y-2">
-              <h3 className="text-2xl font-black tracking-tight">Agri-Registry Inactive</h3>
+              <h3 className="text-2xl font-black tracking-tight">Select Diagnostic Profile</h3>
               <p className="text-muted-foreground max-w-sm mx-auto font-medium">
-                Select a crop, fruit, or vegetable profile from the bio-intelligence registry to load diagnostics and verified treatments.
+                Browse the registry to view high-fidelity diagnostic data, verified chemical cures, and traditional Indian remedies.
               </p>
             </div>
             <div className="flex gap-2">
-              <Badge variant="outline" className="opacity-40">{crops?.length || 0} Registered Profiles</Badge>
+              <Badge variant="outline" className="opacity-40">{crops?.length || 0} Crops Tracked</Badge>
               <Badge variant="outline" className="opacity-40">Verified Remedies</Badge>
             </div>
           </div>
