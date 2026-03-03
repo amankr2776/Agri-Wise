@@ -17,6 +17,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  FormDescription,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -203,7 +204,8 @@ export default function LoginPage() {
                             <FormMessage />
                           </FormItem>
                         )}
-                      )}
+                      />
+                    )}
                     <Button type="submit" className="w-full h-11" disabled={loading}>
                       {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                       {showOtp ? "Verify & Login" : "Send OTP"} <ArrowRight className="ml-2 h-4 w-4" />
