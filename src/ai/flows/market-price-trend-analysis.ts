@@ -1,16 +1,14 @@
+
 'use server';
 /**
- * @fileOverview A flow for analyzing crop market prices and predicting trends.
+ * @fileOverview A flow for analyzing crop market prices, predicting trends, and advising Sell vs Hold.
  *
  * - marketPriceTrendAnalysis - A function that handles the market price trend analysis process.
- * - MarketPriceTrendAnalysisInput - The input type for the marketPriceTrendAnalysis function.
- * - MarketPriceTrendAnalysisOutput - The return type for the marketPriceTrendAnalysis function.
  */
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 
-// Input Schema
 const MarketPriceTrendAnalysisInputSchema = z.object({
   cropType: z.string().describe('The type of crop to analyze (e.g., "Wheat", "Rice").'),
   state: z.string().describe('The state where the market price data was collected.'),
@@ -23,28 +21,26 @@ const MarketPriceTrendAnalysisInputSchema = z.object({
 });
 export type MarketPriceTrendAnalysisInput = z.infer<typeof MarketPriceTrendAnalysisInputSchema>;
 
-// Output Schema
 const MarketPriceTrendAnalysisOutputSchema = z.object({
   cropType: z.string().describe('The type of crop analyzed.'),
   state: z.string().describe('The state for which the analysis was performed.'),
-  predictedTrend: z.enum(['Rising', 'Stable', 'Falling']).describe('The predicted price trend: "Rising", "Stable", or "Falling".'),
-  reasoning: z.string().describe('A detailed explanation for the predicted trend based on the provided data.'),
+  predictedTrend: z.enum(['Rising', 'Stable', 'Falling']).describe('The predicted price trend.'),
+  recommendedAction: z.enum(['Sell', 'Hold', 'Wait']).describe('Strategic advice: Sell now to lock in profit, Hold for higher prices, or Wait for stability.'),
+  reasoning: z.string().describe('Detailed explanation based on data.'),
 });
 export type MarketPriceTrendAnalysisOutput = z.infer<typeof MarketPriceTrendAnalysisOutputSchema>;
 
-// Wrapper function to call the flow
 export async function marketPriceTrendAnalysis(
   input: MarketPriceTrendAnalysisInput
 ): Promise<MarketPriceTrendAnalysisOutput> {
   return marketPriceTrendAnalysisFlow(input);
 }
 
-// Define the prompt
 const prompt = ai.definePrompt({
   name: 'marketPriceTrendAnalysisPrompt',
   input: { schema: MarketPriceTrendAnalysisInputSchema },
   output: { schema: MarketPriceTrendAnalysisOutputSchema },
-  prompt: `You are an expert agricultural market analyst. Your task is to analyze historical crop price data and predict the future trend (Rising, Stable, or Falling) for a specific crop in a given state.
+  prompt: `You are an expert agricultural market analyst. Your task is to analyze historical crop price data and predict the future trend.
 
 Analyze the following market price data for {{{cropType}}} in the state of {{{state}}}:
 
@@ -53,10 +49,16 @@ Market Price Data:
   - Date: {{{this.date}}}, Price: {{{this.price}}}
 {{/each}}
 
-Based on this data, determine if the price trend is "Rising", "Stable", or "Falling". Provide a clear and concise reasoning for your prediction, considering patterns, fluctuations, and overall trajectory. Your reasoning should be based solely on the provided historical data and generally accepted market analysis principles.`,
+Based on this data, determine:
+1. The predicted trend: "Rising", "Stable", or "Falling".
+2. The recommended strategic action: 
+   - "Sell": If prices are at a peak or falling significantly.
+   - "Hold": If prices are rising or expected to spike.
+   - "Wait": If the market is too volatile or stable.
+
+Provide detailed reasoning for your prediction and action.`,
 });
 
-// Define the flow
 const marketPriceTrendAnalysisFlow = ai.defineFlow(
   {
     name: 'marketPriceTrendAnalysisFlow',
@@ -65,9 +67,7 @@ const marketPriceTrendAnalysisFlow = ai.defineFlow(
   },
   async (input) => {
     const { output } = await prompt(input);
-    if (!output) {
-      throw new Error('No output received from the prompt.');
-    }
+    if (!output) throw new Error('No output received from the prompt.');
     return output;
   }
 );

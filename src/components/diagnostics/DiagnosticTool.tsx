@@ -2,7 +2,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Upload, Camera, Search, Loader2, CheckCircle2, ShieldCheck, Leaf, Bug } from "lucide-react";
+import { Camera, Search, Loader2, CheckCircle2, Leaf, Bug, FlaskConical, Droplets, ShieldCheck, Thermometer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -10,24 +10,28 @@ import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { diagnoseCropPest, FarmerCropPestDiagnosisOutput } from "@/ai/flows/farmer-crop-pest-diagnosis";
 import { TTSWrapper } from "@/components/voice/TTSWrapper";
-import { useAppState } from "@/lib/app-state";
+import { Slider } from "@/components/ui/slider";
+import { cn } from "@/lib/utils";
 
 export function DiagnosticTool() {
   const [cropType, setCropType] = useState("");
   const [symptoms, setSymptoms] = useState("");
   const [photo, setPhoto] = useState<string | null>(null);
+  const [soilPh, setSoilPh] = useState(7);
+  const [soilMoisture, setSoilMoisture] = useState(40);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<FarmerCropPestDiagnosisOutput | null>(null);
-  const { role, verifiedRemedies, addVerifiedRemedy } = useAppState();
 
   const handleDiagnose = async () => {
-    if (!cropType || (!symptoms && !photo)) return;
+    if (!cropType) return;
     setLoading(true);
     try {
       const res = await diagnoseCropPest({
         cropType,
         symptomsDescription: symptoms,
         photoDataUri: photo || undefined,
+        soilPh,
+        soilMoisture
       });
       setResult(res);
     } catch (err) {
@@ -46,133 +50,182 @@ export function DiagnosticTool() {
     }
   };
 
-  const isVerified = (remedy: string) => verifiedRemedies.includes(remedy);
-
   return (
-    <div className="space-y-6">
-      <Card className="border-primary/20 bg-white">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-primary font-headline">
-            <Leaf className="h-6 w-6" />
-            AI Crop Doctor
-          </CardTitle>
-          <CardDescription>
-            Identify pests and diseases with AI. Get chemical and traditional remedies.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <label className="text-sm font-semibold">Crop Name</label>
-              <Input
-                placeholder="e.g. Tomato, Wheat, Paddy"
-                value={cropType}
-                onChange={(e) => setCropType(e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-semibold">Describe Symptoms</label>
-              <Textarea
-                placeholder="Yellow leaves, holes in stem..."
-                value={symptoms}
-                onChange={(e) => setSymptoms(e.target.value)}
-              />
-            </div>
-          </div>
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="lg:col-span-2 space-y-6">
+        <Card className="glass border-none rounded-[2.5rem] p-8">
+          <CardHeader className="p-0 mb-8">
+            <CardTitle className="text-2xl font-bold flex items-center gap-3">
+              <Leaf className="h-7 w-7 text-primary" />
+              AI Bio-Diagnostic Command
+            </CardTitle>
+            <CardDescription className="text-white/60">Identify pathogens and soil health deficiencies with multi-modal AI</CardDescription>
+          </CardHeader>
+          
+          <CardContent className="p-0 space-y-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-white/40 uppercase tracking-widest">Crop Species</label>
+                  <Input
+                    placeholder="e.g. Tomato, Wheat"
+                    value={cropType}
+                    onChange={(e) => setCropType(e.target.value)}
+                    className="glass border-none h-12"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-white/40 uppercase tracking-widest">Symptom Log</label>
+                  <Textarea
+                    placeholder="Yellow spotting, leaf curl..."
+                    value={symptoms}
+                    onChange={(e) => setSymptoms(e.target.value)}
+                    className="glass border-none min-h-[120px]"
+                  />
+                </div>
+              </div>
 
-          <div className="flex items-center gap-4">
-            <div className="flex-1">
-              <label className="block text-sm font-semibold mb-2">Upload Photo (Optional)</label>
-              <div className="relative border-2 border-dashed border-muted rounded-lg p-4 text-center hover:bg-muted/50 transition-colors cursor-pointer">
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="absolute inset-0 opacity-0 cursor-pointer"
-                  onChange={handlePhotoUpload}
-                />
-                <div className="flex flex-col items-center">
-                  <Camera className="h-8 w-8 text-muted-foreground mb-2" />
-                  <span className="text-sm text-muted-foreground">Click or drag to upload photo</span>
+              <div className="space-y-6">
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center">
+                    <label className="text-xs font-bold text-white/40 uppercase tracking-widest flex items-center gap-2">
+                      <FlaskConical className="h-3 w-3" /> Soil pH Level
+                    </label>
+                    <span className="font-bold text-primary">{soilPh}</span>
+                  </div>
+                  <Slider value={[soilPh]} onValueChange={(v) => setSoilPh(v[0])} min={0} max={14} step={0.1} />
+                </div>
+                
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center">
+                    <label className="text-xs font-bold text-white/40 uppercase tracking-widest flex items-center gap-2">
+                      <Droplets className="h-3 w-3" /> Moisture Saturation
+                    </label>
+                    <span className="font-bold text-accent">{soilMoisture}%</span>
+                  </div>
+                  <Slider value={[soilMoisture]} onValueChange={(v) => setSoilMoisture(v[0])} min={0} max={100} step={1} />
+                </div>
+
+                <div className="relative group glass border-dashed border-2 border-white/10 rounded-3xl p-6 text-center hover:bg-white/5 transition-all cursor-pointer">
+                  <input type="file" accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer" onChange={handlePhotoUpload} />
+                  <div className="flex flex-col items-center">
+                    {photo ? (
+                      <img src={photo} alt="Preview" className="h-20 w-20 object-cover rounded-xl" />
+                    ) : (
+                      <>
+                        <Camera className="h-10 w-10 text-white/20 mb-2 group-hover:text-primary transition-colors" />
+                        <span className="text-xs font-bold text-white/30 uppercase">Thermal/Visual Scan</span>
+                      </>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
-            {photo && (
-              <div className="h-24 w-24 rounded-lg overflow-hidden border">
-                <img src={photo} alt="Preview" className="h-full w-full object-cover" />
-              </div>
-            )}
-          </div>
 
-          <Button 
-            className="w-full h-12 text-lg font-semibold bg-primary hover:bg-primary/90"
-            disabled={loading}
-            onClick={handleDiagnose}
-          >
-            {loading ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : <Search className="h-5 w-5 mr-2" />}
-            Diagnose Problem
-          </Button>
-        </CardContent>
-      </Card>
-
-      {result && (
-        <Card className="border-accent bg-white animate-in slide-in-from-bottom-2">
-          <CardHeader className="bg-accent/10 border-b border-accent/20">
-            <div className="flex justify-between items-start">
-              <CardTitle className="text-primary font-headline flex items-center gap-2">
-                <CheckCircle2 className="h-6 w-6 text-primary" />
-                Diagnosis: {result.diagnosis}
-              </CardTitle>
-            </div>
-          </CardHeader>
-          <CardContent className="p-6 space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <div className="space-y-4">
-                <h4 className="font-bold flex items-center gap-2 text-red-600">
-                  <Bug className="h-4 w-4" />
-                  Chemical Remedies
-                </h4>
-                <ul className="space-y-2">
-                  {result.suggestedChemicalRemedies.map((rem, i) => (
-                    <li key={i} className="flex items-center gap-2 p-3 bg-red-50 rounded-lg border border-red-100">
-                      <TTSWrapper text={rem}>
-                        <span className="text-sm flex-1">{rem}</span>
-                      </TTSWrapper>
-                      {isVerified(rem) && <Badge className="bg-primary text-white text-[10px]">Verified</Badge>}
-                      {role === "Expert" && !isVerified(rem) && (
-                        <Button variant="ghost" size="sm" onClick={() => addVerifiedRemedy(rem)} className="h-6 text-[10px] text-primary">
-                          <ShieldCheck className="h-3 w-3 mr-1" /> Certify
-                        </Button>
-                      )}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              <div className="space-y-4">
-                <h4 className="font-bold flex items-center gap-2 text-primary">
-                  <Leaf className="h-4 w-4" />
-                  Traditional 'Desi' Remedies
-                </h4>
-                <ul className="space-y-2">
-                  {result.suggestedTraditionalRemedies.map((rem, i) => (
-                    <li key={i} className="flex items-center gap-2 p-3 bg-primary/5 rounded-lg border border-primary/10">
-                      <TTSWrapper text={rem}>
-                        <span className="text-sm flex-1">{rem}</span>
-                      </TTSWrapper>
-                      {isVerified(rem) && <Badge className="bg-primary text-white text-[10px]">Verified</Badge>}
-                      {role === "Expert" && !isVerified(rem) && (
-                        <Button variant="ghost" size="sm" onClick={() => addVerifiedRemedy(rem)} className="h-6 text-[10px] text-primary">
-                          <ShieldCheck className="h-3 w-3 mr-1" /> Certify
-                        </Button>
-                      )}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </div>
+            <Button 
+              className="w-full h-14 text-lg font-bold bg-primary hover:bg-primary/90 rounded-[1.5rem] vivid-glow-green"
+              disabled={loading}
+              onClick={handleDiagnose}
+            >
+              {loading ? <Loader2 className="h-6 w-6 animate-spin mr-2" /> : <Search className="h-6 w-6 mr-2" />}
+              Initiate Full Diagnostic Scan
+            </Button>
           </CardContent>
         </Card>
-      )}
+
+        {result && (
+          <Card className="glass border-none rounded-[2.5rem] p-8 animate-in slide-in-from-bottom-4">
+            <CardHeader className="p-0 mb-8">
+              <div className="flex justify-between items-start">
+                <CardTitle className="text-2xl font-bold flex items-center gap-3 text-primary">
+                  <CheckCircle2 className="h-7 w-7" />
+                  Diagnosis: {result.diagnosis}
+                </CardTitle>
+                <Badge className="bg-primary/20 text-primary border-primary/30">AI Confirmed</Badge>
+              </div>
+            </CardHeader>
+            <CardContent className="p-0 space-y-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="space-y-4">
+                  <h4 className="text-xs font-bold text-red-400 uppercase tracking-widest flex items-center gap-2">
+                    <Bug className="h-4 w-4" /> Pathogen Neutralization
+                  </h4>
+                  <ul className="space-y-2">
+                    {result.suggestedChemicalRemedies.map((rem, i) => (
+                      <li key={i} className="glass p-4 rounded-2xl bg-red-500/5 text-sm border-none italic text-white/80">
+                        <TTSWrapper text={rem}>{rem}</TTSWrapper>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                <div className="space-y-4">
+                  <h4 className="text-xs font-bold text-primary uppercase tracking-widest flex items-center gap-2">
+                    <Leaf className="h-4 w-4" /> Bio-Organic Protocols
+                  </h4>
+                  <ul className="space-y-2">
+                    {result.suggestedTraditionalRemedies.map((rem, i) => (
+                      <li key={i} className="glass p-4 rounded-2xl bg-primary/5 text-sm border-none italic text-white/80">
+                        <TTSWrapper text={rem}>{rem}</TTSWrapper>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+
+              <div className="p-6 rounded-3xl bg-accent/10 border border-accent/20">
+                <h4 className="text-xs font-bold text-accent uppercase tracking-widest flex items-center gap-2 mb-4">
+                  <FlaskConical className="h-4 w-4" /> Soil Remediation Plan
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {result.fertilizerRecommendations.map((rec, i) => (
+                    <div key={i} className="flex items-center gap-3 p-3 bg-white/5 rounded-xl text-xs font-bold text-white/90">
+                      <div className="h-2 w-2 rounded-full bg-accent" />
+                      {rec}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+      </div>
+
+      <div className="space-y-6">
+        <Card className="glass border-none rounded-[2.5rem] p-8">
+          <CardHeader className="p-0 mb-6">
+            <CardTitle className="text-sm font-bold flex items-center gap-2 text-primary uppercase tracking-widest">
+              <ShieldCheck className="h-4 w-4" /> Cluster Security
+            </CardTitle>
+          </CardHeader>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between text-xs font-bold">
+              <span className="text-white/40 uppercase">Local Outbreak Risk</span>
+              <span className="text-primary">Low</span>
+            </div>
+            <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
+              <div className="h-full bg-primary w-[12%] rounded-full" />
+            </div>
+            <div className="flex items-center justify-between text-xs font-bold">
+              <span className="text-white/40 uppercase">Soil Health Index</span>
+              <span className="text-accent">Optimized</span>
+            </div>
+            <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
+              <div className="h-full bg-accent w-[92%] rounded-full" />
+            </div>
+          </div>
+        </Card>
+
+        <Card className="glass border-none rounded-[2.5rem] p-8 bg-gradient-to-br from-accent/20 to-transparent">
+          <div className="flex flex-col gap-4">
+            <Thermometer className="h-8 w-8 text-accent" />
+            <div className="text-xs font-bold text-white/40 uppercase tracking-widest">Ambient Context</div>
+            <p className="text-sm font-medium italic leading-relaxed text-white/70">
+              "Current cluster humidity is 62%. Risk of fungal growth is moderate. Ensure soil moisture does not exceed 55% for current crop stage."
+            </p>
+          </div>
+        </Card>
+      </div>
     </div>
   );
 }

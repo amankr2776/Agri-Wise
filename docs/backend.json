@@ -31,7 +31,7 @@
         "role": {
           "type": "string",
           "description": "The primary role of the user (e.g., Farmer, Expert, Authority, Logistics).",
-          "enum": ["Farmer", "Expert", "Authority", "Logistics"]
+          "enum": ["Expert", "Authority", "Logistics"]
         },
         "preferredLanguage": {
           "type": "string",
@@ -56,7 +56,8 @@
         "latitude": { "type": "number" },
         "longitude": { "type": "number" },
         "state": { "type": "string" },
-        "reportedAt": { "type": "string", "format": "date-time" }
+        "reportedAt": { "type": "string", "format": "date-time" },
+        "predictedMovementVector": { "type": "string", "description": "AI predicted direction of spread (e.g., 'North-West')" }
       }
     },
     "CropCertification": {
@@ -70,6 +71,18 @@
         "isCertified": { "type": "boolean", "description": "Whether the solution has been verified by an expert." },
         "region": { "type": "string" },
         "expertId": { "type": "string", "description": "ID of the scientist who certified the crop." }
+      }
+    },
+    "SoilData": {
+      "title": "Soil Data",
+      "type": "object",
+      "description": "Records of soil pH and moisture levels for localized fertilizer recommendations.",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "phLevel": { "type": "number", "minimum": 0, "maximum": 14 },
+        "moisturePercentage": { "type": "number", "minimum": 0, "maximum": 100 },
+        "recordedAt": { "type": "string", "format": "date-time" }
       }
     }
   },
@@ -96,7 +109,7 @@
         "definition": {
           "entityName": "PestOutbreak",
           "schema": { "$ref": "#/backend/entities/PestOutbreak" },
-          "description": "Real-time pest outbreak reports with geographic coordinates."
+          "description": "Real-time pest outbreak reports with geographic coordinates and predicted spread vectors."
         }
       },
       {
@@ -105,6 +118,14 @@
           "entityName": "CropCertification",
           "schema": { "$ref": "#/backend/entities/CropCertification" },
           "description": "Records of crop certification status across India."
+        }
+      },
+      {
+        "path": "/users/{userId}/soilHealth/{dataId}",
+        "definition": {
+          "entityName": "SoilData",
+          "schema": { "$ref": "#/backend/entities/SoilData" },
+          "description": "Historical soil health records for a specific user cluster."
         }
       }
     ]
