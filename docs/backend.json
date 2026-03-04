@@ -1,4 +1,3 @@
-
 {
   "entities": {
     "User": {
@@ -16,42 +15,51 @@
         "city": { "type": "string" },
         "state": { "type": "string" },
         "phone": { "type": "string" },
-        "basePrice": { "type": "number", "description": "Default price per KM for logistics providers" }
+        "basePrice": { "type": "number", "description": "Default price per KM for logistics providers" },
+        "expertise": { "type": "string", "description": "Specialized crop expertise" }
       },
       "required": ["id", "role"]
     },
-    "Vehicle": {
-      "title": "Vehicle",
+    "Post": {
+      "title": "Post",
       "type": "object",
       "properties": {
         "id": { "type": "string" },
-        "ownerId": { "type": "string" },
-        "agencyName": { "type": "string" },
-        "type": { "type": "string", "enum": ["Mini Truck (2T)", "Heavy Truck (15T)", "Pickup Van (1T)", "Refrigerated Van (5T)", "Tractor Trailer (8T)"] },
-        "plateNumber": { "type": "string" },
-        "pricePerKm": { "type": "number" },
-        "contact": { "type": "string" },
-        "city": { "type": "string" },
-        "state": { "type": "string" },
-        "isAvailable": { "type": "boolean" },
+        "authorId": { "type": "string" },
+        "authorName": { "type": "string" },
+        "authorLocation": { "type": "string" },
+        "content": { "type": "string" },
+        "imageUrl": { "type": "string" },
+        "category": { "type": "string", "enum": ["Success Story", "Issue Alert", "Product Feedback", "General"] },
+        "likesCount": { "type": "number" },
+        "reactions": { "type": "object" },
+        "isVerified": { "type": "boolean" },
+        "expertise": { "type": "string" },
         "createdAt": { "type": "string", "format": "date-time" }
       }
     },
-    "Booking": {
-      "title": "Booking",
+    "Comment": {
+      "title": "Comment",
       "type": "object",
       "properties": {
         "id": { "type": "string" },
-        "farmerId": { "type": "string" },
-        "vehicleId": { "type": "string" },
-        "agencyName": { "type": "string" },
-        "cropType": { "type": "string" },
-        "distance": { "type": "number" },
-        "estimatedFare": { "type": "number" },
-        "status": { "type": "string", "enum": ["Pending", "Confirmed", "Picked Up", "In Transit", "Reached Destination"] },
-        "destination": { "type": "string" },
-        "createdAt": { "type": "string", "format": "date-time" },
-        "updatedAt": { "type": "string", "format": "date-time" }
+        "postId": { "type": "string" },
+        "authorId": { "type": "string" },
+        "authorName": { "type": "string" },
+        "content": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "Feedback": {
+      "title": "Feedback",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "targetId": { "type": "string", "description": "ID of vehicle, expert, or product being rated" },
+        "authorId": { "type": "string" },
+        "rating": { "type": "number", "minimum": 1, "maximum": 5 },
+        "comment": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
       }
     }
   },
@@ -65,12 +73,16 @@
         "definition": { "entityName": "User", "schema": { "$ref": "#/backend/entities/User" }, "description": "User profile data." }
       },
       {
-        "path": "/vehicles/{vehicleId}",
-        "definition": { "entityName": "Vehicle", "schema": { "$ref": "#/backend/entities/Vehicle" }, "description": "Logistics fleet inventory." }
+        "path": "/posts/{postId}",
+        "definition": { "entityName": "Post", "schema": { "$ref": "#/backend/entities/Post" }, "description": "Community social posts." }
       },
       {
-        "path": "/bookings/{bookingId}",
-        "definition": { "entityName": "Booking", "schema": { "$ref": "#/backend/entities/Booking" }, "description": "Shipment transactions." }
+        "path": "/posts/{postId}/comments/{commentId}",
+        "definition": { "entityName": "Comment", "schema": { "$ref": "#/backend/entities/Comment" }, "description": "Comments on social posts." }
+      },
+      {
+        "path": "/feedback/{feedbackId}",
+        "definition": { "entityName": "Feedback", "schema": { "$ref": "#/backend/entities/Feedback" }, "description": "User ratings and reviews." }
       }
     ]
   }

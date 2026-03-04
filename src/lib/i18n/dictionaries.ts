@@ -56,7 +56,10 @@ export const UI_MESSAGES: Record<string, any> = {
     per_quintal: "per Quintal",
     price_change: "24h Change",
     seven_day_trend: "7-Day Trend",
-    nearby_markets: "Nearby Mandi Comparison"
+    nearby_markets: "Nearby Mandi Comparison",
+    success_story: "Success Story",
+    issue_alert: "Issue Alert",
+    product_feedback: "Product Feedback"
   },
   Hindi: {
     dashboard: "डैशबोर्ड",
@@ -114,41 +117,10 @@ export const UI_MESSAGES: Record<string, any> = {
     per_quintal: "प्रति क्विंटल",
     price_change: "24 घंटे का बदलाव",
     seven_day_trend: "7-दिन का रुझान",
-    nearby_markets: "निकटतम मंडी तुलना"
-  },
-  Punjabi: {
-    dashboard: "ਡੈਸ਼ਬੋਰਡ",
-    welcome: "ਸਤਿ ਸ੍ਰੀ ਅਕਾਲ",
-    field_status: "{city} ਵਿੱਚ ਤੁਹਾਡੇ ਖੇਤ ਤੰਦਰੁਸਤ ਲੱਗ ਰਹੇ ਹਨ।",
-    ai_scan: "AI ਫੀਲਡ ਸਕੈਨ",
-    report_issue: "ਨਵੀਂ ਸਮੱਸਿਆ ਦੀ ਰਿਪੋਰਟ ਕਰੋ",
-    settings: "ਸੈਟਿੰਗਾਂ",
-    market: "ਮੰਡੀ ਦੀ ਜਾਣਕਾਰੀ",
-    network: "ਕਿਸਾਨ ਨੈੱਟਵਰਕ",
-    logout: "ਲੌਗਆਉਟ",
-    save: "ਪ੍ਰੋਫਾਈਲ ਸੇਵ ਕਰੋ",
-    verified_expert: "ਮਾਹਿਰ ਦੁਆਰਾ ਪ੍ਰਮਾਣਿਤ",
-    chemical_cure: "ਪੇਸ਼ੇਵਰ ਇਲਾਜ",
-    heritage_wisdom: "ਵਿਰਾਸਤੀ ਗਿਆਨ",
-    mandi_price: "ਮੰਡੀ ਦਾ ਭਾਅ",
-    active_alerts: "ਸਰਗਰਮ ਅਲਰਟ",
-    best_price: "ਅੱਜ ਦਾ ਸਭ ਤੋਂ ਵਧੀਆ ਭਾਅ",
-    active_shipments: "ਸਰਗਰਮ ਸ਼ਿਪਮੈਂਟ",
-    shortcuts: "ਕੁਇੱਕ ਸ਼ਾਰਟਕੱਟ",
-    fleet_hub: "ਫਲੀਟ ਹੱਬ",
-    mandi_link: "ਮੰਡੀ-ਲਿੰਕ",
-    diagnostics: "ਫਸਲ ਨਿਦਾਨ",
-    transport: "ਟਰਾਂਸਪੋਰਟ ਲੱਭੋ",
-    shipments: "ਸ਼ਿਪਮੈਂਟ ਟ੍ਰੈਕਿੰਗ",
-    profile: "ਪ੍ਰੋਫਾਈਲ ਪਛਾਣ",
-    language: "ਭਾਸ਼ਾ ਤਰਜੀਹ",
-    track_order: "ਟ੍ਰੈਕ ਕਰੋ",
-    last_updated: "ਅੰਤਿਮ ਅਪਡੇਟ",
-    net_profit: "ਸ਼ੁੱਧ ਮੁਨਾਫਾ",
-    transport_cost: "ਟਰਾਂਸਪੋਰਟ ਖਰਚਾ",
-    per_quintal: "ਪ੍ਰਤੀ ਕੁਇੰਟਲ",
-    price_change: "24 ਘੰਟੇ ਦੀ ਤਬਦੀਲੀ",
-    seven_day_trend: "7-ਦਿਨ ਦਾ ਰੁਝਾਨ"
+    nearby_markets: "निकटतम मंडी तुलना",
+    success_story: "सफलता की कहानी",
+    issue_alert: "समस्या अलर्ट",
+    product_feedback: "उत्पाद प्रतिक्रिया"
   }
 };
 
