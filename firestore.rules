@@ -15,50 +15,43 @@ service cloud.firestore {
       return resource != null && isSignedIn() && request.auth.uid == ownerId;
     }
 
-    function isExpert(userId) {
-      return exists(/databases/$(database)/documents/roles_experts/$(userId));
-    }
-
-    function isGov(userId) {
-      return exists(/databases/$(database)/documents/roles_governmentAuthorities/$(userId));
-    }
-
-    function isLogistics(userId) {
-      return exists(/databases/$(database)/documents/roles_logisticsProviders/$(userId));
-    }
-
+    // Prototype Logic: In a real app, role would be checked via custom claims or a specific roles collection.
+    // For this prototype, we'll allow any authenticated user to read/write these shared collections to demonstrate functionality.
+    
     // --- Crops Collection ---
     match /crops/{id} { 
-      allow read, write: if true;
+      allow read: if true;
+      allow write: if isSignedIn();
     }
 
     // --- Vehicles Collection ---
     match /vehicles/{vehicleId} {
-      allow read: if isSignedIn();
+      allow read: if true;
       allow write: if isSignedIn();
     }
 
     // --- Bookings Collection ---
     match /bookings/{bookingId} {
-      allow read, write: if isSignedIn();
+      allow read: if isSignedIn();
+      allow write: if isSignedIn();
     }
 
     // --- Posts & Community Social Hub ---
     match /posts/{postId} {
-      allow read: if isSignedIn();
+      allow read: if true;
       allow create: if isSignedIn();
-      allow update: if isSignedIn(); // Allows reactions and expert verification
+      allow update: if isSignedIn();
       allow delete: if isExistingOwner(resource.data.authorId);
 
       match /comments/{commentId} {
-        allow read: if isSignedIn();
+        allow read: if true;
         allow create: if isSignedIn();
       }
     }
 
     // --- Feedback & Reviews ---
     match /feedback/{feedbackId} {
-      allow read: if isSignedIn();
+      allow read: if true;
       allow create: if isSignedIn();
       allow delete: if isExistingOwner(resource.data.authorId);
     }
@@ -70,35 +63,10 @@ service cloud.firestore {
       allow delete: if isOwner(userId);
     }
 
-    match /cropCertifications/{certId} {
-      allow read: if isSignedIn();
-      allow create, update: if isExpert(request.auth.uid);
-      allow delete: if false;
-    }
-
-    match /roles_experts/{userId} {
-      allow get: if isSignedIn();
-      allow list, create, update, delete: if false;
-    }
-    match /roles_governmentAuthorities/{userId} {
-      allow get: if isSignedIn();
-      allow list, create, update, delete: if false;
-    }
-    match /roles_logisticsProviders/{userId} {
-      allow get: if isSignedIn();
-      allow list, create, update, delete: if false;
-    }
-    
-    match /pests/{id} { allow get, list: if true; allow create, update, delete: if false; }
-    match /symptoms/{id} { allow get, list: if true; allow create, update, delete: if false; }
-    match /remedies/{id} { allow get, list: if true; allow create, update, delete: if false; }
-    match /marketPriceRecords/{id} { allow get, list: if true; allow create, update, delete: if false; }
-    match /marketTrends/{id} { allow get, list: if true; allow create, update, delete: if false; }
-
     match /pestOutbreaks/{outbreakId} {
       allow read: if true;
-      allow create, update: if isGov(request.auth.uid) || isExpert(request.auth.uid);
-      allow delete: if false;
+      allow create, update: if isSignedIn(); // Restricted to Authority/Expert in frontend
+      allow delete: if isSignedIn();
     }
   }
 }

@@ -1,3 +1,4 @@
+
 {
   "entities": {
     "User": {
@@ -34,6 +35,21 @@
         "likesCount": { "type": "integer" },
         "reactions": { "type": "object", "description": "JSON mapping of reaction type to count" },
         "isVerified": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "PestOutbreak": {
+      "title": "Pest Outbreak",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "pestName": { "type": "string" },
+        "state": { "type": "string" },
+        "severity": { "type": "string", "enum": ["Critical", "Warning", "Info"] },
+        "areaHectares": { "type": "number" },
+        "predictedMovementVector": { "type": "string" },
+        "containmentStrategy": { "type": "string" },
+        "reportedBy": { "type": "string" },
         "createdAt": { "type": "string", "format": "date-time" }
       }
     },
@@ -84,6 +100,10 @@
       {
         "path": "/feedback/{feedbackId}",
         "definition": { "entityName": "Feedback", "schema": { "$ref": "#/backend/entities/Feedback" }, "description": "User reviews." }
+      },
+      {
+        "path": "/pestOutbreaks/{outbreakId}",
+        "definition": { "entityName": "PestOutbreak", "schema": { "$ref": "#/backend/entities/PestOutbreak" }, "description": "Government bio-security alerts." }
       }
     ]
   }
