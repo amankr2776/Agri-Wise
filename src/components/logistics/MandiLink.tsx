@@ -109,7 +109,7 @@ export function MandiLink() {
   };
 
   return (
-    <div className="space-y-10 animate-in fade-in duration-500 max-w-7xl mx-auto pb-20">
+    <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-10 animate-in fade-in duration-500 max-w-7xl mx-auto pb-20">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
           <h2 className="text-4xl font-black tracking-tighter text-slate-900 flex items-center gap-3">
@@ -118,12 +118,12 @@ export function MandiLink() {
           </h2>
           <p className="text-muted-foreground font-medium mt-1 uppercase text-[10px] tracking-[0.2em]">Active Logistics Grid & Fare Intelligence</p>
         </div>
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="bg-white p-1 rounded-full shadow-sm border">
+        <div className="bg-white p-1 rounded-full shadow-sm border">
           <TabsList className="bg-transparent border-none">
             <TabsTrigger value="browse" className="rounded-full px-8 h-10 data-[state=active]:bg-primary data-[state=active]:text-white font-black text-xs uppercase tracking-widest">{t("transport")}</TabsTrigger>
             <TabsTrigger value="bookings" className="rounded-full px-8 h-10 data-[state=active]:bg-primary data-[state=active]:text-white font-black text-xs uppercase tracking-widest">{t("shipments")}</TabsTrigger>
           </TabsList>
-        </Tabs>
+        </div>
       </div>
 
       <TabsContent value="browse" className="space-y-10 m-0">
@@ -349,6 +349,6 @@ export function MandiLink() {
           </div>
         )}
       </TabsContent>
-    </div>
+    </Tabs>
   );
 }
