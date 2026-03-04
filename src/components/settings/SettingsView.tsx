@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/select";
 import { useAppState, AppLanguage } from "@/lib/app-state";
 import { useToast } from "@/hooks/use-toast";
+import { useTranslation } from "@/hooks/use-translation";
 import { cn } from "@/lib/utils";
 
 const LANGUAGES: AppLanguage[] = [
@@ -40,6 +41,7 @@ const LANGUAGES: AppLanguage[] = [
 
 export function SettingsView() {
   const { toast } = useToast();
+  const { t } = useTranslation();
   const { 
     language, 
     setLanguage, 
@@ -114,7 +116,7 @@ export function SettingsView() {
             <CardHeader className="p-8 pb-4">
               <CardTitle className="flex items-center gap-3 text-xl font-black">
                 <User className="h-5 w-5 text-primary" />
-                Farmer Profile
+                {t('welcome')} Profile
               </CardTitle>
               <CardDescription className="font-medium">Update your core identity details.</CardDescription>
             </CardHeader>
@@ -202,7 +204,7 @@ export function SettingsView() {
                 </p>
               </div>
               <Button onClick={handleSave} className="w-full h-12 rounded-xl bg-white text-primary hover:bg-white/90 font-black gap-2 shadow-xl">
-                <Save className="h-4 w-4" /> Save All Intelligence
+                <Save className="h-4 w-4" /> {t('save')}
               </Button>
             </div>
           </Card>

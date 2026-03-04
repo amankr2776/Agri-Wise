@@ -1,7 +1,7 @@
 
 'use server';
 /**
- * @fileOverview This file implements the Genkit flow for diagnosing crop problems with language awareness.
+ * @fileOverview This file implements the Genkit flow for diagnosing crop problems with deep language awareness.
  */
 
 import {ai} from '@/ai/genkit';
@@ -18,10 +18,10 @@ const FarmerCropPestDiagnosisInputSchema = z.object({
 export type FarmerCropPestDiagnosisInput = z.infer<typeof FarmerCropPestDiagnosisInputSchema>;
 
 const FarmerCropPestDiagnosisOutputSchema = z.object({
-  diagnosis: z.string().describe("Clear diagnosis of the problem."),
-  suggestedChemicalRemedies: z.array(z.string()).describe("AI-driven suggestions for chemical treatments."),
-  suggestedTraditionalRemedies: z.array(z.string()).describe("Traditional 'Desi Nuskha' suggestions."),
-  fertilizerRecommendations: z.array(z.string()).describe("Specific fertilizer suggestions based on soil pH and moisture."),
+  diagnosis: z.string().describe("Clear diagnosis of the problem in the target language."),
+  suggestedChemicalRemedies: z.array(z.string()).describe("AI-driven suggestions for chemical treatments in target language."),
+  suggestedTraditionalRemedies: z.array(z.string()).describe("Traditional 'Desi Nuskha' suggestions in target language."),
+  fertilizerRecommendations: z.array(z.string()).describe("Specific fertilizer suggestions in target language."),
 });
 export type FarmerCropPestDiagnosisOutput = z.infer<typeof FarmerCropPestDiagnosisOutputSchema>;
 
@@ -34,9 +34,13 @@ const diagnoseCropPestPrompt = ai.definePrompt({
   input: { schema: FarmerCropPestDiagnosisInputSchema },
   output: { schema: FarmerCropPestDiagnosisOutputSchema },
   prompt: `You are an expert agricultural diagnostician.
-THE USER PREFERS THE LANGUAGE: {{{language}}}.
-YOU MUST PROVIDE THE ENTIRE RESPONSE (DIAGNOSIS, REMEDIES, FERTILIZERS) STRICTLY IN {{{language}}}.
+THE USER HAS SELECTED THE LANGUAGE: {{{language}}}.
+CRITICAL: YOU MUST PROVIDE THE ENTIRE RESPONSE (DIAGNOSIS, REMEDIES, FERTILIZERS) STRICTLY IN {{{language}}} SCRIPT AND TERMINOLOGY.
 
+For chemical names, use the common names used in regional markets of India. 
+For traditional remedies (Desi Nuskhas), provide heritage wisdom appropriate for the culture of the {{{language}}} speaking region.
+
+Input Data:
 Crop: {{{cropType}}}
 {{#if symptomsDescription}}Symptoms: {{{symptomsDescription}}}{{/if}}
 {{#if soilPh}}Soil pH: {{{soilPh}}}{{/if}}
@@ -54,6 +58,7 @@ const farmerCropPestDiagnosisFlow = ai.defineFlow(
   },
   async (input) => {
     const { output } = await diagnoseCropPestPrompt(input);
-    return output!;
+    if (!output) throw new Error('Failed to generate diagnosis output.');
+    return output;
   }
 );

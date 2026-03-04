@@ -1,10 +1,7 @@
+
 'use server';
 /**
- * @fileOverview A conversational AI voice assistant for farmers.
- *
- * - voiceAssistantGuidance - A function that handles the voice assistant's response generation.
- * - VoiceAssistantGuidanceInput - The input type for the voiceAssistantGuidance function.
- * - VoiceAssistantGuidanceOutput - The return type for the voiceAssistantGuidance function.
+ * @fileOverview A conversational AI voice assistant for farmers with deep regional language support.
  */
 
 import {ai} from '@/ai/genkit';
@@ -18,11 +15,11 @@ const VoiceAssistantGuidanceInputSchema = z.object({
 export type VoiceAssistantGuidanceInput = z.infer<typeof VoiceAssistantGuidanceInputSchema>;
 
 const VoiceAssistantGuidanceOutputSchema = z.object({
-  text: z.string().describe("The text version of the AI response."),
+  text: z.string().describe("The text version of the AI response in the target language."),
   audioDataUri: z
     .string()
     .describe(
-      "The audio response from the AI assistant as a data URI that must include a MIME type (audio/wav) and use Base64 encoding. Expected format: 'data:audio/wav;base64,<encoded_audio_data>'"
+      "The audio response from the AI assistant as a data URI that must include a MIME type (audio/wav) and use Base64 encoding."
     ),
 });
 export type VoiceAssistantGuidanceOutput = z.infer<typeof VoiceAssistantGuidanceOutputSchema>;
@@ -40,15 +37,15 @@ const voiceAssistantGuidanceFlow = ai.defineFlow(
     outputSchema: VoiceAssistantGuidanceOutputSchema,
   },
   async input => {
-    // First, generate a text response from the LLM in the target language
+    // Generate a response in the target language
     const {text: textResponse} = await ai.generate({
-      prompt: `You are an expert agricultural AI assistant. 
+      prompt: `You are an expert agricultural AI assistant for the KisanMitra platform. 
 The farmer is asking a question in ${input.language}. 
-PLEASE RESPOND ENTIRELY IN ${input.language}. 
+YOU MUST RESPOND ENTIRELY IN ${input.language} SCRIPT. 
 
 Farmer's Question: ${input.query}
 
-Provide a concise, helpful, and friendly answer suitable for verbal delivery.`,
+Provide a concise, helpful, and friendly answer suitable for verbal delivery in the local agricultural context.`,
       model: 'googleai/gemini-2.5-flash',
     });
 
@@ -56,7 +53,7 @@ Provide a concise, helpful, and friendly answer suitable for verbal delivery.`,
       throw new Error('No text response generated.');
     }
 
-    // Second, convert the text response to speech using TTS
+    // Convert to speech
     const {media} = await ai.generate({
       model: 'googleai/gemini-2.5-flash-preview-tts',
       config: {

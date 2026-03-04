@@ -36,15 +36,23 @@
     --muted: 162 20% 15%;
   }
 
-  /* Regional Font Logic */
+  [data-theme='contrast'] {
+    --background: 0 0% 100%;
+    --foreground: 0 0% 0%;
+    --primary: 0 0% 0%;
+    --primary-foreground: 0 0% 100%;
+    --border: 0 0% 0%;
+  }
+
+  /* Regional Font & Variable Script Height Logic */
   [data-lang="Hindi"], [data-lang="Marathi"], [data-lang="Bhojpuri"], [data-lang="Haryanvi"], [data-lang="Rajasthani"], [data-lang="Magahi"], [data-lang="Pahadi"] {
     font-family: 'Mukta', sans-serif !important;
     line-height: 1.6;
   }
 
-  [data-lang="Kannada"] {
+  [data-lang="Kannada"], [data-lang="Telugu"] {
     font-family: 'Noto Sans Kannada', sans-serif !important;
-    line-height: 1.8;
+    line-height: 1.85; /* Increased for Dravidian glyphs */
   }
 
   [data-lang="Tamil"] {
@@ -52,14 +60,14 @@
     line-height: 1.8;
   }
 
-  [data-lang="Telugu"] {
-    font-family: 'Noto Sans Telugu', sans-serif !important;
-    line-height: 1.8;
-  }
-
   [data-lang="Malayalam"] {
     font-family: 'Noto Sans Malayalam', sans-serif !important;
-    line-height: 1.8;
+    line-height: 1.9;
+  }
+
+  [data-lang="Bengali"], [data-lang="Oriya"] {
+    font-family: 'Inter', sans-serif; /* Fallback until specific fonts loaded */
+    line-height: 1.7;
   }
 }
 
@@ -73,7 +81,7 @@
 }
 
 .glass-card {
-  @apply bg-white/50 backdrop-blur-md border border-white/20 shadow-xl;
+  @apply bg-white/70 backdrop-blur-md border border-white/20 shadow-2xl;
 }
 
 .touch-target {
@@ -92,4 +100,9 @@
 .verified-expert-glow {
   border: 2px solid #eab308;
   box-shadow: 0 0 15px #eab308;
+}
+
+/* layout resilience for longer translations */
+.flex-wrap-resilient {
+  @apply flex flex-wrap gap-2 overflow-hidden;
 }
