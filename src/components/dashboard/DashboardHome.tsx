@@ -12,7 +12,7 @@ import {
   ChevronRight,
   Zap
 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
@@ -22,10 +22,10 @@ interface DashboardHomeProps {
 
 export function DashboardHome({ onNavigate }: DashboardHomeProps) {
   const stats = [
-    { label: "Active Alerts", value: "3", icon: AlertTriangle, color: "text-destructive", bg: "bg-destructive/10" },
-    { label: "Best Price Today", value: "₹2,150/q", sub: "Wheat (Nashik)", icon: TrendingUp, color: "text-primary", bg: "bg-primary/10" },
-    { label: "Active Shipments", value: "2", icon: Truck, color: "text-blue-500", bg: "bg-blue-500/10" },
-    { label: "Community Posts", value: "12", icon: Users, color: "text-amber-500", bg: "bg-amber-500/10" },
+    { id: "market", label: "Active Alerts", value: "3", icon: AlertTriangle, color: "text-destructive", bg: "bg-destructive/10" },
+    { id: "market", label: "Best Price Today", value: "₹2,150/q", sub: "Wheat (Nashik)", icon: TrendingUp, color: "text-primary", bg: "bg-primary/10" },
+    { id: "fleet", label: "Active Shipments", value: "2", icon: Truck, color: "text-blue-500", bg: "bg-blue-500/10" },
+    { id: "network", label: "Community Posts", value: "12", icon: Users, color: "text-amber-500", bg: "bg-amber-500/10" },
   ];
 
   const quickActions = [
@@ -62,7 +62,11 @@ export function DashboardHome({ onNavigate }: DashboardHomeProps) {
       {/* Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {stats.map((stat, i) => (
-          <Card key={i} className="border-none shadow-sm hover:shadow-md transition-shadow rounded-2xl">
+          <Card 
+            key={i} 
+            className="border-none shadow-sm hover:shadow-xl hover:scale-[1.02] transition-all cursor-pointer rounded-2xl"
+            onClick={() => onNavigate(stat.id)}
+          >
             <CardContent className="p-6 flex items-center justify-between">
               <div className="space-y-1">
                 <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">{stat.label}</p>
@@ -102,12 +106,22 @@ export function DashboardHome({ onNavigate }: DashboardHomeProps) {
       {/* Recent Alerts */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-xl font-bold">Recent Alerts</h2>
-          <Button variant="link" className="text-primary font-bold">View History</Button>
+          <h2 className="text-xl font-bold">Recent Intelligence Alerts</h2>
+          <Button 
+            variant="link" 
+            className="text-primary font-bold"
+            onClick={() => onNavigate("market")}
+          >
+            View History
+          </Button>
         </div>
         <div className="grid grid-cols-1 gap-4">
           {alerts.map((alert, i) => (
-            <Card key={i} className="border-none shadow-sm rounded-2xl overflow-hidden hover:bg-muted/50 transition-colors">
+            <Card 
+              key={i} 
+              className="border-none shadow-sm rounded-2xl overflow-hidden hover:bg-muted/50 cursor-pointer transition-all hover:translate-x-1"
+              onClick={() => onNavigate("market")}
+            >
               <CardContent className="p-0 flex items-center">
                 <div className={`w-1.5 self-stretch ${
                   alert.type === 'Critical' ? 'bg-destructive' : alert.type === 'Warning' ? 'bg-amber-500' : 'bg-blue-500'

@@ -15,7 +15,8 @@ import {
   Search,
   Zap,
   Loader2,
-  RefreshCw
+  RefreshCw,
+  Info
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -37,6 +38,7 @@ import {
   ResponsiveContainer 
 } from "recharts";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 
 const STATES = [
@@ -85,6 +87,7 @@ interface MarketIntelligenceProps {
 }
 
 export function MarketIntelligence({ searchQuery = "" }: MarketIntelligenceProps) {
+  const { toast } = useToast();
   const [selectedCrop, setSelectedCrop] = useState("Wheat");
   const [selectedState, setSelectedState] = useState("Punjab");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -94,7 +97,6 @@ export function MarketIntelligence({ searchQuery = "" }: MarketIntelligenceProps
     if (searchQuery) setLocalSearch(searchQuery);
   }, [searchQuery]);
 
-  // Generate dynamic chart data based on selected crop and state
   const chartData = useMemo(() => {
     const seed = selectedCrop.length + selectedState.length;
     const basePrice = 1500 + (seed * 20);
@@ -108,7 +110,6 @@ export function MarketIntelligence({ searchQuery = "" }: MarketIntelligenceProps
     ];
   }, [selectedCrop, selectedState]);
 
-  // Generate dynamic table data for the selected state
   const tableData = useMemo(() => {
     const seed = selectedState.length;
     const items = CROPS.filter(c => c.name.toLowerCase().includes(localSearch.toLowerCase()));
@@ -147,16 +148,26 @@ export function MarketIntelligence({ searchQuery = "" }: MarketIntelligenceProps
     };
   }, [selectedCrop, selectedState, chartData]);
 
+  const handleRowClick = (row: any) => {
+    toast({
+      title: `${row.crop} Mandi Insight`,
+      description: `Current trend in ${row.mandi} is ${row.trend}. Volume is high.`,
+    });
+  };
+
   const handleStrategyExecution = () => {
     setIsAnalyzing(true);
     setTimeout(() => {
       setIsAnalyzing(false);
+      toast({
+        title: "Strategy Synchronized",
+        description: `Your ${forecast.action} directive for ${selectedCrop} has been applied to your portfolio.`,
+      });
     }, 1500);
   };
 
   return (
     <div className="space-y-10 max-w-7xl mx-auto pb-16 animate-in fade-in duration-700">
-      {/* Search and Filter Section */}
       <div className="flex flex-col lg:flex-row gap-6 items-start lg:items-center justify-between">
         <div className="flex flex-wrap gap-4 w-full lg:w-auto">
           <div className="space-y-1.5 flex-1 min-w-[200px]">
@@ -206,11 +217,11 @@ export function MarketIntelligence({ searchQuery = "" }: MarketIntelligenceProps
             { label: "Mandi Avg", val: `₹${(Math.round(chartData.reduce((a, b) => a + b.price, 0) / 6)).toLocaleString()}`, sub: "Seasonal Avg", icon: BarChart3, color: "text-slate-700" },
             { label: "Risk Factor", val: forecast.confidence > 90 ? "High" : "Stable", sub: "Market Volatility", icon: AlertCircle, color: forecast.confidence > 90 ? "text-destructive" : "text-blue-600" },
           ].map((s, i) => (
-            <Card key={i} className="glass-card rounded-3xl p-5 border-none flex flex-col justify-between h-28 border-b-4 border-b-transparent hover:border-b-primary transition-all">
+            <Card key={i} className="glass-card rounded-3xl p-5 border-none flex flex-col justify-between h-28 border-b-4 border-b-transparent hover:border-b-primary transition-all cursor-help group">
               <p className="text-[9px] uppercase font-black text-muted-foreground tracking-widest">{s.label}</p>
               <div className="flex items-center justify-between">
                 <p className={cn("text-xl font-black", s.color)}>{s.val}</p>
-                <div className={cn("h-8 w-8 rounded-full flex items-center justify-center bg-muted/50")}>
+                <div className={cn("h-8 w-8 rounded-full flex items-center justify-center bg-muted/50 group-hover:scale-110 transition-transform")}>
                   <s.icon className={cn("h-4 w-4", s.color)} />
                 </div>
               </div>
@@ -221,18 +232,17 @@ export function MarketIntelligence({ searchQuery = "" }: MarketIntelligenceProps
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        {/* Main Chart */}
-        <Card className="lg:col-span-8 glass-card rounded-[3rem] overflow-hidden border-none">
+        <Card className="lg:col-span-8 glass-card rounded-[3rem] overflow-hidden border-none shadow-xl">
           <CardHeader className="p-10 border-b bg-slate-50/50 flex flex-row items-center justify-between">
             <div className="space-y-1">
               <CardTitle className="text-2xl font-black flex items-center gap-3">
                 <TrendingUp className="h-7 w-7 text-primary" />
-                {selectedCrop} Price Index: {selectedState}
+                {selectedCrop} Past Trend & Forecast
               </CardTitle>
-              <p className="text-sm font-medium text-muted-foreground">Historical trajectory for the current agricultural cycle</p>
+              <p className="text-sm font-medium text-muted-foreground">Detailed trajectory for the current agricultural cycle</p>
             </div>
             <div className="flex items-center gap-2">
-              <Badge variant="secondary" className="bg-primary/10 text-primary border-none px-3 font-black text-[10px] uppercase">Live Feed</Badge>
+              <Badge variant="secondary" className="bg-primary/10 text-primary border-none px-3 font-black text-[10px] uppercase">Verified Pulse</Badge>
             </div>
           </CardHeader>
           <CardContent className="p-10">
@@ -259,6 +269,7 @@ export function MarketIntelligence({ searchQuery = "" }: MarketIntelligenceProps
                     tick={{ fontSize: 12, fontWeight: 700, fill: '#94a3b8' }}
                   />
                   <Tooltip 
+                    cursor={{ stroke: 'hsl(var(--primary))', strokeWidth: 2, strokeDasharray: '5 5' }}
                     contentStyle={{ 
                       borderRadius: '24px', 
                       border: 'none', 
@@ -282,8 +293,7 @@ export function MarketIntelligence({ searchQuery = "" }: MarketIntelligenceProps
           </CardContent>
         </Card>
 
-        {/* AI Analysis Card */}
-        <Card className="lg:col-span-4 glass-card rounded-[3rem] bg-slate-950 p-10 text-white relative overflow-hidden group border-none">
+        <Card className="lg:col-span-4 glass-card rounded-[3rem] bg-slate-950 p-10 text-white relative overflow-hidden group border-none shadow-2xl">
           <div className="absolute top-0 right-0 p-12 opacity-5 group-hover:scale-125 transition-transform duration-700">
             <Zap className="h-64 w-64 rotate-12" />
           </div>
@@ -334,7 +344,7 @@ export function MarketIntelligence({ searchQuery = "" }: MarketIntelligenceProps
                   <Loader2 className="h-6 w-6 animate-spin" />
                 ) : (
                   <>
-                    Execute Mandi Strategy <ArrowRight className="h-5 w-5 ml-2 group-hover:translate-x-2 transition-transform" />
+                    Apply Mandi Strategy <ArrowRight className="h-5 w-5 ml-2 group-hover:translate-x-2 transition-transform" />
                   </>
                 )}
               </Button>
@@ -343,25 +353,24 @@ export function MarketIntelligence({ searchQuery = "" }: MarketIntelligenceProps
         </Card>
       </div>
 
-      {/* Mandi Intelligence Feed */}
-      <Card className="glass-card rounded-[3rem] overflow-hidden border-none">
+      <Card className="glass-card rounded-[3rem] overflow-hidden border-none shadow-xl">
         <div className="p-10 border-b flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-slate-50/50">
           <div className="space-y-1">
             <CardTitle className="text-2xl font-black">Live Mandi Hub Feed: {selectedState}</CardTitle>
-            <p className="text-sm font-medium text-muted-foreground">Real-time commodity valuation across major regional trading hubs.</p>
+            <p className="text-sm font-medium text-muted-foreground">Click any record for deep-dive regional intelligence.</p>
           </div>
           <div className="flex gap-3">
             <div className="relative w-64">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-              <Input 
-                placeholder="Filter Mandi list..." 
+              <input 
+                placeholder="Filter results..." 
                 value={localSearch}
                 onChange={(e) => setLocalSearch(e.target.value)}
-                className="pl-9 h-11 rounded-xl bg-background/50 border-none font-bold"
+                className="pl-9 h-11 w-full rounded-xl bg-background/50 border-none font-bold text-sm focus:ring-2 focus:ring-primary/20"
               />
             </div>
             <Button variant="outline" className="rounded-xl gap-2 border-border font-bold h-11 px-6 shadow-sm hover:bg-primary hover:text-white transition-all">
-              <Calendar className="h-4 w-4" /> Export
+              <Calendar className="h-4 w-4" /> Schedule Alert
             </Button>
           </div>
         </div>
@@ -380,15 +389,19 @@ export function MarketIntelligence({ searchQuery = "" }: MarketIntelligenceProps
               <TableHeader className="bg-muted/30">
                 <TableRow className="hover:bg-transparent border-none">
                   <TableHead className="font-black text-[11px] uppercase tracking-widest px-10 py-6 text-slate-500">Commodity</TableHead>
-                  <TableHead className="font-black text-[11px] uppercase tracking-widest text-slate-500">Regional Hub (Mandi)</TableHead>
+                  <TableHead className="font-black text-[11px] uppercase tracking-widest text-slate-500">Mandi Node</TableHead>
                   <TableHead className="font-black text-[11px] uppercase tracking-widest text-right text-slate-500">Price (₹/q)</TableHead>
-                  <TableHead className="font-black text-[11px] uppercase tracking-widest text-slate-500">Market Momentum</TableHead>
-                  <TableHead className="font-black text-[11px] uppercase tracking-widest text-right px-10 text-slate-500">24h Volatility</TableHead>
+                  <TableHead className="font-black text-[11px] uppercase tracking-widest text-slate-500">Momentum</TableHead>
+                  <TableHead className="font-black text-[11px] uppercase tracking-widest text-right px-10 text-slate-500">Volatility</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {tableData.map((row, i) => (
-                  <TableRow key={i} className="group hover:bg-slate-50/80 transition-all border-b border-slate-100 last:border-0">
+                  <TableRow 
+                    key={i} 
+                    className="group hover:bg-primary/5 transition-all border-b border-slate-100 last:border-0 cursor-pointer"
+                    onClick={() => handleRowClick(row)}
+                  >
                     <TableCell className="px-10 py-8">
                       <div className="flex flex-col gap-1.5">
                         <div className="flex items-center gap-3">
@@ -398,7 +411,7 @@ export function MarketIntelligence({ searchQuery = "" }: MarketIntelligenceProps
                         {row.alert && (
                           <div className="flex items-center gap-1.5">
                             <AlertCircle className="h-3 w-3 text-destructive animate-pulse" />
-                            <span className="text-[9px] font-black uppercase text-destructive tracking-widest">Surveillance Active</span>
+                            <span className="text-[9px] font-black uppercase text-destructive tracking-widest">High Volatility</span>
                           </div>
                         )}
                       </div>
@@ -406,7 +419,7 @@ export function MarketIntelligence({ searchQuery = "" }: MarketIntelligenceProps
                     <TableCell>
                       <div className="flex flex-col">
                         <span className="text-sm font-bold text-slate-700">{row.mandi}</span>
-                        <span className="text-[10px] text-muted-foreground font-medium">{row.state}</span>
+                        <span className="text-[10px] text-muted-foreground font-medium flex items-center gap-1"><MapPin className="h-2 w-2" /> {row.state}</span>
                       </div>
                     </TableCell>
                     <TableCell className="text-right">
@@ -417,7 +430,7 @@ export function MarketIntelligence({ searchQuery = "" }: MarketIntelligenceProps
                     </TableCell>
                     <TableCell>
                       <div className={cn(
-                        "flex items-center gap-2.5 px-4 py-2 rounded-2xl w-fit font-black text-[10px] uppercase tracking-widest border",
+                        "flex items-center gap-2.5 px-4 py-2 rounded-2xl w-fit font-black text-[10px] uppercase tracking-widest border transition-all group-hover:scale-105",
                         row.trend === 'up' ? 'bg-primary/5 text-primary border-primary/20' : 
                         row.trend === 'down' ? 'bg-destructive/5 text-destructive border-destructive/20' : 
                         'bg-slate-100 text-slate-500 border-slate-200'

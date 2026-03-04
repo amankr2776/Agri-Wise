@@ -13,11 +13,11 @@ import {
   Settings,
   LogOut,
   FlaskConical,
-  Globe,
   Loader2,
   Package,
   X,
-  RefreshCw
+  MessageCircle,
+  CheckCircle2
 } from "lucide-react";
 import { 
   SidebarProvider, 
@@ -34,6 +34,11 @@ import {
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { 
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { useAppState } from "@/lib/app-state";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -45,17 +50,18 @@ import { MarketIntelligence } from "@/components/market/MarketIntelligence";
 import { MandiLink } from "@/components/logistics/MandiLink";
 import { KisanNetwork } from "@/components/social/KisanNetwork";
 import { ExpertVerificationPortal } from "@/components/experts/ExpertVerificationPortal";
-import { MinistryIntelligence } from "@/components/gov/MinistryIntelligence";
 import { FleetManagement } from "@/components/logistics/FleetManagement";
 import { SettingsView } from "@/components/settings/SettingsView";
 
 export default function KisanMitraApp() {
   const router = useRouter();
   const { toast } = useToast();
-  const { role, isAuthenticated, logout } = useAppState();
+  const { role, isAuthenticated, logout, notifications, markNotificationsAsRead } = useAppState();
   const [activeSection, setActiveSection] = useState("dashboard");
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearching, setIsSearching] = useState(false);
+
+  const unreadCount = notifications.filter(n => !n.isRead).length;
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -65,7 +71,6 @@ export default function KisanMitraApp() {
 
   useEffect(() => {
     if (role === "Logistics") setActiveSection("fleet");
-    else if (role === "Authority") setActiveSection("gov-intel");
     else if (role === "Expert") setActiveSection("expert-portal");
     else setActiveSection("dashboard");
   }, [role]);
@@ -74,7 +79,6 @@ export default function KisanMitraApp() {
     if (!searchQuery.trim()) return;
     setIsSearching(true);
     
-    // Simulate manual search fetch
     setTimeout(() => {
       setIsSearching(false);
       toast({
@@ -111,7 +115,6 @@ export default function KisanMitraApp() {
       case "logistics": return <MandiLink />;
       case "network": return <KisanNetwork />;
       case "expert-portal": return <ExpertVerificationPortal />;
-      case "gov-intel": return <MinistryIntelligence />;
       case "fleet": return <FleetManagement />;
       case "settings": return <SettingsView />;
       default: return <DashboardHome onNavigate={setActiveSection} />;
@@ -119,14 +122,13 @@ export default function KisanMitraApp() {
   };
 
   const menuItems = [
-    { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, roles: ["Farmer", "Expert", "Authority", "Logistics"] },
-    { id: "diagnostics", label: "Crop Diagnostics", icon: Leaf, roles: ["Farmer", "Expert", "Authority", "Logistics"] },
-    { id: "market", label: "Market Intelligence", icon: TrendingUp, roles: ["Farmer", "Expert", "Authority", "Logistics"] },
+    { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, roles: ["Farmer", "Expert", "Logistics"] },
+    { id: "diagnostics", label: "Crop Diagnostics", icon: Leaf, roles: ["Farmer", "Expert", "Logistics"] },
+    { id: "market", label: "Market Intelligence", icon: TrendingUp, roles: ["Farmer", "Expert", "Logistics"] },
     { id: "expert-portal", label: "Verification Portal", icon: FlaskConical, roles: ["Expert"] },
-    { id: "gov-intel", label: "Ministry Intel", icon: Globe, roles: ["Authority"] },
     { id: "fleet", label: "Fleet Hub", icon: Truck, roles: ["Logistics"] },
     { id: "logistics", label: "Mandi-Link", icon: Package, roles: ["Farmer"] },
-    { id: "network", label: "Kisan Network", icon: Users, roles: ["Farmer", "Expert", "Authority", "Logistics"] },
+    { id: "network", label: "Kisan Network", icon: Users, roles: ["Farmer", "Expert", "Logistics"] },
   ];
 
   const filteredMenu = menuItems.filter(item => item.roles.includes(role));
@@ -208,10 +210,45 @@ export default function KisanMitraApp() {
               </Button>
             </div>
             <div className="flex items-center gap-4">
-              <Button variant="ghost" size="icon" className="relative touch-target rounded-full hover:bg-muted">
-                <Bell className="h-5 w-5" />
-                <Badge className="absolute top-1 right-1 h-4 w-4 flex items-center justify-center p-0 bg-destructive text-[9px] border-2 border-white">3</Badge>
-              </Button>
+              <Popover onOpenChange={(open) => open && markNotificationsAsRead()}>
+                <PopoverTrigger asChild>
+                  <Button variant="ghost" size="icon" className="relative touch-target rounded-full hover:bg-muted">
+                    <Bell className="h-5 w-5" />
+                    {unreadCount > 0 && (
+                      <Badge className="absolute top-1 right-1 h-4 w-4 flex items-center justify-center p-0 bg-destructive text-[9px] border-2 border-white">
+                        {unreadCount}
+                      </Badge>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-80 p-0 rounded-3xl overflow-hidden shadow-2xl border-none">
+                  <div className="bg-primary p-4 text-white">
+                    <h4 className="font-black text-xs uppercase tracking-widest">Grid Notifications</h4>
+                  </div>
+                  <div className="max-h-[400px] overflow-y-auto">
+                    {notifications.length === 0 ? (
+                      <div className="p-8 text-center text-muted-foreground">
+                        <CheckCircle2 className="h-10 w-10 mx-auto mb-2 opacity-20" />
+                        <p className="text-xs font-bold uppercase tracking-tighter">Your grid is clear</p>
+                      </div>
+                    ) : (
+                      notifications.map((n) => (
+                        <div key={n.id} className="p-4 border-b last:border-0 hover:bg-muted/30 transition-colors cursor-pointer">
+                          <div className="flex gap-3">
+                            <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary shrink-0">
+                              {n.type === 'like' ? <MessageCircle className="h-4 w-4" /> : <Users className="h-4 w-4" />}
+                            </div>
+                            <div className="space-y-1">
+                              <p className="text-xs font-bold text-slate-800">{n.message}</p>
+                              <p className="text-[10px] text-muted-foreground uppercase font-black">{n.from}</p>
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </PopoverContent>
+              </Popover>
               <div className="h-8 w-px bg-border hidden sm:block" />
               <div className="flex items-center gap-3 bg-muted/30 px-3 py-1.5 rounded-full border border-border/50">
                 <div className="hidden sm:block text-right">

@@ -1,4 +1,3 @@
-
 'use client';
 
 import React from "react";
@@ -9,8 +8,7 @@ import {
   Truck, 
   Users, 
   ChevronRight,
-  FlaskConical,
-  Globe
+  FlaskConical
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -41,14 +39,6 @@ export default function LoginPage() {
       accent: "text-blue-600"
     },
     { 
-      id: "Authority" as UserRole, 
-      label: "Govt. Authority", 
-      desc: "Monitor regional outbreaks and market inflation trends.", 
-      icon: Globe, 
-      color: "bg-amber-500",
-      accent: "text-amber-600"
-    },
-    { 
       id: "Logistics" as UserRole, 
       label: "Logistics Provider", 
       desc: "Manage your transport fleet and Mandi-Link deliveries.", 
@@ -59,7 +49,6 @@ export default function LoginPage() {
   ];
 
   const handleRoleSelection = (roleId: UserRole) => {
-    // Authenticate the user anonymously to provide a valid Firebase user context
     if (auth) {
       initiateAnonymousSignIn(auth);
     }
@@ -69,7 +58,6 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6 md:p-12 relative overflow-hidden">
-      {/* Decorative Background */}
       <div className="absolute top-[-10%] right-[-10%] w-[500px] h-[500px] bg-primary/5 rounded-full blur-3xl -z-10" />
       <div className="absolute bottom-[-10%] left-[-10%] w-[500px] h-[500px] bg-accent/5 rounded-full blur-3xl -z-10" />
 
@@ -86,14 +74,14 @@ export default function LoginPage() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {roles.map((role) => (
             <Card 
               key={role.id}
               onClick={() => handleRoleSelection(role.id)}
               className="group cursor-pointer border-none shadow-xl hover:shadow-2xl hover:scale-[1.02] transition-all duration-300 rounded-[2.5rem] bg-white overflow-hidden text-left"
             >
-              <CardContent className="p-8 flex items-center gap-6">
+              <CardContent className="p-8 flex flex-col items-start gap-6">
                 <div className={`h-16 w-16 ${role.color} rounded-2xl flex items-center justify-center text-white shadow-lg`}>
                   <role.icon className="h-8 w-8" />
                 </div>
@@ -101,7 +89,7 @@ export default function LoginPage() {
                   <h3 className={`text-2xl font-black tracking-tight ${role.accent}`}>{role.label}</h3>
                   <p className="text-sm text-muted-foreground font-medium leading-relaxed">{role.desc}</p>
                 </div>
-                <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-colors">
+                <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-colors self-end">
                   <ChevronRight className="h-5 w-5" />
                 </div>
               </CardContent>
