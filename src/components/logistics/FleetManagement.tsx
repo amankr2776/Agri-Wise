@@ -22,7 +22,9 @@ import {
   User,
   Building2,
   DollarSign,
-  Zap
+  Zap,
+  X,
+  Check
 } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -69,6 +71,11 @@ export function FleetManagement() {
   const [isAddVehicleOpen, setIsAddVehicleOpen] = useState(false);
   const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
   const [isSeeding, setIsSeeding] = useState(false);
+  
+  // Inline editing state for individual vehicles
+  const [editingVehicleId, setEditingVehicleId] = useState<string | null>(null);
+  const [editPrice, setEditPrice] = useState<string>("");
+  const [editContact, setEditContact] = useState<string>("");
 
   // Fetch Agency Profile from User Doc
   const userRef = useMemoFirebase(() => {
@@ -184,24 +191,23 @@ export function FleetManagement() {
     toast({ title: "Profile Updated", description: "Agency details have been synchronized across your fleet." });
   };
 
-  const handleUpdateVehiclePrice = (vehicleId: string, currentPrice: number) => {
-    if (!firestore) return;
-    const newPrice = prompt("Enter new Price per KM (₹):", currentPrice.toString());
-    if (newPrice && !isNaN(Number(newPrice))) {
-      const docRef = doc(firestore, "vehicles", vehicleId);
-      updateDocumentNonBlocking(docRef, { pricePerKm: Number(newPrice) });
-      toast({ title: "Price Adjusted", description: "Market rate has been updated for this vehicle." });
-    }
+  const startEditing = (v: any) => {
+    setEditingVehicleId(v.id);
+    setEditPrice(v.pricePerKm.toString());
+    setEditContact(v.contact || "");
   };
 
-  const handleUpdateVehicleContact = (vehicleId: string, currentContact: string) => {
+  const saveVehicleEdits = (vehicleId: string) => {
     if (!firestore) return;
-    const newContact = prompt("Enter new Contact Number:", currentContact);
-    if (newContact !== null && newContact.trim() !== "") {
-      const docRef = doc(firestore, "vehicles", vehicleId);
-      updateDocumentNonBlocking(docRef, { contact: newContact.trim() });
-      toast({ title: "Contact Updated", description: "Vehicle contact information has been updated." });
-    }
+    const docRef = doc(firestore, "vehicles", vehicleId);
+    
+    updateDocumentNonBlocking(docRef, { 
+      pricePerKm: Number(editPrice),
+      contact: editContact.trim()
+    });
+
+    setEditingVehicleId(null);
+    toast({ title: "Vehicle Updated", description: "Operational details have been saved." });
   };
 
   const getNextStatus = (current: string) => {
@@ -397,52 +403,85 @@ export function FleetManagement() {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {myFleet.map((v) => (
-                <Card key={v.id} className="border-none shadow-xl rounded-[2.5rem] bg-white p-8 space-y-6 group hover:shadow-2xl transition-all">
-                  <div className="flex justify-between items-start">
-                    <div className="h-14 w-14 bg-slate-100 rounded-2xl flex items-center justify-center text-slate-500 group-hover:bg-primary/10 group-hover:text-primary transition-colors">
-                      <Truck className="h-8 w-8" />
+              {myFleet.map((v) => {
+                const isEditing = editingVehicleId === v.id;
+                return (
+                  <Card key={v.id} className="border-none shadow-xl rounded-[2.5rem] bg-white p-8 space-y-6 group hover:shadow-2xl transition-all border border-transparent hover:border-primary/10">
+                    <div className="flex justify-between items-start">
+                      <div className="h-14 w-14 bg-slate-100 rounded-2xl flex items-center justify-center text-slate-500 group-hover:bg-primary/10 group-hover:text-primary transition-colors">
+                        <Truck className="h-8 w-8" />
+                      </div>
+                      <Badge className={cn(
+                        "rounded-full h-8 px-4 font-bold text-[10px] uppercase",
+                        v.isAvailable ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'
+                      )}>
+                        {v.isAvailable ? 'Active' : 'Busy'}
+                      </Badge>
                     </div>
-                    <Badge className={cn(
-                      "rounded-full h-8 px-4 font-bold text-[10px] uppercase",
-                      v.isAvailable ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'
-                    )}>
-                      {v.isAvailable ? 'Active' : 'Busy'}
-                    </Badge>
-                  </div>
-                  <div className="space-y-1">
-                    <h4 className="text-xl font-black">{v.type}</h4>
-                    <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">{v.plateNumber}</p>
-                    <p className="text-xs font-bold text-muted-foreground flex items-center gap-1 mt-2">
-                      <MapPin className="h-3.5 w-3.5 text-primary" /> {v.city}, {v.state}
-                    </p>
-                  </div>
-                  <div className="pt-4 border-t space-y-4">
-                    <div className="flex justify-between items-center">
-                      <span className="text-[10px] font-black text-muted-foreground uppercase">Current Rate</span>
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        onClick={() => handleUpdateVehiclePrice(v.id, v.pricePerKm)}
-                        className="h-10 px-4 rounded-xl font-black text-primary bg-primary/5 hover:bg-primary/10 transition-all active:scale-95"
-                      >
-                        ₹{v.pricePerKm}/km <Edit3 className="h-3 w-3 ml-2 opacity-50" />
-                      </Button>
+                    <div className="space-y-1">
+                      <h4 className="text-xl font-black">{v.type}</h4>
+                      <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">{v.plateNumber}</p>
+                      <p className="text-xs font-bold text-muted-foreground flex items-center gap-1 mt-2">
+                        <MapPin className="h-3.5 w-3.5 text-primary" /> {v.city}, {v.state}
+                      </p>
                     </div>
-                    <div className="flex justify-between items-center p-3 bg-slate-50 rounded-xl">
-                      <span className="text-[10px] font-black text-muted-foreground uppercase">Fleet Contact</span>
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        onClick={() => handleUpdateVehicleContact(v.id, v.contact)}
-                        className="h-10 px-4 rounded-xl font-bold flex items-center gap-2 hover:bg-white/50 transition-all active:scale-95"
-                      >
-                        <Phone className="h-3 w-3" /> {v.contact} <Edit3 className="h-3 w-3 ml-1 opacity-50" />
-                      </Button>
+                    
+                    <div className="pt-4 border-t space-y-4">
+                      {isEditing ? (
+                        <div className="space-y-4 animate-in fade-in zoom-in-95 duration-200">
+                          <div className="space-y-1.5">
+                            <Label className="text-[10px] font-black uppercase text-muted-foreground ml-1">Price per KM (₹)</Label>
+                            <Input 
+                              type="number" 
+                              value={editPrice} 
+                              onChange={(e) => setEditPrice(e.target.value)}
+                              className="h-11 rounded-xl bg-muted/30 border-none font-bold text-primary"
+                            />
+                          </div>
+                          <div className="space-y-1.5">
+                            <Label className="text-[10px] font-black uppercase text-muted-foreground ml-1">Contact Phone</Label>
+                            <Input 
+                              value={editContact} 
+                              onChange={(e) => setEditContact(e.target.value)}
+                              className="h-11 rounded-xl bg-muted/30 border-none font-bold"
+                            />
+                          </div>
+                          <div className="flex gap-2 pt-2">
+                            <Button onClick={() => saveVehicleEdits(v.id)} className="flex-1 h-11 rounded-xl font-black bg-primary">
+                              <Check className="h-4 w-4 mr-2" /> Save
+                            </Button>
+                            <Button variant="outline" onClick={() => setEditingVehicleId(null)} className="h-11 w-11 p-0 rounded-xl">
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <>
+                          <div className="flex justify-between items-center">
+                            <span className="text-[10px] font-black text-muted-foreground uppercase">Current Rate</span>
+                            <div className="h-10 px-4 rounded-xl flex items-center font-black text-primary bg-primary/5">
+                              ₹{v.pricePerKm}/km
+                            </div>
+                          </div>
+                          <div className="flex justify-between items-center p-3 bg-slate-50 rounded-xl">
+                            <span className="text-[10px] font-black text-muted-foreground uppercase">Fleet Contact</span>
+                            <div className="flex items-center gap-2 font-bold text-xs">
+                              <Phone className="h-3 w-3 text-muted-foreground" /> {v.contact}
+                            </div>
+                          </div>
+                          <Button 
+                            variant="outline" 
+                            onClick={() => startEditing(v)}
+                            className="w-full h-11 rounded-xl font-black text-xs uppercase tracking-widest border-slate-200 hover:border-primary hover:bg-primary/5 transition-all"
+                          >
+                            <Edit3 className="h-3.5 w-3.5 mr-2" /> Edit Details
+                          </Button>
+                        </>
+                      )}
                     </div>
-                  </div>
-                </Card>
-              ))}
+                  </Card>
+                );
+              })}
             </div>
           )}
         </TabsContent>
