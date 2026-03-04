@@ -1,7 +1,6 @@
-
 'use client';
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { 
   Search, 
   ArrowLeft, 
@@ -18,7 +17,8 @@ import {
   Loader2,
   Tag,
   TrendingDown,
-  Info
+  Info,
+  RefreshCw
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -39,14 +39,23 @@ import { cn } from "@/lib/utils";
 
 const CATEGORIES = ["All", "Plant", "Seed", "Vegetable", "Fruit", "Grain"];
 
-export function CropDiagnostics() {
+interface CropDiagnosticsProps {
+  searchQuery?: string;
+}
+
+export function CropDiagnostics({ searchQuery = "" }: CropDiagnosticsProps) {
   const firestore = useFirestore();
   const { toast } = useToast();
-  const [search, setSearch] = useState("");
+  const [localSearch, setLocalSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [selectedCropId, setSelectedCropId] = useState<string | null>(null);
   const [isReportOpen, setIsReportOpen] = useState(false);
   const [isSubmittingReport, setIsSubmittingReport] = useState(false);
+
+  // Sync local search with global search query if provided
+  useEffect(() => {
+    if (searchQuery) setLocalSearch(searchQuery);
+  }, [searchQuery]);
 
   const cropsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
@@ -62,12 +71,12 @@ export function CropDiagnostics() {
       const disease = c.diseaseName || "";
       const category = c.category || "";
       
-      const matchesSearch = name.toLowerCase().includes(search.toLowerCase()) || 
-                          disease.toLowerCase().includes(search.toLowerCase());
+      const matchesSearch = name.toLowerCase().includes(localSearch.toLowerCase()) || 
+                          disease.toLowerCase().includes(localSearch.toLowerCase());
       const matchesCategory = selectedCategory === "All" || category === selectedCategory;
       return matchesSearch && matchesCategory;
     });
-  }, [crops, search, selectedCategory]);
+  }, [crops, localSearch, selectedCategory]);
 
   const selectedCrop = useMemo(() => {
     return crops?.find(c => c.id === selectedCropId) || null;
@@ -107,6 +116,11 @@ export function CropDiagnostics() {
     }
   };
 
+  const resetFilters = () => {
+    setLocalSearch("");
+    setSelectedCategory("All");
+  };
+
   if (isLoading) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -127,7 +141,7 @@ export function CropDiagnostics() {
             className="space-y-10"
           >
             <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-              <div className="flex gap-2 p-1 bg-muted rounded-full w-fit overflow-x-auto scrollbar-hide max-w-full">
+              <div className="flex gap-2 p-1 bg-muted rounded-full w-fit overflow-x-auto scrollbar-hide max-w-full glass-card">
                 {CATEGORIES.map((cat) => (
                   <Button
                     key={cat}
@@ -145,10 +159,10 @@ export function CropDiagnostics() {
               <div className="relative w-full md:w-96">
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input 
-                  placeholder="Search crop or disease..." 
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className="pl-11 rounded-full bg-white border-none shadow-sm h-12 font-bold"
+                  placeholder="Filter grid in real-time..." 
+                  value={localSearch}
+                  onChange={(e) => setLocalSearch(e.target.value)}
+                  className="pl-11 rounded-full bg-white border-none shadow-sm h-12 font-bold focus:ring-2 focus:ring-primary/20 transition-all"
                 />
               </div>
             </div>
@@ -158,7 +172,7 @@ export function CropDiagnostics() {
                 <DialogTrigger asChild>
                   <motion.button
                     whileHover={{ scale: 1.02 }}
-                    className="group relative h-80 rounded-[2.5rem] border-2 border-dashed border-primary/30 flex flex-col items-center justify-center gap-4 bg-primary/5 hover:bg-primary/10 transition-all"
+                    className="group relative h-80 rounded-[2.5rem] border-2 border-dashed border-primary/30 flex flex-col items-center justify-center gap-4 bg-primary/5 hover:bg-primary/10 transition-all shadow-sm"
                   >
                     <div className="h-16 w-16 bg-white rounded-2xl flex items-center justify-center text-primary shadow-xl shadow-primary/10 group-hover:scale-110 transition-transform">
                       <PlusCircle className="h-10 w-10" />
@@ -225,10 +239,19 @@ export function CropDiagnostics() {
             </div>
 
             {filteredCrops.length === 0 && (
-              <div className="text-center py-40 bg-muted/20 rounded-[4rem] border-2 border-dashed border-border/50">
-                <Info className="h-16 w-16 text-muted-foreground/20 mx-auto mb-6" />
-                <h3 className="text-2xl font-black text-slate-800">No Crops Found</h3>
-                <p className="text-muted-foreground mt-2 font-medium">Try a different filter or search term.</p>
+              <div className="text-center py-40 bg-white/50 backdrop-blur-md rounded-[4rem] border-2 border-dashed border-primary/20 shadow-sm animate-in zoom-in-95 duration-300">
+                <div className="h-24 w-24 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <Search className="h-10 w-10 text-primary opacity-20" />
+                </div>
+                <h3 className="text-3xl font-black tracking-tight">No Results for "{localSearch}"</h3>
+                <p className="text-muted-foreground mt-2 font-medium max-w-sm mx-auto">Try broadening your search or resetting the category filters to explore more intelligence.</p>
+                <Button 
+                  onClick={resetFilters}
+                  variant="outline" 
+                  className="mt-8 rounded-full h-12 px-10 font-black text-xs uppercase tracking-widest border-primary/20 text-primary hover:bg-primary/5"
+                >
+                  <RefreshCw className="h-4 w-4 mr-2" /> Reset Intelligence Filters
+                </Button>
               </div>
             )}
           </motion.div>
@@ -266,7 +289,7 @@ export function CropDiagnostics() {
                     </div>
                   </div>
 
-                  <Card className="border-none shadow-xl rounded-[2.5rem] p-8 bg-white">
+                  <Card className="glass-card rounded-[2.5rem] p-8 border-none">
                     <div className="flex items-center justify-between mb-6">
                       <h3 className="text-[10px] font-black uppercase tracking-widest text-primary flex items-center gap-2">
                         <ShieldCheck className="h-4 w-4" /> Agronomy Summary
@@ -294,7 +317,7 @@ export function CropDiagnostics() {
                 </div>
 
                 <div className="lg:col-span-7 space-y-8">
-                  <Card className="border-none shadow-xl rounded-[2.5rem] p-10 bg-white space-y-8 overflow-hidden relative">
+                  <Card className="glass-card rounded-[2.5rem] p-10 border-none space-y-8 overflow-hidden relative">
                     <div className="absolute top-0 right-0 p-10 opacity-5 pointer-events-none">
                       <Bug className="h-40 w-40" />
                     </div>
@@ -346,7 +369,7 @@ export function CropDiagnostics() {
                   </Card>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <Card className="border-none shadow-xl rounded-[3rem] p-8 bg-blue-50/50 border-l-8 border-blue-500">
+                    <Card className="glass-card rounded-[3rem] p-8 border-none border-l-8 border-blue-500/50">
                       <div className="flex items-center gap-3 mb-6">
                         <Droplets className="h-6 w-6 text-blue-600" />
                         <h4 className="text-[10px] font-black uppercase tracking-widest text-blue-700">Irrigation Gauge</h4>
@@ -361,7 +384,7 @@ export function CropDiagnostics() {
                       </div>
                     </Card>
 
-                    <Card className="border-none shadow-xl rounded-[3rem] p-8 bg-primary/5 border-l-8 border-primary">
+                    <Card className="glass-card rounded-[3rem] p-8 border-none border-l-8 border-primary/50">
                       <div className="flex items-center gap-3 mb-6">
                         <Tag className="h-6 w-6 text-primary" />
                         <h4 className="text-[10px] font-black uppercase tracking-widest text-primary">Market Intelligence</h4>
@@ -371,7 +394,7 @@ export function CropDiagnostics() {
                           <p className="text-3xl font-black text-slate-900">₹{selectedCrop?.estimatedPrice || "2,150"}</p>
                           <p className="text-[10px] font-bold text-muted-foreground uppercase">Per Quintal</p>
                         </div>
-                        <div className="flex items-center gap-2 px-4 py-2 bg-white rounded-xl w-fit shadow-sm">
+                        <div className="flex items-center gap-2 px-4 py-2 bg-white/50 rounded-xl w-fit shadow-sm">
                           <TrendingUp className="h-4 w-4 text-primary" />
                           <span className="text-[10px] font-black uppercase text-primary">Rising Momentum</span>
                         </div>

@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useEffect } from "react";
@@ -16,7 +15,9 @@ import {
   FlaskConical,
   Globe,
   Loader2,
-  Package
+  Package,
+  X,
+  RefreshCw
 } from "lucide-react";
 import { 
   SidebarProvider, 
@@ -34,6 +35,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { useAppState } from "@/lib/app-state";
+import { useToast } from "@/hooks/use-toast";
 
 // Section Components
 import { DashboardHome } from "@/components/dashboard/DashboardHome";
@@ -44,11 +46,15 @@ import { KisanNetwork } from "@/components/social/KisanNetwork";
 import { ExpertVerificationPortal } from "@/components/experts/ExpertVerificationPortal";
 import { MinistryIntelligence } from "@/components/gov/MinistryIntelligence";
 import { FleetManagement } from "@/components/logistics/FleetManagement";
+import { SettingsView } from "@/components/settings/SettingsView";
 
 export default function KisanMitraApp() {
   const router = useRouter();
+  const { toast } = useToast();
   const { role, isAuthenticated, logout } = useAppState();
   const [activeSection, setActiveSection] = useState("dashboard");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isSearching, setIsSearching] = useState(false);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -62,6 +68,28 @@ export default function KisanMitraApp() {
     else if (role === "Expert") setActiveSection("expert-portal");
     else setActiveSection("dashboard");
   }, [role]);
+
+  const handleGlobalSearch = () => {
+    if (!searchQuery.trim()) return;
+    setIsSearching(true);
+    
+    // Simulate manual search fetch
+    setTimeout(() => {
+      setIsSearching(false);
+      toast({
+        title: "Search Intelligence Updated",
+        description: `Filtering ${activeSection} for "${searchQuery}"`,
+      });
+    }, 800);
+  };
+
+  const clearSearch = () => {
+    setSearchQuery("");
+    toast({
+      title: "Search Cleared",
+      description: "Displaying full intelligence grid.",
+    });
+  };
 
   if (!isAuthenticated || !role) {
     return (
@@ -77,13 +105,14 @@ export default function KisanMitraApp() {
   const renderSection = () => {
     switch (activeSection) {
       case "dashboard": return <DashboardHome onNavigate={setActiveSection} />;
-      case "diagnostics": return <CropDiagnostics />;
-      case "market": return <MarketIntelligence />;
+      case "diagnostics": return <CropDiagnostics searchQuery={searchQuery} />;
+      case "market": return <MarketIntelligence searchQuery={searchQuery} />;
       case "logistics": return <MandiLink />;
       case "network": return <KisanNetwork />;
       case "expert-portal": return <ExpertVerificationPortal />;
       case "gov-intel": return <MinistryIntelligence />;
       case "fleet": return <FleetManagement />;
+      case "settings": return <SettingsView />;
       default: return <DashboardHome onNavigate={setActiveSection} />;
     }
   };
@@ -101,14 +130,9 @@ export default function KisanMitraApp() {
 
   const filteredMenu = menuItems.filter(item => item.roles.includes(role));
 
-  const handleLogout = () => {
-    logout();
-    router.push("/login");
-  };
-
   return (
     <SidebarProvider>
-      <div className="flex min-h-screen w-full bg-background">
+      <div className="flex min-h-screen w-full bg-background text-foreground">
         <Sidebar collapsible="icon" className="border-r border-border bg-card">
           <SidebarHeader className="h-16 flex items-center px-4 border-b">
             <div className="flex items-center gap-3">
@@ -136,11 +160,18 @@ export default function KisanMitraApp() {
             </SidebarMenu>
           </SidebarContent>
           <SidebarFooter className="border-t p-4 space-y-2">
-            <SidebarMenuButton tooltip="Settings" className="h-12"><Settings className="h-5 w-5" /> <span>Settings</span></SidebarMenuButton>
+            <SidebarMenuButton 
+              isActive={activeSection === "settings"}
+              onClick={() => setActiveSection("settings")}
+              tooltip="Settings" 
+              className="h-12 data-[active=true]:bg-primary/10 data-[active=true]:text-primary"
+            >
+              <Settings className="h-5 w-5" /> <span>Settings</span>
+            </SidebarMenuButton>
             <SidebarMenuButton 
               tooltip="Logout" 
-              onClick={handleLogout}
-              className="h-12 text-destructive hover:bg-destructive/10 hover:text-destructive"
+              onClick={() => logout()}
+              className="h-12 text-destructive hover:bg-destructive/10"
             >
               <LogOut className="h-5 w-5" /> <span>Logout</span>
             </SidebarMenuButton>
@@ -148,16 +179,32 @@ export default function KisanMitraApp() {
         </Sidebar>
 
         <SidebarInset className="flex flex-col">
-          <header className="h-16 flex items-center justify-between px-6 border-b bg-card sticky top-0 z-30">
+          <header className="h-16 flex items-center justify-between px-6 border-b glass-card sticky top-0 z-30">
             <div className="flex items-center gap-4">
               <SidebarTrigger className="md:hidden" />
-              <div className="hidden md:flex items-center gap-2 bg-muted/50 px-4 py-2 rounded-full w-96 border border-border/50">
-                <Search className="h-4 w-4 text-muted-foreground" />
+              <div className="hidden md:flex items-center gap-2 bg-muted/50 px-4 py-2 rounded-full w-96 border border-border/50 transition-all focus-within:ring-2 focus-within:ring-primary/20">
+                <Search className={cn("h-4 w-4 transition-colors", isSearching ? "text-primary animate-pulse" : "text-muted-foreground")} />
                 <input 
                   placeholder="Search intelligence, Mandis, or experts..." 
-                  className="bg-transparent border-none text-sm focus:outline-none w-full font-medium"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleGlobalSearch()}
+                  className="bg-transparent border-none text-sm focus:outline-none w-full font-bold"
                 />
+                {searchQuery && (
+                  <button onClick={clearSearch} className="hover:text-primary">
+                    <X className="h-3 w-3" />
+                  </button>
+                )}
               </div>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={handleGlobalSearch}
+                className="h-10 w-10 rounded-full md:hidden"
+              >
+                <Search className="h-5 w-5" />
+              </Button>
             </div>
             <div className="flex items-center gap-4">
               <Button variant="ghost" size="icon" className="relative touch-target rounded-full hover:bg-muted">
@@ -170,7 +217,7 @@ export default function KisanMitraApp() {
                   <p className="text-xs font-black leading-none uppercase">{role} Portal</p>
                   <p className="text-[9px] text-primary font-bold mt-1 tracking-tighter uppercase">Verified Access</p>
                 </div>
-                <Avatar className="h-8 w-8 border-2 border-primary/20">
+                <Avatar className="h-8 w-8 border-2 border-primary/20 shadow-sm">
                   <AvatarImage src={`https://picsum.photos/seed/${role}/40/40`} />
                   <AvatarFallback>{role[0]}</AvatarFallback>
                 </Avatar>

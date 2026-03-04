@@ -14,7 +14,8 @@ import {
   MapPin,
   Search,
   Zap,
-  Loader2
+  Loader2,
+  RefreshCw
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -47,13 +48,11 @@ const STATES = [
 ];
 
 const CROPS = [
-  // Grains
   { name: "Paddy", category: "Grain" },
   { name: "Wheat", category: "Grain" },
   { name: "Maize", category: "Grain" },
   { name: "Bajra", category: "Grain" },
   { name: "Jowar", category: "Grain" },
-  // Vegetables
   { name: "Tomato", category: "Vegetable" },
   { name: "Potato", category: "Vegetable" },
   { name: "Onion", category: "Vegetable" },
@@ -61,7 +60,6 @@ const CROPS = [
   { name: "Brinjal", category: "Vegetable" },
   { name: "Okra", category: "Vegetable" },
   { name: "Cabbage", category: "Vegetable" },
-  // Fruits
   { name: "Mango", category: "Fruit" },
   { name: "Banana", category: "Fruit" },
   { name: "Grapes", category: "Fruit" },
@@ -69,12 +67,10 @@ const CROPS = [
   { name: "Pomegranate", category: "Fruit" },
   { name: "Guava", category: "Fruit" },
   { name: "Orange", category: "Fruit" },
-  // Seeds/Oilseeds
   { name: "Mustard", category: "Seed" },
   { name: "Soybean", category: "Seed" },
   { name: "Groundnut", category: "Seed" },
   { name: "Sunflower", category: "Seed" },
-  // Plants/Cash Crops
   { name: "Cotton", category: "Plant" },
   { name: "Sugarcane", category: "Plant" },
   { name: "Tea", category: "Plant" },
@@ -84,14 +80,22 @@ const CROPS = [
   { name: "Black Pepper", category: "Plant" },
 ];
 
-export function MarketIntelligence() {
+interface MarketIntelligenceProps {
+  searchQuery?: string;
+}
+
+export function MarketIntelligence({ searchQuery = "" }: MarketIntelligenceProps) {
   const [selectedCrop, setSelectedCrop] = useState("Wheat");
   const [selectedState, setSelectedState] = useState("Punjab");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [localSearch, setLocalSearch] = useState("");
+
+  useEffect(() => {
+    if (searchQuery) setLocalSearch(searchQuery);
+  }, [searchQuery]);
 
   // Generate dynamic chart data based on selected crop and state
   const chartData = useMemo(() => {
-    // Deterministic seed based on string lengths to make it feel "real" per selection
     const seed = selectedCrop.length + selectedState.length;
     const basePrice = 1500 + (seed * 20);
     return [
@@ -107,7 +111,9 @@ export function MarketIntelligence() {
   // Generate dynamic table data for the selected state
   const tableData = useMemo(() => {
     const seed = selectedState.length;
-    return CROPS.slice(0, 8).map((c, i) => {
+    const items = CROPS.filter(c => c.name.toLowerCase().includes(localSearch.toLowerCase()));
+    
+    return items.slice(0, 12).map((c, i) => {
       const price = 1000 + (seed * 50) + (i * 100);
       const prevPrice = price - (i % 2 === 0 ? 50 : -50);
       const change = ((price - prevPrice) / prevPrice * 100).toFixed(1);
@@ -125,7 +131,7 @@ export function MarketIntelligence() {
         alert: Math.abs(parseFloat(change)) > 15
       };
     });
-  }, [selectedState]);
+  }, [selectedState, localSearch]);
 
   const forecast = useMemo(() => {
     const current = chartData[chartData.length - 1].price;
@@ -145,7 +151,6 @@ export function MarketIntelligence() {
     setIsAnalyzing(true);
     setTimeout(() => {
       setIsAnalyzing(false);
-      // In a real app, this would trigger a flow or update state
     }, 1500);
   };
 
@@ -157,7 +162,7 @@ export function MarketIntelligence() {
           <div className="space-y-1.5 flex-1 min-w-[200px]">
             <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-4">Commodity Selector</label>
             <Select value={selectedCrop} onValueChange={setSelectedCrop}>
-              <SelectTrigger className="w-full lg:w-[240px] rounded-2xl h-12 bg-white border-border shadow-md font-bold px-6">
+              <SelectTrigger className="w-full lg:w-[240px] rounded-2xl h-12 bg-white/50 backdrop-blur-md border-none shadow-md font-black px-6">
                 <div className="flex items-center gap-2">
                   <Search className="h-4 w-4 text-primary" />
                   <SelectValue placeholder="Select Crop" />
@@ -179,7 +184,7 @@ export function MarketIntelligence() {
           <div className="space-y-1.5 flex-1 min-w-[200px]">
             <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-4">Jurisdiction</label>
             <Select value={selectedState} onValueChange={setSelectedState}>
-              <SelectTrigger className="w-full lg:w-[240px] rounded-2xl h-12 bg-white border-border shadow-md font-bold px-6">
+              <SelectTrigger className="w-full lg:w-[240px] rounded-2xl h-12 bg-white/50 backdrop-blur-md border-none shadow-md font-black px-6">
                 <div className="flex items-center gap-2">
                   <MapPin className="h-4 w-4 text-primary" />
                   <SelectValue placeholder="Select State" />
@@ -201,7 +206,7 @@ export function MarketIntelligence() {
             { label: "Mandi Avg", val: `₹${(Math.round(chartData.reduce((a, b) => a + b.price, 0) / 6)).toLocaleString()}`, sub: "Seasonal Avg", icon: BarChart3, color: "text-slate-700" },
             { label: "Risk Factor", val: forecast.confidence > 90 ? "High" : "Stable", sub: "Market Volatility", icon: AlertCircle, color: forecast.confidence > 90 ? "text-destructive" : "text-blue-600" },
           ].map((s, i) => (
-            <Card key={i} className="border-none shadow-lg rounded-3xl p-5 bg-white flex flex-col justify-between h-28 border-b-4 border-b-transparent hover:border-b-primary transition-all">
+            <Card key={i} className="glass-card rounded-3xl p-5 border-none flex flex-col justify-between h-28 border-b-4 border-b-transparent hover:border-b-primary transition-all">
               <p className="text-[9px] uppercase font-black text-muted-foreground tracking-widest">{s.label}</p>
               <div className="flex items-center justify-between">
                 <p className={cn("text-xl font-black", s.color)}>{s.val}</p>
@@ -217,7 +222,7 @@ export function MarketIntelligence() {
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         {/* Main Chart */}
-        <Card className="lg:col-span-8 border-none shadow-2xl rounded-[3rem] overflow-hidden bg-white">
+        <Card className="lg:col-span-8 glass-card rounded-[3rem] overflow-hidden border-none">
           <CardHeader className="p-10 border-b bg-slate-50/50 flex flex-row items-center justify-between">
             <div className="space-y-1">
               <CardTitle className="text-2xl font-black flex items-center gap-3">
@@ -278,7 +283,7 @@ export function MarketIntelligence() {
         </Card>
 
         {/* AI Analysis Card */}
-        <Card className="lg:col-span-4 border-none shadow-2xl rounded-[3rem] bg-slate-950 p-10 text-white relative overflow-hidden group">
+        <Card className="lg:col-span-4 glass-card rounded-[3rem] bg-slate-950 p-10 text-white relative overflow-hidden group border-none">
           <div className="absolute top-0 right-0 p-12 opacity-5 group-hover:scale-125 transition-transform duration-700">
             <Zap className="h-64 w-64 rotate-12" />
           </div>
@@ -339,82 +344,104 @@ export function MarketIntelligence() {
       </div>
 
       {/* Mandi Intelligence Feed */}
-      <Card className="border-none shadow-2xl rounded-[3rem] overflow-hidden bg-white">
+      <Card className="glass-card rounded-[3rem] overflow-hidden border-none">
         <div className="p-10 border-b flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-slate-50/50">
           <div className="space-y-1">
             <CardTitle className="text-2xl font-black">Live Mandi Hub Feed: {selectedState}</CardTitle>
             <p className="text-sm font-medium text-muted-foreground">Real-time commodity valuation across major regional trading hubs.</p>
           </div>
-          <Button variant="outline" className="rounded-2xl gap-2 border-border font-bold h-11 px-6 shadow-sm hover:bg-primary hover:text-white transition-all">
-            <Calendar className="h-4 w-4" /> Export Intelligence Report
-          </Button>
+          <div className="flex gap-3">
+            <div className="relative w-64">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+              <Input 
+                placeholder="Filter Mandi list..." 
+                value={localSearch}
+                onChange={(e) => setLocalSearch(e.target.value)}
+                className="pl-9 h-11 rounded-xl bg-background/50 border-none font-bold"
+              />
+            </div>
+            <Button variant="outline" className="rounded-xl gap-2 border-border font-bold h-11 px-6 shadow-sm hover:bg-primary hover:text-white transition-all">
+              <Calendar className="h-4 w-4" /> Export
+            </Button>
+          </div>
         </div>
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader className="bg-muted/30">
-              <TableRow className="hover:bg-transparent border-none">
-                <TableHead className="font-black text-[11px] uppercase tracking-widest px-10 py-6 text-slate-500">Commodity</TableHead>
-                <TableHead className="font-black text-[11px] uppercase tracking-widest text-slate-500">Regional Hub (Mandi)</TableHead>
-                <TableHead className="font-black text-[11px] uppercase tracking-widest text-right text-slate-500">Price (₹/q)</TableHead>
-                <TableHead className="font-black text-[11px] uppercase tracking-widest text-slate-500">Market Momentum</TableHead>
-                <TableHead className="font-black text-[11px] uppercase tracking-widest text-right px-10 text-slate-500">24h Volatility</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {tableData.map((row, i) => (
-                <TableRow key={i} className="group hover:bg-slate-50/80 transition-all border-b border-slate-100 last:border-0">
-                  <TableCell className="px-10 py-8">
-                    <div className="flex flex-col gap-1.5">
-                      <div className="flex items-center gap-3">
-                        <span className="text-lg font-black text-slate-900">{row.crop}</span>
-                        <Badge variant="outline" className="text-[8px] uppercase font-black tracking-widest h-4 opacity-70">{row.category}</Badge>
-                      </div>
-                      {row.alert && (
-                        <div className="flex items-center gap-1.5">
-                          <AlertCircle className="h-3 w-3 text-destructive animate-pulse" />
-                          <span className="text-[9px] font-black uppercase text-destructive tracking-widest">Surveillance Active</span>
-                        </div>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex flex-col">
-                      <span className="text-sm font-bold text-slate-700">{row.mandi}</span>
-                      <span className="text-[10px] text-muted-foreground font-medium">{row.state}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex flex-col items-end">
-                      <span className="text-xl font-black text-slate-950">₹{row.price.toLocaleString()}</span>
-                      <span className="text-[10px] text-muted-foreground font-bold line-through opacity-50">₹{row.prevPrice.toLocaleString()}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className={cn(
-                      "flex items-center gap-2.5 px-4 py-2 rounded-2xl w-fit font-black text-[10px] uppercase tracking-widest border",
-                      row.trend === 'up' ? 'bg-primary/5 text-primary border-primary/20' : 
-                      row.trend === 'down' ? 'bg-destructive/5 text-destructive border-destructive/20' : 
-                      'bg-slate-100 text-slate-500 border-slate-200'
-                    )}>
-                      {row.trend === 'up' ? <TrendingUp className="h-4 w-4" /> : 
-                       row.trend === 'down' ? <TrendingDown className="h-4 w-4" /> : 
-                       <Minus className="h-4 w-4" />}
-                      {row.trend}
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-right px-10">
-                    <div className={cn(
-                      "text-lg font-black tabular-nums",
-                      row.trend === 'up' ? 'text-primary' : row.trend === 'down' ? 'text-destructive' : 'text-slate-500'
-                    )}>
-                      {row.trend === 'up' ? '+' : row.trend === 'down' ? '-' : ''}{row.change}%
-                    </div>
-                  </TableCell>
+        
+        {tableData.length === 0 ? (
+          <div className="p-20 text-center space-y-4">
+            <div className="h-16 w-16 bg-muted rounded-full flex items-center justify-center mx-auto">
+              <Search className="h-8 w-8 text-muted-foreground opacity-20" />
+            </div>
+            <h4 className="text-xl font-black">No Commodities Matching "{localSearch}"</h4>
+            <Button variant="link" onClick={() => setLocalSearch("")} className="text-primary font-bold">Clear Filters</Button>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader className="bg-muted/30">
+                <TableRow className="hover:bg-transparent border-none">
+                  <TableHead className="font-black text-[11px] uppercase tracking-widest px-10 py-6 text-slate-500">Commodity</TableHead>
+                  <TableHead className="font-black text-[11px] uppercase tracking-widest text-slate-500">Regional Hub (Mandi)</TableHead>
+                  <TableHead className="font-black text-[11px] uppercase tracking-widest text-right text-slate-500">Price (₹/q)</TableHead>
+                  <TableHead className="font-black text-[11px] uppercase tracking-widest text-slate-500">Market Momentum</TableHead>
+                  <TableHead className="font-black text-[11px] uppercase tracking-widest text-right px-10 text-slate-500">24h Volatility</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+              </TableHeader>
+              <TableBody>
+                {tableData.map((row, i) => (
+                  <TableRow key={i} className="group hover:bg-slate-50/80 transition-all border-b border-slate-100 last:border-0">
+                    <TableCell className="px-10 py-8">
+                      <div className="flex flex-col gap-1.5">
+                        <div className="flex items-center gap-3">
+                          <span className="text-lg font-black text-slate-900">{row.crop}</span>
+                          <Badge variant="outline" className="text-[8px] uppercase font-black tracking-widest h-4 opacity-70">{row.category}</Badge>
+                        </div>
+                        {row.alert && (
+                          <div className="flex items-center gap-1.5">
+                            <AlertCircle className="h-3 w-3 text-destructive animate-pulse" />
+                            <span className="text-[9px] font-black uppercase text-destructive tracking-widest">Surveillance Active</span>
+                          </div>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex flex-col">
+                        <span className="text-sm font-bold text-slate-700">{row.mandi}</span>
+                        <span className="text-[10px] text-muted-foreground font-medium">{row.state}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex flex-col items-end">
+                        <span className="text-xl font-black text-slate-950">₹{row.price.toLocaleString()}</span>
+                        <span className="text-[10px] text-muted-foreground font-bold line-through opacity-50">₹{row.prevPrice.toLocaleString()}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className={cn(
+                        "flex items-center gap-2.5 px-4 py-2 rounded-2xl w-fit font-black text-[10px] uppercase tracking-widest border",
+                        row.trend === 'up' ? 'bg-primary/5 text-primary border-primary/20' : 
+                        row.trend === 'down' ? 'bg-destructive/5 text-destructive border-destructive/20' : 
+                        'bg-slate-100 text-slate-500 border-slate-200'
+                      )}>
+                        {row.trend === 'up' ? <TrendingUp className="h-4 w-4" /> : 
+                         row.trend === 'down' ? <TrendingDown className="h-4 w-4" /> : 
+                         <Minus className="h-4 w-4" />}
+                        {row.trend}
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-right px-10">
+                      <div className={cn(
+                        "text-lg font-black tabular-nums",
+                        row.trend === 'up' ? 'text-primary' : row.trend === 'down' ? 'text-destructive' : 'text-slate-500'
+                      )}>
+                        {row.trend === 'up' ? '+' : row.trend === 'down' ? '-' : ''}{row.change}%
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
       </Card>
     </div>
   );
