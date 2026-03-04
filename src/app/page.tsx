@@ -15,7 +15,6 @@ import {
   FlaskConical,
   Loader2,
   Package,
-  MessageCircle,
   CheckCircle2
 } from "lucide-react";
 import { 
@@ -38,8 +37,8 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { useAppState } from "@/lib/app-state";
-import { useToast } from "@/hooks/use-toast";
 import { useTranslation } from "@/hooks/use-translation";
 import { cn } from "@/lib/utils";
 
@@ -71,7 +70,7 @@ export default function KisanMitraApp() {
     if (!isAuthenticated) router.push("/login");
   }, [isAuthenticated, router]);
 
-  if (!isAuthenticated || !role) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="animate-spin" /></div>;
+  if (!isAuthenticated || !role) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="animate-spin text-primary" /></div>;
 
   const renderSection = () => {
     switch (activeSection) {
@@ -89,13 +88,15 @@ export default function KisanMitraApp() {
 
   const menuItems = [
     { id: "dashboard", label: t("dashboard"), icon: LayoutDashboard, roles: ["Farmer", "Expert", "Logistics"] },
-    { id: "diagnostics", label: t("diagnostics"), icon: Leaf, roles: ["Farmer", "Expert", "Logistics"] },
-    { id: "market", label: t("market"), icon: TrendingUp, roles: ["Farmer", "Expert", "Logistics"] },
+    { id: "diagnostics", label: t("diagnostics"), icon: Leaf, roles: ["Farmer", "Expert"] },
+    { id: "market", label: t("market"), icon: TrendingUp, roles: ["Farmer", "Expert"] },
     { id: "expert-portal", label: t("verification_portal"), icon: FlaskConical, roles: ["Expert"] },
     { id: "fleet", label: t("fleet_hub"), icon: Truck, roles: ["Logistics"] },
     { id: "logistics", label: t("mandi_link"), icon: Package, roles: ["Farmer"] },
     { id: "network", label: t("network"), icon: Users, roles: ["Farmer", "Expert", "Logistics"] },
   ];
+
+  const unreadCount = notifications.filter(n => !n.isRead).length;
 
   return (
     <SidebarProvider>
@@ -127,11 +128,11 @@ export default function KisanMitraApp() {
             </SidebarMenu>
           </SidebarContent>
           <SidebarFooter className="border-t p-4 space-y-2">
-            <SidebarMenuButton onClick={() => setActiveSection("settings")} className="h-12">
-              <Settings className="h-5 w-5" /> <span>{t("settings")}</span>
+            <SidebarMenuButton onClick={() => setActiveSection("settings")} className="h-12 rounded-xl">
+              <Settings className="h-5 w-5" /> <span className="font-bold">{t("settings")}</span>
             </SidebarMenuButton>
-            <SidebarMenuButton onClick={() => logout()} className="h-12 text-destructive">
-              <LogOut className="h-5 w-5" /> <span>{t("logout")}</span>
+            <SidebarMenuButton onClick={() => logout()} className="h-12 text-destructive rounded-xl">
+              <LogOut className="h-5 w-5" /> <span className="font-bold">{t("logout")}</span>
             </SidebarMenuButton>
           </SidebarFooter>
         </Sidebar>
@@ -140,16 +141,65 @@ export default function KisanMitraApp() {
           <header className="h-16 flex items-center justify-between px-6 border-b glass-card sticky top-0 z-30">
             <div className="flex items-center gap-4">
               <SidebarTrigger className="md:hidden" />
-              <h2 className="text-sm font-black uppercase tracking-[0.2em] text-muted-foreground hidden md:block">Grid Intelligence</h2>
+              <h2 className="text-xs font-black uppercase tracking-[0.2em] text-muted-foreground hidden md:block">Grid Intelligence Hub</h2>
             </div>
-            <div className="flex items-center gap-4">
-              <Avatar className="h-8 w-8 border-2 border-primary/20">
-                <AvatarImage src={profileImage || ""} />
-                <AvatarFallback>{(name || role)[0]}</AvatarFallback>
-              </Avatar>
+            <div className="flex items-center gap-6">
+              <Popover onOpenChange={(open) => open && markNotificationsAsRead()}>
+                <PopoverTrigger asChild>
+                  <Button variant="ghost" size="icon" className="relative h-10 w-10 rounded-full bg-muted/50 hover:bg-muted">
+                    <Bell className="h-5 w-5" />
+                    {unreadCount > 0 && (
+                      <span className="absolute -top-1 -right-1 h-5 w-5 bg-destructive text-white text-[10px] font-black rounded-full flex items-center justify-center border-2 border-background">
+                        {unreadCount}
+                      </span>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-80 p-0 rounded-3xl overflow-hidden shadow-2xl border-none">
+                  <div className="bg-primary p-4 text-white">
+                    <h4 className="font-black text-sm uppercase tracking-widest">Recent Activity</h4>
+                  </div>
+                  <ScrollArea className="h-80">
+                    <div className="p-2">
+                      {notifications.length === 0 ? (
+                        <div className="p-10 text-center opacity-40">
+                          <Bell className="h-10 w-10 mx-auto mb-2" />
+                          <p className="text-xs font-bold">No new notifications</p>
+                        </div>
+                      ) : (
+                        notifications.map((notif) => (
+                          <div key={notif.id} className="p-4 rounded-2xl hover:bg-muted/50 transition-colors flex gap-4 items-start group">
+                            <div className={cn(
+                              "h-8 w-8 rounded-full flex items-center justify-center shrink-0",
+                              notif.type === 'alert' ? 'bg-destructive/10 text-destructive' : 'bg-primary/10 text-primary'
+                            )}>
+                              {notif.type === 'alert' ? <Package className="h-4 w-4" /> : <CheckCircle2 className="h-4 w-4" />}
+                            </div>
+                            <div className="space-y-1">
+                              <p className="text-xs font-black leading-tight">{notif.title}</p>
+                              <p className="text-[10px] text-muted-foreground font-medium leading-relaxed">{notif.message}</p>
+                              <p className="text-[8px] text-slate-400 uppercase font-bold">{new Date(notif.createdAt).toLocaleTimeString()}</p>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </ScrollArea>
+                </PopoverContent>
+              </Popover>
+
+              <div className="flex items-center gap-3 p-1 pl-4 bg-muted/30 rounded-full border border-border/50">
+                <span className="text-xs font-black text-slate-600 hidden sm:block">{name}</span>
+                <Avatar className="h-8 w-8 border-2 border-primary/20">
+                  <AvatarImage src={profileImage || ""} />
+                  <AvatarFallback className="bg-primary text-white font-black">
+                    {name ? name[0] : (role ? role[0] : 'U')}
+                  </AvatarFallback>
+                </Avatar>
+              </div>
             </div>
           </header>
-          <main className="flex-1 p-6 md:p-8 overflow-x-hidden">
+          <main className="flex-1 p-6 md:p-10 overflow-x-hidden custom-scrollbar">
             {renderSection()}
           </main>
         </SidebarInset>

@@ -24,7 +24,7 @@
     --border: 120 20% 88%;
     --input: 120 20% 88%;
     --ring: 142 45% 44%;
-    --radius: 1.25rem;
+    --radius: 1.5rem;
   }
 
   [data-theme='dark'] {
@@ -44,7 +44,7 @@
     --border: 0 0% 0%;
   }
 
-  /* Regional Font & Variable Script Height Logic */
+  /* Regional Font Optimization */
   [data-lang="Hindi"], [data-lang="Marathi"], [data-lang="Bhojpuri"], [data-lang="Haryanvi"], [data-lang="Rajasthani"], [data-lang="Magahi"], [data-lang="Pahadi"] {
     font-family: 'Mukta', sans-serif !important;
     line-height: 1.6;
@@ -52,7 +52,7 @@
 
   [data-lang="Kannada"], [data-lang="Telugu"] {
     font-family: 'Noto Sans Kannada', sans-serif !important;
-    line-height: 1.85; /* Increased for Dravidian glyphs */
+    line-height: 1.85; 
   }
 
   [data-lang="Tamil"] {
@@ -63,11 +63,6 @@
   [data-lang="Malayalam"] {
     font-family: 'Noto Sans Malayalam', sans-serif !important;
     line-height: 1.9;
-  }
-
-  [data-lang="Bengali"], [data-lang="Oriya"] {
-    font-family: 'Inter', sans-serif; /* Fallback until specific fonts loaded */
-    line-height: 1.7;
   }
 }
 
@@ -84,25 +79,26 @@
   @apply bg-white/70 backdrop-blur-md border border-white/20 shadow-2xl;
 }
 
-.touch-target {
-  @apply min-h-[44px] min-w-[44px] flex items-center justify-center;
-}
-
-@keyframes pulse-engagement {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.1); }
+.two-tone-icon {
+  @apply h-14 w-14 rounded-2xl flex items-center justify-center;
 }
 
 .animate-pulse-engagement {
-  animation: pulse-engagement 0.5s ease-in-out;
+  animation: pulse-engagement 1.5s infinite;
 }
 
-.verified-expert-glow {
-  border: 2px solid #eab308;
-  box-shadow: 0 0 15px #eab308;
+@keyframes pulse-engagement {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.8; transform: scale(1.05); }
 }
 
-/* layout resilience for longer translations */
-.flex-wrap-resilient {
-  @apply flex flex-wrap gap-2 overflow-hidden;
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: hsl(var(--primary) / 0.2);
+  border-radius: 10px;
 }
