@@ -15,7 +15,9 @@ import {
   FlaskConical,
   Loader2,
   Package,
-  CheckCircle2
+  CheckCircle2,
+  ShieldCheck,
+  Zap
 } from "lucide-react";
 import { 
   SidebarProvider, 
@@ -72,15 +74,26 @@ export default function KisanMitraApp() {
 
   if (!isAuthenticated || !role) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="animate-spin text-primary" /></div>;
 
+  // Role-Based Section Rendering with Guard
   const renderSection = () => {
     switch (activeSection) {
       case "dashboard": return <DashboardHome onNavigate={setActiveSection} />;
-      case "diagnostics": return <CropDiagnostics />;
-      case "market": return <MarketIntelligence />;
-      case "logistics": return <MandiLink />;
+      case "diagnostics": 
+        if (role === "Logistics") return <DashboardHome onNavigate={setActiveSection} />;
+        return <CropDiagnostics />;
+      case "market": 
+        if (role === "Logistics") return <DashboardHome onNavigate={setActiveSection} />;
+        return <MarketIntelligence />;
+      case "logistics": 
+        if (role !== "Farmer") return <DashboardHome onNavigate={setActiveSection} />;
+        return <MandiLink />;
       case "network": return <KisanNetwork />;
-      case "expert-portal": return <ExpertVerificationPortal />;
-      case "fleet": return <FleetManagement />;
+      case "expert-portal": 
+        if (role !== "Expert") return <DashboardHome onNavigate={setActiveSection} />;
+        return <ExpertVerificationPortal />;
+      case "fleet": 
+        if (role !== "Logistics") return <DashboardHome onNavigate={setActiveSection} />;
+        return <FleetManagement />;
       case "settings": return <SettingsView />;
       default: return <DashboardHome onNavigate={setActiveSection} />;
     }
@@ -141,7 +154,10 @@ export default function KisanMitraApp() {
           <header className="h-16 flex items-center justify-between px-6 border-b glass-card sticky top-0 z-30">
             <div className="flex items-center gap-4">
               <SidebarTrigger className="md:hidden" />
-              <h2 className="text-xs font-black uppercase tracking-[0.2em] text-muted-foreground hidden md:block">Grid Intelligence Hub</h2>
+              <div className="hidden md:flex items-center gap-3">
+                <ShieldCheck className="h-4 w-4 text-primary" />
+                <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">{role} Intelligence Hub</h2>
+              </div>
             </div>
             <div className="flex items-center gap-6">
               <Popover onOpenChange={(open) => open && markNotificationsAsRead()}>

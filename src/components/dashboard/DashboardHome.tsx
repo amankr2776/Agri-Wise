@@ -19,7 +19,10 @@ import {
   Clock,
   ArrowRight,
   Package,
-  Info
+  Info,
+  FlaskConical,
+  ClipboardCheck,
+  RefreshCw
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -79,26 +82,57 @@ export function DashboardHome({ onNavigate }: DashboardHomeProps) {
     });
   }, []);
 
-  const stats = [
-    { id: "market", label: t("active_alerts"), value: "3", icon: AlertTriangle, color: "text-destructive", bg: "bg-destructive/10" },
-    { id: "market", label: t("best_price"), value: "₹2,150/q", sub: "Wheat (Nashik)", icon: TrendingUp, color: "text-primary", bg: "bg-primary/10" },
-    { 
-      id: role === "Logistics" ? "fleet" : "logistics", 
-      label: t("active_shipments"), 
-      value: "2", 
-      icon: Truck, 
-      color: "text-blue-500", 
-      bg: "bg-blue-500/10" 
-    },
-    { id: "network", label: t("community_posts"), value: "12", icon: Users, color: "text-amber-500", bg: "bg-amber-500/10" },
-  ];
+  // Role-Aware Statistics
+  const stats = useMemo(() => {
+    if (role === "Farmer") {
+      return [
+        { id: "diagnostics", label: "Active Alerts", value: "3", icon: AlertTriangle, color: "text-destructive", bg: "bg-destructive/10" },
+        { id: "market", label: "Best Mandi Price", value: "₹2,150/q", sub: "Wheat (Nashik)", icon: TrendingUp, color: "text-primary", bg: "bg-primary/10" },
+        { id: "logistics", label: "My Shipments", value: "2", icon: Truck, color: "text-blue-500", bg: "bg-blue-500/10" },
+        { id: "network", label: "Network Posts", value: "12", icon: Users, color: "text-amber-500", bg: "bg-amber-500/10" },
+      ];
+    } else if (role === "Expert") {
+      return [
+        { id: "expert-portal", label: "Pending Verifications", value: "15", icon: FlaskConical, color: "text-blue-500", bg: "bg-blue-500/10" },
+        { id: "diagnostics", label: "Active Outbreaks", value: "8", icon: Bug, color: "text-destructive", bg: "bg-destructive/10" },
+        { id: "network", label: "Expert Insights", value: "45", icon: ClipboardCheck, color: "text-primary", bg: "bg-primary/10" },
+        { id: "network", label: "Farmer Queries", value: "24", icon: MessageCircle, color: "text-amber-500", bg: "bg-amber-500/10" },
+      ];
+    } else {
+      return [
+        { id: "fleet", label: "Total Fleet", value: "45", icon: Truck, color: "text-primary", bg: "bg-primary/10" },
+        { id: "fleet", label: "Active Loads", value: "28", icon: Package, color: "text-blue-500", bg: "bg-blue-500/10" },
+        { id: "fleet", label: "Available Units", value: "12", icon: Activity, color: "text-green-500", bg: "bg-green-500/10" },
+        { id: "fleet", label: "Maintenance", value: "5", icon: RefreshCw, color: "text-amber-500", bg: "bg-amber-500/10" },
+      ];
+    }
+  }, [role]);
 
-  const quickActions = [
-    { id: "diagnostics", label: t("ai_scan"), icon: Leaf, desc: "AI Field Scan", color: "text-primary", bg: "bg-primary/10" },
-    { id: "market", label: t("market"), icon: Search, desc: "Market Trends", color: "text-blue-500", bg: "bg-blue-500/10" },
-    { id: "logistics", label: t("mandi_link"), icon: Truck, desc: "Transport", color: "text-amber-500", bg: "bg-amber-500/10" },
-    { id: "network", label: t("network"), icon: MessageCircle, desc: "Community", color: "text-purple-500", bg: "bg-purple-500/10" },
-  ];
+  // Role-Aware Quick Actions
+  const quickActions = useMemo(() => {
+    if (role === "Farmer") {
+      return [
+        { id: "diagnostics", label: "AI Field Scan", icon: Leaf, desc: "Multimodal Analysis", color: "text-primary", bg: "bg-primary/10" },
+        { id: "market", label: "Market Trends", icon: Search, desc: "Price Forecasting", color: "text-blue-500", bg: "bg-blue-500/10" },
+        { id: "logistics", label: "Book Transport", icon: Truck, desc: "Mandi-Link Pro", color: "text-amber-500", bg: "bg-amber-500/10" },
+        { id: "network", label: "Network Hub", icon: Users, desc: "Collaborate", color: "text-purple-500", bg: "bg-purple-500/10" },
+      ];
+    } else if (role === "Expert") {
+      return [
+        { id: "expert-portal", label: "Verify Protocols", icon: FlaskConical, desc: "Certify Solutions", color: "text-blue-500", bg: "bg-blue-500/10" },
+        { id: "diagnostics", label: "Pest Surveillance", icon: Bug, desc: "Monitor Outbreaks", color: "text-destructive", bg: "bg-destructive/10" },
+        { id: "network", label: "Publish Advisory", icon: ShieldAlert, desc: "Grid Broadcast", color: "text-primary", bg: "bg-primary/10" },
+        { id: "settings", label: "Expert Profile", icon: Users, desc: "Identity Settings", color: "text-slate-500", bg: "bg-slate-500/10" },
+      ];
+    } else {
+      return [
+        { id: "fleet", label: "Manage Fleet", icon: Truck, desc: "All-India Units", color: "text-primary", bg: "bg-primary/10" },
+        { id: "fleet", label: "Active Loads", icon: Package, desc: "Track Shipments", color: "text-blue-500", bg: "bg-blue-500/10" },
+        { id: "settings", label: "Update Rates", icon: TrendingUp, desc: "Agency Profile", color: "text-amber-500", bg: "bg-amber-500/10" },
+        { id: "network", label: "Mandi Network", icon: Users, desc: "Community News", color: "text-purple-500", bg: "bg-purple-500/10" },
+      ];
+    }
+  }, [role]);
 
   const alerts: AlertDetail[] = [
     { 
@@ -117,10 +151,6 @@ export function DashboardHome({ onNavigate }: DashboardHomeProps) {
       traditionalRemedy: "Burning neem leaves and loud drumming to disrupt flight."
     }
   ];
-
-  const handleStatClick = (sectionId: string) => {
-    onNavigate(sectionId);
-  };
 
   return (
     <div className="space-y-10">
@@ -144,7 +174,7 @@ export function DashboardHome({ onNavigate }: DashboardHomeProps) {
               {t("welcome")}, {name} Ji!
             </h1>
             <p className="text-xl md:text-2xl text-primary-foreground/90 font-medium">
-              {t("field_status", { city })}
+              Your professional grid in {city} is active.
             </p>
           </div>
         </div>
@@ -160,7 +190,7 @@ export function DashboardHome({ onNavigate }: DashboardHomeProps) {
           >
             <Card 
               className="glass-card cursor-pointer group hover:scale-[1.02] transition-all rounded-[2.5rem]" 
-              onClick={() => handleStatClick(stat.id)}
+              onClick={() => onNavigate(stat.id)}
             >
               <CardContent className="p-8 flex items-center justify-between">
                 <div>
@@ -180,7 +210,7 @@ export function DashboardHome({ onNavigate }: DashboardHomeProps) {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
         <div className="lg:col-span-8 space-y-8">
           <h2 className="text-2xl font-black flex items-center gap-3">
-            <Zap className="h-7 w-7 text-primary" /> {t("shortcuts")}
+            <Zap className="h-7 w-7 text-primary" /> Professional Tools
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             {quickActions.map((action, i) => (
