@@ -1,21 +1,27 @@
+
 'use client';
 
 import React, { useState, useMemo } from "react";
 import { 
   ArrowLeft, 
   PlusCircle, 
-  Volume2, 
-  Bug, 
   Droplets, 
   TrendingUp, 
+  TrendingDown,
   ShieldCheck, 
-  LayoutGrid, 
   FlaskConical,
   Loader2,
   Tag,
   Zap,
   Mic2,
-  ChevronRight
+  ChevronRight,
+  Search,
+  Settings2,
+  Calendar,
+  Mountain,
+  Edit2,
+  Save,
+  X
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -23,45 +29,66 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
-import { query, collection } from "firebase/firestore";
-import { addDocumentNonBlocking } from "@/firebase/non-blocking-updates";
+import { query, collection, doc } from "firebase/firestore";
+import { addDocumentNonBlocking, updateDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 import { useToast } from "@/hooks/use-toast";
 import { useTranslation } from "@/hooks/use-translation";
+import { useAppState } from "@/lib/app-state";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { DiagnosticTool } from "./DiagnosticTool";
 
+const CATEGORIES = ["Plant", "Seed", "Vegetable", "Fruit", "Grain"];
+
 export function CropDiagnostics() {
   const { t, language } = useTranslation();
+  const { role } = useAppState();
   const firestore = useFirestore();
   const { toast } = useToast();
-  const [selectedCropId, setSelectedCropId] = useState<string | null>(null);
+  
+  const [selectedCategory, setSelectedCategory] = useState<string>("Plant");
+  const [searchQuery, setSearchQuery] = useState("");
   const [isReportOpen, setIsReportOpen] = useState(false);
+  const [editingPriceId, setEditingPriceId] = useState<string | null>(null);
+  const [newPrice, setNewPrice] = useState("");
 
   const cropsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
     return query(collection(firestore, "crops"));
   }, [firestore]);
 
-  const { data: crops, isLoading } = useCollection(cropsQuery);
+  const { data: allCrops, isLoading } = useCollection(cropsQuery);
 
-  const selectedCrop = useMemo(() => {
-    return crops?.find(c => c.id === selectedCropId) || null;
-  }, [crops, selectedCropId]);
+  const filteredCrops = useMemo(() => {
+    if (!allCrops) return [];
+    return allCrops.filter(crop => {
+      const matchesCategory = crop.category === selectedCategory;
+      const matchesSearch = crop.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                           (crop.diseaseName?.toLowerCase().includes(searchQuery.toLowerCase()));
+      return matchesCategory && matchesSearch;
+    });
+  }, [allCrops, selectedCategory, searchQuery]);
 
-  const speakSummary = () => {
-    if (!selectedCrop) return;
-    const text = `${selectedCrop.name}. ${t("diagnostics")}: ${selectedCrop.symptoms || selectedCrop.diseaseName}. ${t("heritage_wisdom")}: ${selectedCrop.desiNuskha}`;
+  const speakCropDetails = (crop: any) => {
+    const text = `${crop.name}. Irrigation interval: Every ${crop.irrigationInterval} days. Estimated market price: ${crop.estimatedMarketPrice} rupees per quintal. Sowing season: ${crop.sowingSeason}. Recommended soil: ${crop.soilType}. Diagnosis: ${crop.symptoms || crop.diseaseName}.`;
     if ("speechSynthesis" in window) {
       window.speechSynthesis.cancel();
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.lang = language === 'Hindi' ? 'hi-IN' : 'en-IN';
       window.speechSynthesis.speak(utterance);
     }
+  };
+
+  const handleUpdatePrice = (cropId: string) => {
+    if (!firestore || !newPrice) return;
+    updateDocumentNonBlocking(doc(firestore, "crops", cropId), {
+      estimatedMarketPrice: Number(newPrice)
+    });
+    setEditingPriceId(null);
+    toast({ title: "Price Updated", description: "The global market registry has been updated." });
   };
 
   const handleManualReport = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -71,8 +98,8 @@ export function CropDiagnostics() {
     addDocumentNonBlocking(collection(firestore, "crops"), {
       name: formData.get("cropName"),
       diseaseName: formData.get("diseaseName"),
+      category: selectedCategory,
       symptoms: formData.get("symptoms"),
-      category: "User Submitted",
       isCertified: false,
       createdAt: new Date().toISOString()
     });
@@ -80,136 +107,190 @@ export function CropDiagnostics() {
     toast({ title: t("report_issue"), description: "Sent to professional expert queue." });
   };
 
-  if (isLoading) return <div className="p-20 text-center"><Loader2 className="animate-spin mx-auto text-primary" /></div>;
-
   return (
     <div className="space-y-12">
-      <AnimatePresence mode="wait">
-        {!selectedCropId ? (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-16">
-            <div className="space-y-4">
-              <h2 className="text-4xl font-black tracking-tighter flex items-center gap-3">
-                <Zap className="h-10 w-10 text-primary" /> {t("ai_scan")}
-              </h2>
-              <DiagnosticTool />
-            </div>
+      <div className="space-y-6">
+        <h2 className="text-4xl font-black tracking-tighter flex items-center gap-3">
+          <Zap className="h-10 w-10 text-primary" /> {t("ai_scan")}
+        </h2>
+        <DiagnosticTool />
+      </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-              <Dialog open={isReportOpen} onOpenChange={setIsReportOpen}>
-                <DialogTrigger asChild>
-                  <button className="h-80 rounded-[3rem] border-2 border-dashed border-primary/30 flex flex-col items-center justify-center bg-primary/5 hover:bg-primary/10 transition-all group">
-                    <PlusCircle className="h-14 w-14 text-primary mb-4 group-hover:scale-110 transition-transform" />
-                    <p className="font-black text-xl text-primary">{t("report_issue")}</p>
-                  </button>
-                </DialogTrigger>
-                <DialogContent className="rounded-[3rem] p-10 border-none shadow-2xl">
-                  <DialogHeader>
-                    <DialogTitle className="text-3xl font-black">{t("report_issue")}</DialogTitle>
-                    <DialogDescription>Submit field observations for scientist verification.</DialogDescription>
-                  </DialogHeader>
-                  <form onSubmit={handleManualReport} className="space-y-6 pt-6">
-                    <Input name="cropName" placeholder="Crop Name (e.g. Paddy)" required className="h-12 rounded-xl bg-muted/30 border-none font-bold" />
-                    <Input name="diseaseName" placeholder="Suspected Disease" className="h-12 rounded-xl bg-muted/30 border-none font-bold" />
-                    <Textarea name="symptoms" placeholder="Describe symptoms..." required className="rounded-xl bg-muted/30 border-none min-h-[120px] font-medium" />
-                    <Button type="submit" className="w-full h-14 rounded-2xl font-black text-lg">{t("publish")}</Button>
-                  </form>
-                </DialogContent>
-              </Dialog>
+      <div className="space-y-8">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+          <div className="flex flex-wrap gap-2 p-1.5 bg-muted/50 rounded-2xl">
+            {CATEGORIES.map(cat => (
+              <Button
+                key={cat}
+                onClick={() => setSelectedCategory(cat)}
+                variant={selectedCategory === cat ? "default" : "ghost"}
+                className={cn(
+                  "rounded-xl font-black text-xs uppercase tracking-widest px-6 h-11",
+                  selectedCategory === cat ? "bg-primary text-white shadow-lg" : "text-muted-foreground"
+                )}
+              >
+                {cat}s
+              </Button>
+            ))}
+          </div>
+          
+          <div className="relative w-full md:w-80">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search by name or pest..."
+              className="pl-12 h-12 rounded-2xl bg-white/70 border-none shadow-sm font-bold"
+            />
+          </div>
+        </div>
 
-              {crops?.map((crop) => (
+        {isLoading ? (
+          <div className="p-20 text-center"><Loader2 className="animate-spin mx-auto text-primary" /></div>
+        ) : filteredCrops.length === 0 ? (
+          <div className="p-20 text-center glass-card rounded-[3rem] space-y-4">
+            <Search className="h-16 w-16 mx-auto text-muted-foreground opacity-20" />
+            <h3 className="text-2xl font-black">No results found for "{searchQuery}"</h3>
+            <Button variant="outline" onClick={() => setSearchQuery("")} className="rounded-xl">Clear Filters</Button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 gap-10">
+            <AnimatePresence mode="popLayout">
+              {filteredCrops.map((crop) => (
                 <motion.div
                   key={crop.id}
-                  whileHover={{ scale: 1.05 }}
-                  className="h-80 rounded-[3rem] overflow-hidden cursor-pointer glass-card relative group shadow-xl"
-                  onClick={() => setSelectedCropId(crop.id)}
+                  layout
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  className="group relative"
                 >
-                  <img src={crop.imageUrl || "https://picsum.photos/seed/crop/400/400"} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent p-10 flex flex-col justify-end">
-                    <Badge className="w-fit mb-3 bg-white/20 text-white border-none font-black uppercase text-[10px] tracking-widest">{crop.category}</Badge>
-                    <h3 className="text-3xl font-black text-white tracking-tight">{crop.name}</h3>
-                    <ChevronRight className="h-6 w-6 text-white/50 group-hover:text-white absolute bottom-10 right-10 transition-all" />
-                  </div>
+                  <Card className="glass-card rounded-[3rem] overflow-hidden border-none shadow-xl hover:shadow-2xl transition-all duration-500">
+                    <div className="grid grid-cols-1 lg:grid-cols-12">
+                      {/* Column 1: Image */}
+                      <div className="lg:col-span-4 h-64 lg:h-auto relative overflow-hidden">
+                        <img 
+                          src={crop.imageUrl || "https://picsum.photos/seed/agri/800/800"} 
+                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" 
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                        <div className="absolute bottom-6 left-6 flex items-center gap-3">
+                          <Button 
+                            onClick={() => speakCropDetails(crop)} 
+                            className="h-10 w-10 rounded-full bg-white/20 backdrop-blur-md text-white hover:bg-primary transition-all"
+                          >
+                            <Mic2 className="h-5 w-5" />
+                          </Button>
+                        </div>
+                      </div>
+
+                      {/* Column 2: Pest & Disease Info */}
+                      <div className="lg:col-span-4 p-10 space-y-6 bg-white/50 border-r border-white/20">
+                        <div className="space-y-1">
+                          <div className="flex items-center justify-between">
+                            <Badge className="bg-primary/20 text-primary border-none font-black text-[10px] uppercase tracking-widest">
+                              {crop.category}
+                            </Badge>
+                            <Badge variant={crop.severity === 'Critical' ? 'destructive' : 'default'} className="font-black text-[10px] uppercase">
+                              {crop.severity}
+                            </Badge>
+                          </div>
+                          <h3 className="text-4xl font-black tracking-tighter">{crop.name}</h3>
+                          <p className="text-destructive font-black uppercase text-xs tracking-tight">{crop.diseaseName}</p>
+                        </div>
+
+                        <Tabs defaultValue="diagnosis" className="w-full">
+                          <TabsList className="bg-muted rounded-full p-1 h-10 w-full mb-4">
+                            <TabsTrigger value="diagnosis" className="rounded-full text-[9px] uppercase font-black tracking-widest">Diagnosis</TabsTrigger>
+                            <TabsTrigger value="cure" className="rounded-full text-[9px] uppercase font-black tracking-widest">Cure</TabsTrigger>
+                            <TabsTrigger value="natural" className="rounded-full text-[9px] uppercase font-black tracking-widest">Natural</TabsTrigger>
+                          </TabsList>
+                          <TabsContent value="diagnosis" className="text-sm font-medium text-slate-600 leading-relaxed italic">
+                            {crop.symptoms || "Intelligence analysis confirmed by agricultural protocol."}
+                          </TabsContent>
+                          <TabsContent value="cure" className="text-sm font-bold text-destructive">
+                            {crop.chemicalCure} ({crop.chemicalDosage})
+                          </TabsContent>
+                          <TabsContent value="natural" className="text-sm font-bold text-primary italic">
+                            {crop.desiNuskha}
+                          </TabsContent>
+                        </Tabs>
+                      </div>
+
+                      {/* Column 3: Smart Farming Summary */}
+                      <div className="lg:col-span-4 p-10 space-y-8 bg-slate-50/50">
+                        <h4 className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Smart Farming Summary</h4>
+                        
+                        <div className="grid grid-cols-2 gap-6">
+                          <div className="space-y-2">
+                            <div className="flex items-center gap-2 text-blue-600">
+                              <Droplets className="h-4 w-4" />
+                              <span className="text-[10px] font-black uppercase">Irrigation</span>
+                            </div>
+                            <p className="text-lg font-black tracking-tight">Every {crop.irrigationInterval || 7} Days</p>
+                            <Progress value={65} className="h-1 bg-blue-100" />
+                          </div>
+
+                          <div className="space-y-2">
+                            <div className="flex items-center gap-2 text-amber-600">
+                              <Calendar className="h-4 w-4" />
+                              <span className="text-[10px] font-black uppercase">Season</span>
+                            </div>
+                            <p className="text-lg font-black tracking-tight">{crop.sowingSeason || "Kharif"}</p>
+                          </div>
+
+                          <div className="space-y-2">
+                            <div className="flex items-center gap-2 text-slate-600">
+                              <Mountain className="h-4 w-4" />
+                              <span className="text-[10px] font-black uppercase">Soil Type</span>
+                            </div>
+                            <p className="text-lg font-black tracking-tight">{crop.soilType || "Loamy"}</p>
+                          </div>
+
+                          <div className="space-y-2">
+                            <div className="flex items-center gap-2 text-primary">
+                              <Tag className="h-4 w-4" />
+                              <span className="text-[10px] font-black uppercase">Market Value</span>
+                            </div>
+                            {editingPriceId === crop.id ? (
+                              <div className="flex gap-1 animate-in slide-in-from-right-2">
+                                <Input 
+                                  value={newPrice} 
+                                  onChange={(e) => setNewPrice(e.target.value)}
+                                  className="h-8 w-20 rounded-lg text-xs font-black"
+                                  autoFocus
+                                />
+                                <Button size="icon" className="h-8 w-8 rounded-lg bg-primary" onClick={() => handleUpdatePrice(crop.id)}><Save className="h-4 w-4"/></Button>
+                                <Button size="icon" variant="ghost" className="h-8 w-8 rounded-lg" onClick={() => setEditingPriceId(null)}><X className="h-4 w-4"/></Button>
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-2">
+                                <p className="text-xl font-black text-primary">₹{crop.estimatedMarketPrice?.toLocaleString() || "2,150"}</p>
+                                <TrendingUp className="h-4 w-4 text-primary animate-bounce" />
+                                {role === 'Authority' && (
+                                  <Button variant="ghost" size="icon" className="h-6 w-6 rounded-full" onClick={() => { setEditingPriceId(crop.id); setNewPrice(crop.estimatedMarketPrice?.toString() || ""); }}>
+                                    <Edit2 className="h-3 w-3" />
+                                  </Button>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="pt-6 border-t border-slate-200">
+                          <Button className="w-full h-12 rounded-xl font-black text-xs uppercase tracking-widest shadow-lg shadow-primary/10">
+                            Apply Optimized Protocol
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </Card>
                 </motion.div>
               ))}
-            </div>
-          </motion.div>
-        ) : (
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-10">
-            <Button variant="ghost" onClick={() => setSelectedCropId(null)} className="gap-2 font-black uppercase text-[10px] tracking-widest bg-muted/50 hover:bg-muted rounded-full px-6">
-              <ArrowLeft className="h-4 w-4" /> {t("dashboard")}
-            </Button>
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
-              <div className="lg:col-span-5">
-                <Card className="rounded-[3rem] overflow-hidden shadow-2xl border-none">
-                  <img src={selectedCrop?.imageUrl} className="w-full aspect-[4/5] object-cover" />
-                </Card>
-              </div>
-              <div className="lg:col-span-7 space-y-8">
-                <Card className="glass-card p-12 rounded-[3rem] space-y-10 border-none">
-                  <div className="flex justify-between items-start">
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-4">
-                        <h3 className="text-4xl font-black tracking-tighter">{t("pathogen_intel")}</h3>
-                        <Button variant="ghost" size="icon" onClick={speakSummary} className="h-10 w-10 bg-primary/10 text-primary rounded-full">
-                          <Mic2 className="h-5 w-5" />
-                        </Button>
-                      </div>
-                      <p className="text-destructive text-xl font-black uppercase tracking-tight">{selectedCrop?.diseaseName}</p>
-                    </div>
-                    <Badge variant="destructive" className="px-6 py-1.5 font-black uppercase tracking-widest text-[10px]">{selectedCrop?.severity}</Badge>
-                  </div>
-                  
-                  <Tabs defaultValue="diagnosis" className="w-full">
-                    <TabsList className="bg-muted rounded-full p-1.5 h-14 w-full justify-start gap-2">
-                      <TabsTrigger value="diagnosis" className="rounded-full h-11 px-8 font-black text-xs uppercase tracking-widest data-[state=active]:bg-primary data-[state=active]:text-white">
-                        {t("diagnostics")}
-                      </TabsTrigger>
-                      <TabsTrigger value="remedy" className="rounded-full h-11 px-8 font-black text-xs uppercase tracking-widest data-[state=active]:bg-primary data-[state=active]:text-white">
-                        {t("chemical_cure")}
-                      </TabsTrigger>
-                      <TabsTrigger value="desi" className="rounded-full h-11 px-8 font-black text-xs uppercase tracking-widest data-[state=active]:bg-primary data-[state=active]:text-white">
-                        {t("heritage_wisdom")}
-                      </TabsTrigger>
-                    </TabsList>
-                    <TabsContent value="diagnosis" className="pt-6 text-lg italic font-medium leading-relaxed text-slate-600 border-l-4 border-primary/20 pl-6">
-                      {selectedCrop?.symptoms || "Intelligence analysis confirmed by agricultural protocol."}
-                    </TabsContent>
-                    <TabsContent value="remedy" className="pt-6">
-                      <div className="p-8 bg-slate-50 rounded-[2rem] font-black text-2xl text-slate-900 border shadow-inner">
-                        {selectedCrop?.chemicalCure}
-                      </div>
-                    </TabsContent>
-                    <TabsContent value="desi" className="pt-6">
-                      <div className="p-8 bg-amber-50 rounded-[2rem] italic font-medium text-xl text-amber-900 border border-amber-100 shadow-inner">
-                        "{selectedCrop?.desiNuskha}"
-                      </div>
-                    </TabsContent>
-                  </Tabs>
-                </Card>
-
-                <div className="grid grid-cols-2 gap-8">
-                  <Card className="glass-card p-10 rounded-[3rem] border-l-8 border-blue-500 relative overflow-hidden">
-                    <div className="absolute top-0 right-0 p-6 opacity-5">
-                      <Droplets className="h-20 w-20" />
-                    </div>
-                    <h4 className="text-[10px] font-black uppercase text-blue-600 tracking-widest mb-6">{t("irrigation")}</h4>
-                    <p className="text-4xl font-black">{selectedCrop?.irrigationInterval || 7} Days</p>
-                    <Progress value={75} className="mt-6 h-2 bg-blue-100" />
-                  </Card>
-                  <Card className="glass-card p-10 rounded-[3rem] border-l-8 border-primary relative overflow-hidden">
-                    <div className="absolute top-0 right-0 p-6 opacity-5">
-                      <TrendingUp className="h-20 w-20" />
-                    </div>
-                    <h4 className="text-[10px] font-black uppercase text-primary tracking-widest mb-6">{t("market")}</h4>
-                    <p className="text-4xl font-black">₹{selectedCrop?.estimatedPrice || 2150}</p>
-                    <Badge className="mt-6 bg-primary/10 text-primary border-none font-black text-[10px] uppercase">{t("mandi_price")}</Badge>
-                  </Card>
-                </div>
-              </div>
-            </div>
-          </motion.div>
+            </AnimatePresence>
+          </div>
         )}
-      </AnimatePresence>
+      </div>
     </div>
   );
 }

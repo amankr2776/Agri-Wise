@@ -19,6 +19,28 @@
       },
       "required": ["id", "role"]
     },
+    "Crop": {
+      "title": "Crop",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "category": { "type": "string", "enum": ["Plant", "Seed", "Vegetable", "Fruit", "Grain"] },
+        "diseaseName": { "type": "string" },
+        "severity": { "type": "string", "enum": ["Critical", "High", "Medium", "Low"] },
+        "chemicalCure": { "type": "string" },
+        "chemicalDosage": { "type": "string" },
+        "desiNuskha": { "type": "string" },
+        "symptoms": { "type": "string" },
+        "isCertified": { "type": "boolean" },
+        "imageUrl": { "type": "string" },
+        "irrigationInterval": { "type": "integer", "description": "Days between watering" },
+        "estimatedMarketPrice": { "type": "number", "description": "Price in INR per Quintal" },
+        "sowingSeason": { "type": "string" },
+        "soilType": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      }
+    },
     "Post": {
       "title": "Post",
       "type": "object",
@@ -52,32 +74,6 @@
         "reportedBy": { "type": "string" },
         "createdAt": { "type": "string", "format": "date-time" }
       }
-    },
-    "Comment": {
-      "title": "Comment",
-      "type": "object",
-      "properties": {
-        "id": { "type": "string" },
-        "postId": { "type": "string" },
-        "authorId": { "type": "string" },
-        "authorName": { "type": "string" },
-        "content": { "type": "string" },
-        "parentId": { "type": "string", "description": "For nested replies" },
-        "createdAt": { "type": "string", "format": "date-time" }
-      }
-    },
-    "Feedback": {
-      "title": "Feedback",
-      "type": "object",
-      "properties": {
-        "id": { "type": "string" },
-        "authorId": { "type": "string" },
-        "targetId": { "type": "string", "description": "ID of Agency or Product" },
-        "targetType": { "type": "string", "enum": ["Agency", "Product"] },
-        "rating": { "type": "number" },
-        "comment": { "type": "string" },
-        "createdAt": { "type": "string", "format": "date-time" }
-      }
     }
   },
   "auth": {
@@ -90,20 +86,16 @@
         "definition": { "entityName": "User", "schema": { "$ref": "#/backend/entities/User" }, "description": "User profile data." }
       },
       {
+        "path": "/crops/{cropId}",
+        "definition": { "entityName": "Crop", "schema": { "$ref": "#/backend/entities/Crop" }, "description": "Professional agricultural registry." }
+      },
+      {
         "path": "/posts/{postId}",
         "definition": { "entityName": "Post", "schema": { "$ref": "#/backend/entities/Post" }, "description": "Community posts." }
       },
       {
-        "path": "/posts/{postId}/comments/{commentId}",
-        "definition": { "entityName": "Comment", "schema": { "$ref": "#/backend/entities/Comment" }, "description": "Post comments." }
-      },
-      {
-        "path": "/feedback/{feedbackId}",
-        "definition": { "entityName": "Feedback", "schema": { "$ref": "#/backend/entities/Feedback" }, "description": "User reviews." }
-      },
-      {
         "path": "/pestOutbreaks/{outbreakId}",
-        "definition": { "entityName": "PestOutbreak", "schema": { "$ref": "#/backend/entities/PestOutbreak" }, "description": "Government bio-security alerts." }
+        "definition": { "entityName": "PestOutbreak", "schema": { "$ref": "#/backend/entities/PestOutbreak" }, "description": "Bio-security alerts." }
       }
     ]
   }
