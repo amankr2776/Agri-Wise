@@ -18,7 +18,10 @@ import {
   Navigation,
   Loader2,
   RefreshCw,
-  MoreVertical
+  MoreVertical,
+  User,
+  Building2,
+  DollarSign
 } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -26,9 +29,25 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useFirestore, useCollection, useUser, useMemoFirebase } from "@/firebase";
-import { collection, query, where, doc, updateDoc } from "firebase/firestore";
-import { updateDocumentNonBlocking } from "@/firebase/non-blocking-updates";
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle, 
+  DialogTrigger,
+  DialogFooter,
+  DialogDescription
+} from "@/components/ui/dialog";
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from "@/components/ui/select";
+import { useFirestore, useCollection, useUser, useMemoFirebase, useDoc } from "@/firebase";
+import { collection, query, where, doc, updateDoc, addDoc } from "firebase/firestore";
+import { updateDocumentNonBlocking, addDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 
@@ -38,13 +57,29 @@ export function FleetManagement() {
   const { toast } = useToast();
   
   const [activeTab, setActiveTab] = useState("bookings");
+  const [isAddVehicleOpen, setIsAddVehicleOpen] = useState(false);
+  const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
 
+  // Fetch Agency Profile from User Doc
+  const userRef = useMemoFirebase(() => {
+    if (!firestore || !user) return null;
+    return doc(firestore, "users", user.uid);
+  }, [firestore, user]);
+  const { data: profile } = useDoc(userRef);
+
+  // Fetch Provider's Fleet
+  const fleetQuery = useMemoFirebase(() => {
+    if (!firestore || !user) return null;
+    return query(collection(firestore, "vehicles"), where("ownerId", "==", user.uid));
+  }, [firestore, user]);
+  const { data: myFleet, isLoading: loadingFleet } = useCollection(fleetQuery);
+
+  // Fetch Active Bookings for this Provider
   const bookingsQuery = useMemoFirebase(() => {
-    if (!firestore) return null;
-    // For prototype, show all bookings. In prod, filter by logistics agency ID
+    if (!firestore || !user) return null;
+    // In a real app, bookings would be assigned to a specific provider ID
     return query(collection(firestore, "bookings"));
-  }, [firestore]);
-
+  }, [firestore, user]);
   const { data: incomingBookings, isLoading: loadingBookings } = useCollection(bookingsQuery);
 
   const handleUpdateStatus = (bookingId: string, nextStatus: string) => {
@@ -61,6 +96,57 @@ export function FleetManagement() {
     });
   };
 
+  const handleAddVehicle = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!firestore || !user) return;
+    
+    const formData = new FormData(e.currentTarget);
+    const vehicleData = {
+      ownerId: user.uid,
+      agencyName: profile?.firstName || "My Logistics Agency",
+      type: formData.get("type") as string,
+      plateNumber: formData.get("plateNumber") as string,
+      pricePerKm: profile?.basePrice || 25,
+      contact: profile?.phone || "+919876543210",
+      city: profile?.city || "Local Hub",
+      state: profile?.state || "Local State",
+      isAvailable: true,
+      createdAt: new Date().toISOString()
+    };
+
+    addDocumentNonBlocking(collection(firestore, "vehicles"), vehicleData);
+    setIsAddVehicleOpen(false);
+    toast({ title: "Vehicle Added", description: "The new vehicle is now listed in the Mandi-Link marketplace." });
+  };
+
+  const handleUpdateProfile = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!userRef) return;
+    setIsUpdatingProfile(true);
+    
+    const formData = new FormData(e.currentTarget);
+    updateDocumentNonBlocking(userRef, {
+      firstName: formData.get("agencyName"),
+      phone: formData.get("contact"),
+      basePrice: Number(formData.get("basePrice")),
+      city: formData.get("city"),
+      state: formData.get("state")
+    });
+
+    setIsUpdatingProfile(false);
+    toast({ title: "Profile Updated", description: "Agency details have been synchronized across your fleet." });
+  };
+
+  const handleUpdateVehiclePrice = (vehicleId: string, currentPrice: number) => {
+    if (!firestore) return;
+    const newPrice = prompt("Enter new Price per KM (₹):", currentPrice.toString());
+    if (newPrice && !isNaN(Number(newPrice))) {
+      const docRef = doc(firestore, "vehicles", vehicleId);
+      updateDocumentNonBlocking(docRef, { pricePerKm: Number(newPrice) });
+      toast({ title: "Price Updated", description: "Vehicle rate adjusted successfully." });
+    }
+  };
+
   const getNextStatus = (current: string) => {
     const sequence = ["Pending", "Confirmed", "Picked Up", "In Transit", "Reached Destination"];
     const idx = sequence.indexOf(current);
@@ -71,27 +157,59 @@ export function FleetManagement() {
     <div className="space-y-10 animate-in fade-in duration-500 max-w-7xl mx-auto pb-20">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
-          <h2 className="text-3xl font-black font-headline text-slate-900 flex items-center gap-3">
+          <h2 className="text-3xl font-black text-slate-900 flex items-center gap-3">
             <Truck className="h-9 w-9 text-primary" />
-            Provider Hub
+            Logistics Provider Hub
           </h2>
-          <p className="text-muted-foreground font-medium mt-1 uppercase text-[10px] tracking-widest">Global Logistics & Fleet Oversight</p>
+          <p className="text-muted-foreground font-medium mt-1 uppercase text-[10px] tracking-widest">Global Fleet Oversight & Agency Management</p>
         </div>
         <div className="flex items-center gap-3 bg-white p-1 rounded-full shadow-sm border">
-          <Button variant="ghost" className="rounded-full h-10 px-6 font-bold text-xs">Reports</Button>
-          <Button className="rounded-full h-10 px-8 font-black text-xs bg-primary shadow-lg shadow-primary/20">
-            <Plus className="h-4 w-4 mr-2" /> Add Vehicle
-          </Button>
+          <Dialog open={isAddVehicleOpen} onOpenChange={setIsAddVehicleOpen}>
+            <DialogTrigger asChild>
+              <Button className="rounded-full h-10 px-8 font-black text-xs bg-primary shadow-lg shadow-primary/20">
+                <Plus className="h-4 w-4 mr-2" /> Add Vehicle
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="rounded-[2rem] sm:max-w-[425px]">
+              <DialogHeader>
+                <DialogTitle className="text-2xl font-black">Register New Vehicle</DialogTitle>
+                <DialogDescription>Add a new unit to your active service fleet.</DialogDescription>
+              </DialogHeader>
+              <form onSubmit={handleAddVehicle} className="space-y-6 pt-4">
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Vehicle Type</Label>
+                  <Select name="type" defaultValue="Mini Truck">
+                    <SelectTrigger className="rounded-xl h-12 border-none bg-muted/30 font-bold">
+                      <SelectValue placeholder="Select Type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Heavy Truck">Heavy Truck (15T)</SelectItem>
+                      <SelectItem value="Mini Truck">Mini Truck (2T)</SelectItem>
+                      <SelectItem value="Pickup Van">Pickup Van (1T)</SelectItem>
+                      <SelectItem value="Refrigerated Van">Refrigerated Van (Perishables)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Plate Number</Label>
+                  <Input name="plateNumber" placeholder="e.g. PB-02-AT-1234" required className="rounded-xl h-12 bg-muted/30 border-none font-bold uppercase" />
+                </div>
+                <DialogFooter>
+                  <Button type="submit" className="w-full h-12 rounded-xl font-black">Register in Fleet</Button>
+                </DialogFooter>
+              </form>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="bg-muted/50 rounded-full p-1 h-12 mb-10 w-fit">
           <TabsTrigger value="bookings" className="rounded-full px-8 h-10 data-[state=active]:bg-primary data-[state=active]:text-white font-black text-xs uppercase tracking-widest">
-            Active Loads
+            Incoming Loads
           </TabsTrigger>
           <TabsTrigger value="fleet" className="rounded-full px-8 h-10 data-[state=active]:bg-primary data-[state=active]:text-white font-black text-xs uppercase tracking-widest">
-            My Fleet
+            My Fleet ({myFleet?.length || 0})
           </TabsTrigger>
           <TabsTrigger value="settings" className="rounded-full px-8 h-10 data-[state=active]:bg-primary data-[state=active]:text-white font-black text-xs uppercase tracking-widest">
             Agency Profile
@@ -125,7 +243,7 @@ export function FleetManagement() {
                           </div>
                           <p className="text-sm text-muted-foreground font-medium flex items-center gap-2">
                             <Navigation className="h-3.5 w-3.5" />
-                            To: {booking.destination || "Ludhiana Central Mandi"}
+                            To: {booking.destination || "Regional Mandi Hub"}
                           </p>
                           <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Trip ID: {booking.id.slice(-8)}</p>
                         </div>
@@ -141,12 +259,12 @@ export function FleetManagement() {
                           <p className="text-lg font-black text-primary">₹{booking.estimatedFare.toLocaleString()}</p>
                         </div>
                         <div className="space-y-1">
-                          <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Time Lapsed</p>
-                          <p className="text-lg font-black">42m</p>
+                          <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Commodity</p>
+                          <p className="text-lg font-black">{booking.cropType}</p>
                         </div>
                         <div className="space-y-1">
-                          <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Weight</p>
-                          <p className="text-lg font-black">2.4T</p>
+                          <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Logistics</p>
+                          <p className="text-lg font-black">Verified</p>
                         </div>
                       </div>
 
@@ -181,39 +299,123 @@ export function FleetManagement() {
         </TabsContent>
 
         <TabsContent value="fleet" className="space-y-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[
-              { type: "Refrigerated Van", status: "Active", loc: "Ludhiana Hub" },
-              { type: "Mini Truck", status: "Standby", loc: "Service Center" },
-              { type: "Heavy Truck", status: "Active", loc: "NH-44 Bypass" },
-            ].map((v, i) => (
-              <Card key={i} className="border-none shadow-xl rounded-[2.5rem] bg-white p-8 space-y-6">
-                <div className="flex justify-between items-start">
-                  <div className="h-14 w-14 bg-slate-100 rounded-2xl flex items-center justify-center text-slate-500">
-                    <Truck className="h-8 w-8" />
+          {loadingFleet ? (
+            <div className="flex justify-center py-20"><Loader2 className="animate-spin text-primary" /></div>
+          ) : !myFleet?.length ? (
+            <div className="text-center py-32 bg-muted/10 rounded-[3rem] border-2 border-dashed">
+              <Truck className="h-16 w-16 text-muted-foreground/30 mx-auto mb-6" />
+              <h3 className="text-2xl font-black">Fleet Empty</h3>
+              <p className="text-muted-foreground mt-2 font-medium">Click "Add Vehicle" to register your first transport unit.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {myFleet.map((v) => (
+                <Card key={v.id} className="border-none shadow-xl rounded-[2.5rem] bg-white p-8 space-y-6 group">
+                  <div className="flex justify-between items-start">
+                    <div className="h-14 w-14 bg-slate-100 rounded-2xl flex items-center justify-center text-slate-500 group-hover:bg-primary/10 group-hover:text-primary transition-colors">
+                      <Truck className="h-8 w-8" />
+                    </div>
+                    <Badge className={cn(
+                      "rounded-full h-8 px-4 font-bold text-[10px] uppercase",
+                      v.isAvailable ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'
+                    )}>
+                      {v.isAvailable ? 'Active' : 'Busy'}
+                    </Badge>
                   </div>
-                  <Badge className={cn(
-                    "rounded-full h-8 px-4 font-bold text-[10px] uppercase",
-                    v.status === 'Active' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'
-                  )}>
-                    {v.status}
-                  </Badge>
+                  <div className="space-y-1">
+                    <h4 className="text-xl font-black">{v.type}</h4>
+                    <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">{v.plateNumber}</p>
+                    <p className="text-xs font-bold text-muted-foreground flex items-center gap-1 mt-2">
+                      <MapPin className="h-3.5 w-3.5" /> {v.city}, {v.state}
+                    </p>
+                  </div>
+                  <div className="pt-4 border-t space-y-4">
+                    <div className="flex justify-between items-center">
+                      <span className="text-[10px] font-black text-muted-foreground uppercase">Current Rate</span>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={() => handleUpdateVehiclePrice(v.id, v.pricePerKm)}
+                        className="h-8 rounded-xl font-black text-primary hover:bg-primary/5"
+                      >
+                        ₹{v.pricePerKm}/km <Edit3 className="h-3 w-3 ml-2" />
+                      </Button>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-[10px] font-black text-muted-foreground uppercase">Fleet Contact</span>
+                      <span className="text-xs font-bold">{v.contact}</span>
+                    </div>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="settings">
+          <Card className="border-none shadow-xl rounded-[3rem] bg-white overflow-hidden">
+            <div className="grid grid-cols-1 md:grid-cols-3">
+              <div className="bg-slate-50 p-10 space-y-6">
+                <div className="h-24 w-24 bg-primary rounded-[2rem] flex items-center justify-center text-white shadow-xl shadow-primary/20 mx-auto md:mx-0">
+                  <Building2 className="h-12 w-12" />
                 </div>
-                <div>
-                  <h4 className="text-xl font-black">{v.type}</h4>
-                  <p className="text-xs font-bold text-muted-foreground flex items-center gap-1 mt-1">
-                    <MapPin className="h-3.5 w-3.5" /> {v.loc}
-                  </p>
+                <div className="space-y-2 text-center md:text-left">
+                  <h3 className="text-2xl font-black">Agency Profile</h3>
+                  <p className="text-sm text-muted-foreground font-medium">Update your professional identity and base pricing for the Mandi-Link network.</p>
                 </div>
-                <div className="pt-4 border-t flex justify-between items-center">
-                  <span className="text-[10px] font-black text-muted-foreground uppercase">Battery / Fuel</span>
-                  <div className="h-1.5 w-24 bg-slate-100 rounded-full overflow-hidden">
-                    <div className="h-full bg-primary w-3/4" />
+                <div className="pt-6 space-y-4">
+                  <div className="flex items-center gap-4 p-4 bg-white rounded-2xl border shadow-sm">
+                    <CheckCircle2 className="h-5 w-5 text-primary" />
+                    <div>
+                      <p className="text-[10px] font-black uppercase text-muted-foreground">Verification</p>
+                      <p className="text-xs font-bold">Authenticated Partner</p>
+                    </div>
                   </div>
                 </div>
-              </Card>
-            ))}
-          </div>
+              </div>
+              <div className="md:col-span-2 p-10">
+                <form onSubmit={handleUpdateProfile} className="space-y-8">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div className="space-y-2">
+                      <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-2">Registered Agency Name</Label>
+                      <Input name="agencyName" defaultValue={profile?.firstName || ""} placeholder="Enter agency name" className="rounded-2xl h-14 bg-muted/30 border-none font-bold text-lg" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-2">Public Contact Number</Label>
+                      <Input name="contact" defaultValue={profile?.phone || ""} placeholder="+91 00000 00000" className="rounded-2xl h-14 bg-muted/30 border-none font-bold text-lg" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-2">Default Base Rate (₹/KM)</Label>
+                      <div className="relative">
+                        <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-primary" />
+                        <Input name="basePrice" type="number" defaultValue={profile?.basePrice || 25} className="rounded-2xl h-14 pl-12 bg-muted/30 border-none font-bold text-lg" />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-2">Base City</Label>
+                        <Input name="city" defaultValue={profile?.city || ""} placeholder="e.g. Ludhiana" className="rounded-xl h-14 bg-muted/30 border-none font-bold" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-2">State</Label>
+                        <Input name="state" defaultValue={profile?.state || ""} placeholder="e.g. Punjab" className="rounded-xl h-14 bg-muted/30 border-none font-bold" />
+                      </div>
+                    </div>
+                  </div>
+                  <div className="pt-6 border-t">
+                    <Button 
+                      type="submit" 
+                      disabled={isUpdatingProfile}
+                      className="w-full md:w-64 h-14 rounded-2xl font-black text-lg shadow-lg shadow-primary/20"
+                    >
+                      {isUpdatingProfile ? <Loader2 className="animate-spin" /> : <Save className="h-5 w-5 mr-2" />}
+                      Sync Agency Profile
+                    </Button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>
