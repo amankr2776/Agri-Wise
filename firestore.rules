@@ -15,9 +15,18 @@ service cloud.firestore {
       return resource != null && isSignedIn() && request.auth.uid == ownerId;
     }
 
-    // Prototype Logic: In a real app, role would be checked via custom claims or a specific roles collection.
-    // For this prototype, we'll allow any authenticated user to read/write these shared collections to demonstrate functionality.
-    
+    function getRole() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+    }
+
+    function isExpert() {
+      return isSignedIn() && getRole() == 'Expert';
+    }
+
+    function isAuthority() {
+      return isSignedIn() && getRole() == 'Authority';
+    }
+
     // --- Crops Collection ---
     match /crops/{id} { 
       allow read: if true;
@@ -64,9 +73,9 @@ service cloud.firestore {
     }
 
     match /pestOutbreaks/{outbreakId} {
-      allow read: if true;
-      allow create, update: if isSignedIn(); // Restricted to Authority/Expert in frontend
-      allow delete: if isSignedIn();
+      allow read: if isSignedIn() && (getRole() == 'Expert' || getRole() == 'Authority');
+      allow create, update: if isSignedIn() && (getRole() == 'Expert' || getRole() == 'Authority');
+      allow delete: if isSignedIn() && (getRole() == 'Expert' || getRole() == 'Authority');
     }
   }
 }

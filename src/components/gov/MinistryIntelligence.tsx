@@ -18,7 +18,8 @@ import {
   TrendingUp,
   MapPin,
   Save,
-  X
+  X,
+  FlaskConical
 } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -32,9 +33,9 @@ import {
   DialogContent, 
   DialogHeader, 
   DialogTitle, 
-  DialogTrigger,
-  DialogFooter,
-  DialogDescription
+  DialogTrigger, 
+  DialogFooter, 
+  DialogDescription 
 } from "@/components/ui/dialog";
 import { 
   Select, 
@@ -120,14 +121,15 @@ export function MinistryIntelligence() {
     toast({ title: "Alert Cleared", description: "Outbreak has been marked as contained and removed from surveillance." });
   };
 
-  if (role !== "Authority") {
+  // GRANT ACCESS TO EXPERTS AND AUTHORITIES
+  if (role !== "Authority" && role !== "Expert") {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] text-center space-y-4">
         <div className="h-20 w-20 bg-destructive/10 rounded-full flex items-center justify-center text-destructive">
           <Lock className="h-10 w-10" />
         </div>
         <h3 className="text-2xl font-black">Authorized Personnel Only</h3>
-        <p className="text-muted-foreground max-w-sm">Access to government intelligence feeds is restricted to the Ministry of Agriculture and district authorities.</p>
+        <p className="text-muted-foreground max-w-sm">Access to government intelligence feeds is restricted to the Ministry of Agriculture and certified experts.</p>
       </div>
     );
   }
@@ -150,9 +152,9 @@ export function MinistryIntelligence() {
         <div>
           <h2 className="text-4xl font-black tracking-tighter text-slate-900 flex items-center gap-3">
             <ShieldAlert className="h-10 w-10 text-primary" />
-            Ministry Intelligence Grid
+            {role === 'Expert' ? 'Expert Surveillance Hub' : 'Ministry Intelligence Grid'}
           </h2>
-          <p className="text-muted-foreground font-medium mt-1 uppercase text-[10px] tracking-[0.2em]">Bio-Security & Mandi Surveillance Command</p>
+          <p className="text-muted-foreground font-medium mt-1 uppercase text-[10px] tracking-[0.2em]">Bio-Security & Regional Threat Assessment</p>
         </div>
         
         <Dialog open={isReportDialogOpen} onOpenChange={setIsReportDialogOpen}>
@@ -284,7 +286,9 @@ export function MinistryIntelligence() {
                 </CardTitle>
                 <CardDescription className="text-slate-400 font-medium italic">Visualizing AI-predicted spread vectors across regional clusters</CardDescription>
               </div>
-              <Badge className="bg-primary/20 text-primary border border-primary/30 px-4 py-1.5 font-black uppercase text-[10px] shadow-lg">Authority Node: 04</Badge>
+              <Badge className="bg-primary/20 text-primary border border-primary/30 px-4 py-1.5 font-black uppercase text-[10px] shadow-lg">
+                {role === 'Expert' ? 'Expert Node: 02' : 'Authority Node: 04'}
+              </Badge>
             </div>
           </CardHeader>
 

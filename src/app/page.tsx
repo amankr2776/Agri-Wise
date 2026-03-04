@@ -210,14 +210,23 @@ export default function KisanMitraApp() {
                 </PopoverContent>
               </Popover>
 
-              <div className="flex items-center gap-3 p-1 pl-4 bg-muted/30 rounded-full border border-border/50">
-                <span className="text-xs font-black text-slate-600 hidden sm:block">{name}</span>
+              <div className="flex items-center gap-3 p-1 pr-4 bg-muted/30 rounded-full border border-border/50">
                 <Avatar className="h-8 w-8 border-2 border-primary/20">
                   <AvatarImage src={profileImage || ""} />
                   <AvatarFallback className="bg-primary text-white font-black">
                     {name ? name[0] : (role ? role[0] : 'U')}
                   </AvatarFallback>
                 </Avatar>
+                <div className="flex flex-col -space-y-1">
+                  <span className="text-[10px] font-black text-slate-900 leading-tight">{name}</span>
+                  <div className="flex items-center gap-1">
+                    {role === 'Expert' && <FlaskConical className="h-2.5 w-2.5 text-blue-500" />}
+                    {role === 'Authority' && <ShieldCheck className="h-2.5 w-2.5 text-primary" />}
+                    <span className="text-[8px] font-bold text-muted-foreground uppercase tracking-widest">
+                      {role === 'Expert' ? 'Verified Expert' : role}
+                    </span>
+                  </div>
+                </div>
               </div>
             </div>
           </header>
