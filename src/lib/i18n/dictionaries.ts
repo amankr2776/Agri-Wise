@@ -19,7 +19,16 @@ export const UI_MESSAGES: Record<string, any> = {
     active_alerts: "Active Alerts",
     best_price: "Best Price Today",
     active_shipments: "Active Shipments",
-    community_posts: "Community Posts"
+    community_posts: "Community Posts",
+    shortcuts: "Agri-Intelligence Shortcuts",
+    fleet_hub: "Fleet Hub",
+    mandi_link: "Mandi-Link",
+    verification_portal: "Verification Portal",
+    diagnostics: "Crop Diagnostics",
+    transport: "Find Transport",
+    shipments: "Live Shipments",
+    profile: "Profile Identity",
+    language: "Language Preference"
   },
   Hindi: {
     dashboard: "डैशबोर्ड",
@@ -40,7 +49,16 @@ export const UI_MESSAGES: Record<string, any> = {
     active_alerts: "सक्रिय अलर्ट",
     best_price: "आज का सबसे अच्छा भाव",
     active_shipments: "सक्रिय शिपमेंट",
-    community_posts: "सामुदायिक पोस्ट"
+    community_posts: "सामुदायिक पोस्ट",
+    shortcuts: "कृषि-इंटेलिजेंस शॉर्टकट्स",
+    fleet_hub: "फ्लीट हब",
+    mandi_link: "मंडी-लिंक",
+    verification_portal: "सत्यापन पोर्टल",
+    diagnostics: "फसल निदान",
+    transport: "परिवहन खोजें",
+    shipments: "सक्रिय शिपमेंट",
+    profile: "प्रोफ़ाइल पहचान",
+    language: "भाषा प्राथमिकता"
   },
   Kannada: {
     dashboard: "ಡ್ಯಾಶ್‌ಬೋರ್ಡ್",
@@ -61,7 +79,16 @@ export const UI_MESSAGES: Record<string, any> = {
     active_alerts: "ಸಕ್ರಿಯ ಎಚ್ಚರಿಕೆಗಳು",
     best_price: "ಇಂದಿನ ಉತ್ತಮ ಬೆಲೆ",
     active_shipments: "ಸಕ್ರಿಯ ಸಾಗಣೆಗಳು",
-    community_posts: "ಸಮುದಾಯ ಪೋಸ್ಟ್ಗಳು"
+    community_posts: "ಸಮುದಾಯ ಪೋಸ್ಟ್ಗಳು",
+    shortcuts: "ಕೃಷಿ ಬುದ್ಧಿವಂತಿಕೆ ಶಾರ್ಟ್‌ಕಟ್‌ಗಳು",
+    fleet_hub: "ಫ್ಲೀಟ್ ಹಬ್",
+    mandi_link: "ಮಂಡಿ-ಲಿಂಕ್",
+    verification_portal: "ಪರಿಶೀಲನಾ ಪೋರ್ಟಲ್",
+    diagnostics: "ಬೆಳೆ ರೋಗನಿರ್ಣಯ",
+    transport: "ಸಾರಿಗೆಯನ್ನು ಹುಡುಕಿ",
+    shipments: "ಲೈವ್ ಸಾಗಣೆಗಳು",
+    profile: "ಪ್ರೊಫೈಲ್ ಗುರುತು",
+    language: "ಭಾಷಾ ಆದ್ಯತೆ"
   },
   Marathi: {
     dashboard: "डॅशबोर्ड",
@@ -82,7 +109,16 @@ export const UI_MESSAGES: Record<string, any> = {
     active_alerts: "सक्रिय अलर्ट",
     best_price: "आजचा सर्वोत्तम दर",
     active_shipments: "सक्रिय शिपमेंट",
-    community_posts: "सामुदायिक पोस्ट"
+    community_posts: "सामुदायिक पोस्ट",
+    shortcuts: "कृषी-बुद्धिमत्ता शॉर्टकट",
+    fleet_hub: "फ्लीट हब",
+    mandi_link: "मंडी-लिंक",
+    verification_portal: "पडताळणी पोर्टल",
+    diagnostics: "पीक निदान",
+    transport: "वाहतूक शोधा",
+    shipments: "थेट शिपमेंट",
+    profile: "प्रोफाइल ओळख",
+    language: "भाषा निवड"
   },
   Punjabi: {
     dashboard: "ਡੈਸ਼ਬੋਰਡ",
@@ -103,7 +139,16 @@ export const UI_MESSAGES: Record<string, any> = {
     active_alerts: "ਸਰਗਰਮ ਅਲਰਟ",
     best_price: "ਅੱਜ ਦਾ ਸਭ ਤੋਂ ਵਧੀਆ ਭਾਅ",
     active_shipments: "ਸਰਗਰਮ ਸ਼ਿਪਮੈਂਟ",
-    community_posts: "ਭਾਈਚਾਰਕ ਪੋਸਟਾਂ"
+    community_posts: "ਭਾਈਚਾਰਕ ਪੋਸਟਾਂ",
+    shortcuts: "ਖੇਤੀਬਾੜੀ-ਬੁੱਧੀ ਸ਼ਾਰਟਕੱਟ",
+    fleet_hub: "ਫਲੀਟ ਹੱਬ",
+    mandi_link: "ਮੰਡੀ-ਲਿੰਕ",
+    verification_portal: "ਤਸਦੀਕ ਪੋਰਟਲ",
+    diagnostics: "ਫਸਲ ਨਿਦਾਨ",
+    transport: "ਟਰਾਂਸਪੋਰਟ ਲੱਭੋ",
+    shipments: "ਲਾਈਵ ਸ਼ਿਪਮੈਂਟ",
+    profile: "ਪ੍ਰੋਫਾਈਲ ਪਛਾਣ",
+    language: "ਭਾਸ਼ਾ ਤਰਜੀਹ"
   },
   Tamil: {
     dashboard: "ಡ್ಯಾಶ್‌ಬೋರ್ಡ್",
@@ -124,7 +169,16 @@ export const UI_MESSAGES: Record<string, any> = {
     active_alerts: "செயலில் உள்ள விழிப்பூட்டல்கள்",
     best_price: "இன்றைய சிறந்த விலை",
     active_shipments: "செயலில் உள்ள ஏற்றுமதி",
-    community_posts: "சமூகப் பதிவுகள்"
+    community_posts: "சமூகப் பதிவுகள்",
+    shortcuts: "வேளாண்-புத்திசாலித்தன குறுக்குவழிகள்",
+    fleet_hub: "கடற்படை மையம்",
+    mandi_link: "மண்டி-லிங்க்",
+    verification_portal: "சரிபார்ப்பு போர்டல்",
+    diagnostics: "பயிர் நோய் கண்டறிதல்",
+    transport: "போக்குவரத்தை கண்டுபிடி",
+    shipments: "நேரடி ஏற்றுமதி",
+    profile: "சுயவிவர அடையாளம்",
+    language: "மொழி விருப்பம்"
   }
 };
 

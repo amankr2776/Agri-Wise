@@ -74,17 +74,17 @@ export function DashboardHome({ onNavigate }: DashboardHomeProps) {
   }, []);
 
   const stats = [
-    { id: "market", label: "Active Alerts", value: "3", icon: AlertTriangle, color: "text-destructive", bg: "bg-destructive/10" },
-    { id: "market", label: "Best Price Today", value: "₹2,150/q", sub: "Wheat (Nashik)", icon: TrendingUp, color: "text-primary", bg: "bg-primary/10" },
+    { id: "market", label: t("active_alerts"), value: "3", icon: AlertTriangle, color: "text-destructive", bg: "bg-destructive/10" },
+    { id: "market", label: t("best_price"), value: "₹2,150/q", sub: "Wheat (Nashik)", icon: TrendingUp, color: "text-primary", bg: "bg-primary/10" },
     { 
       id: role === "Logistics" ? "fleet" : "logistics", 
-      label: "Active Shipments", 
+      label: t("active_shipments"), 
       value: "2", 
       icon: Truck, 
       color: "text-blue-500", 
       bg: "bg-blue-500/10" 
     },
-    { id: "network", label: "Community Posts", value: "12", icon: Users, color: "text-amber-500", bg: "bg-amber-500/10" },
+    { id: "network", label: t("community_posts"), value: "12", icon: Users, color: "text-amber-500", bg: "bg-amber-500/10" },
   ];
 
   const quickActions = [
@@ -111,8 +111,7 @@ export function DashboardHome({ onNavigate }: DashboardHomeProps) {
         "Report sightings to local agricultural outpost immediately."
       ],
       traditionalRemedy: "Create smoke screens using dried neem leaves and beat loud drums/utensils to deter swarms from settling on fields."
-    },
-    // ... other alerts
+    }
   ];
 
   const containerVariants = {
@@ -171,7 +170,7 @@ export function DashboardHome({ onNavigate }: DashboardHomeProps) {
       <div className="space-y-6">
         <h2 className="text-2xl font-black tracking-tight flex items-center gap-3">
           <Zap className="h-6 w-6 text-primary" /> 
-          Agri-Intelligence Shortcuts
+          {t("shortcuts")}
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {quickActions.map((action) => (
@@ -185,8 +184,130 @@ export function DashboardHome({ onNavigate }: DashboardHomeProps) {
           ))}
         </div>
       </div>
-      
-      {/* ... Recent Alerts Mapping ... */}
+
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <h2 className="text-2xl font-black tracking-tight flex items-center gap-3">
+            <ShieldAlert className="h-6 w-6 text-destructive" /> 
+            Recent Intelligence Alerts
+          </h2>
+          <Button variant="ghost" className="text-xs font-black uppercase tracking-widest text-primary">View Global Map</Button>
+        </div>
+        <div className="grid grid-cols-1 gap-4">
+          {alerts.map((alert) => (
+            <motion.div key={alert.id} variants={itemVariants}>
+              <Card 
+                onClick={() => setSelectedAlert(alert)}
+                className={cn(
+                  "glass-card border-white/20 rounded-[2rem] overflow-hidden cursor-pointer hover:shadow-2xl transition-all border-l-8",
+                  alert.type === 'Critical' ? 'border-l-destructive' : 'border-l-amber-500'
+                )}
+              >
+                <CardContent className="p-8 flex items-center justify-between">
+                  <div className="flex items-center gap-6">
+                    <div className={cn(
+                      "h-14 w-14 rounded-2xl flex items-center justify-center shadow-lg",
+                      alert.type === 'Critical' ? 'bg-destructive/10 text-destructive' : 'bg-amber-500/10 text-amber-600'
+                    )}>
+                      <alert.icon className={cn("h-7 w-7", alert.type === 'Critical' && "animate-pulse")} />
+                    </div>
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-black text-lg tracking-tight">{alert.title}</h3>
+                        <Badge variant={alert.type === 'Critical' ? 'destructive' : 'default'} className="text-[8px] font-black uppercase px-2 py-0.5 animate-pulse">
+                          {alert.type}
+                        </Badge>
+                      </div>
+                      <div className="flex items-center gap-3 text-[10px] text-muted-foreground font-black uppercase tracking-widest">
+                        <span className="flex items-center gap-1"><MapPin className="h-3 w-3" /> {alert.region}</span>
+                        <span>•</span>
+                        <span>{alert.time}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <ChevronRight className="h-6 w-6 text-muted-foreground/30" />
+                </CardContent>
+              </Card>
+            </motion.div>
+          ))}
+        </div>
+      </div>
+
+      <Dialog open={!!selectedAlert} onOpenChange={() => setSelectedAlert(null)}>
+        <DialogContent className="rounded-[3rem] sm:max-w-[700px] p-0 overflow-hidden border-none shadow-2xl">
+          <DialogHeader className="p-10 pb-6 bg-slate-50/50 border-b">
+            <div className="flex justify-between items-start">
+              <div className="space-y-2">
+                <Badge variant={selectedAlert?.type === 'Critical' ? 'destructive' : 'default'} className="rounded-full px-4 py-1 font-black uppercase text-[10px] tracking-widest mb-2">
+                  {selectedAlert?.type} Alert
+                </Badge>
+                <DialogTitle className="text-4xl font-black tracking-tighter text-slate-900">{selectedAlert?.title}</DialogTitle>
+                <DialogDescription className="text-muted-foreground font-medium flex items-center gap-2 italic">
+                  <Clock className="h-4 w-4" /> Detection recorded {selectedAlert?.time} in {selectedAlert?.region}
+                </DialogDescription>
+              </div>
+              <div className={cn(
+                "h-20 w-20 rounded-3xl flex items-center justify-center shadow-2xl",
+                selectedAlert?.type === 'Critical' ? 'bg-destructive text-white shadow-destructive/20' : 'bg-amber-500 text-white shadow-amber-500/20'
+              )}>
+                {selectedAlert && <selectedAlert.icon className="h-10 w-10" />}
+              </div>
+            </div>
+          </DialogHeader>
+          <div className="p-10 space-y-10 max-h-[60vh] overflow-y-auto custom-scrollbar">
+            <div className="space-y-4">
+              <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-primary flex items-center gap-2">
+                <Activity className="h-4 w-4" /> Incident Analysis
+              </h4>
+              <p className="text-lg font-medium text-slate-700 leading-relaxed italic border-l-4 border-primary/20 pl-6">
+                "{selectedAlert?.details}"
+              </p>
+              <div className="grid grid-cols-2 gap-6 pt-4">
+                <div className="p-6 bg-muted/30 rounded-2xl border space-y-1">
+                  <p className="text-[9px] font-black text-muted-foreground uppercase">Impact Assessment</p>
+                  <p className="text-sm font-bold text-slate-800">{selectedAlert?.impact}</p>
+                </div>
+                <div className="p-6 bg-destructive/5 rounded-2xl border border-destructive/10 space-y-1">
+                  <p className="text-[9px] font-black text-destructive uppercase">Market Volatility</p>
+                  <p className="text-sm font-bold text-destructive">{selectedAlert?.volatility}</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-6">
+              <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-primary flex items-center gap-2">
+                <ShieldAlert className="h-4 w-4" /> Mandatory Action Plan
+              </h4>
+              <div className="space-y-3">
+                {selectedAlert?.actionPlan.map((step, i) => (
+                  <div key={i} className="flex items-center gap-4 p-4 bg-slate-50 rounded-2xl border border-slate-100 group hover:bg-white transition-all">
+                    <div className="h-8 w-8 rounded-xl bg-primary/10 flex items-center justify-center text-primary font-black text-xs">
+                      {i + 1}
+                    </div>
+                    <span className="text-sm font-bold text-slate-800">{step}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="p-8 bg-amber-50 rounded-3xl border border-amber-200 relative overflow-hidden group">
+              <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:scale-110 transition-transform">
+                <FlaskConical className="h-20 w-20" />
+              </div>
+              <h4 className="text-[10px] font-black text-amber-600 uppercase tracking-widest flex items-center gap-2 mb-4">
+                <Bug className="h-4 w-4" /> Heritage Wisdom (Desi Nuskha)
+              </h4>
+              <p className="text-sm font-medium text-amber-900 leading-relaxed italic relative z-10">
+                "{selectedAlert?.traditionalRemedy}"
+              </p>
+            </div>
+          </div>
+          <div className="p-8 bg-slate-50 border-t flex justify-end gap-4">
+            <Button variant="ghost" onClick={() => setSelectedAlert(null)} className="rounded-xl font-black text-xs uppercase tracking-widest">Close Intelligence</Button>
+            <Button className="rounded-xl px-8 font-black text-xs uppercase tracking-widest shadow-xl shadow-primary/20">Acknowledge Alert</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </motion.div>
   );
 }

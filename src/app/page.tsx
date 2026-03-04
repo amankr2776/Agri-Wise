@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useEffect } from "react";
@@ -39,6 +40,7 @@ import {
 } from "@/components/ui/popover";
 import { useAppState } from "@/lib/app-state";
 import { useToast } from "@/hooks/use-toast";
+import { useTranslation } from "@/hooks/use-translation";
 import { cn } from "@/lib/utils";
 
 // Section Components
@@ -54,6 +56,7 @@ import { SettingsView } from "@/components/settings/SettingsView";
 export default function KisanMitraApp() {
   const router = useRouter();
   const { toast } = useToast();
+  const { t } = useTranslation();
   const { 
     role, 
     isAuthenticated, 
@@ -105,13 +108,13 @@ export default function KisanMitraApp() {
   };
 
   const menuItems = [
-    { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, roles: ["Farmer", "Expert", "Logistics"] },
-    { id: "diagnostics", label: "Crop Diagnostics", icon: Leaf, roles: ["Farmer", "Expert", "Logistics"] },
-    { id: "market", label: "Market Intelligence", icon: TrendingUp, roles: ["Farmer", "Expert", "Logistics"] },
-    { id: "expert-portal", label: "Verification Portal", icon: FlaskConical, roles: ["Expert"] },
-    { id: "fleet", label: "Fleet Hub", icon: Truck, roles: ["Logistics"] },
-    { id: "logistics", label: "Mandi-Link", icon: Package, roles: ["Farmer"] },
-    { id: "network", label: "Kisan Network", icon: Users, roles: ["Farmer", "Expert", "Logistics"] },
+    { id: "dashboard", label: t("dashboard"), icon: LayoutDashboard, roles: ["Farmer", "Expert", "Logistics"] },
+    { id: "diagnostics", label: t("diagnostics"), icon: Leaf, roles: ["Farmer", "Expert", "Logistics"] },
+    { id: "market", label: t("market"), icon: TrendingUp, roles: ["Farmer", "Expert", "Logistics"] },
+    { id: "expert-portal", label: t("verification_portal"), icon: FlaskConical, roles: ["Expert"] },
+    { id: "fleet", label: t("fleet_hub"), icon: Truck, roles: ["Logistics"] },
+    { id: "logistics", label: t("mandi_link"), icon: Package, roles: ["Farmer"] },
+    { id: "network", label: t("network"), icon: Users, roles: ["Farmer", "Expert", "Logistics"] },
   ];
 
   const filteredMenu = menuItems.filter(item => item.roles.includes(role));
@@ -149,17 +152,17 @@ export default function KisanMitraApp() {
             <SidebarMenuButton 
               isActive={activeSection === "settings"}
               onClick={() => setActiveSection("settings")}
-              tooltip="Settings" 
+              tooltip={t("settings")} 
               className="h-12 data-[active=true]:bg-primary/10 data-[active=true]:text-primary"
             >
-              <Settings className="h-5 w-5" /> <span>Settings</span>
+              <Settings className="h-5 w-5" /> <span>{t("settings")}</span>
             </SidebarMenuButton>
             <SidebarMenuButton 
-              tooltip="Logout" 
+              tooltip={t("logout")} 
               onClick={() => logout()}
               className="h-12 text-destructive hover:bg-destructive/10"
             >
-              <LogOut className="h-5 w-5" /> <span>Logout</span>
+              <LogOut className="h-5 w-5" /> <span>{t("logout")}</span>
             </SidebarMenuButton>
           </SidebarFooter>
         </Sidebar>
