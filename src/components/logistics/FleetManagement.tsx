@@ -47,7 +47,7 @@ import {
 } from "@/components/ui/select";
 import { useFirestore, useCollection, useUser, useMemoFirebase, useDoc } from "@/firebase";
 import { collection, query, where, doc, updateDoc, addDoc } from "firebase/firestore";
-import { updateDocumentNonBlocking, addDocumentNonBlocking } from "@/firebase/non-blocking-updates";
+import { updateDocumentNonBlocking, addDocumentNonBlocking, setDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 
@@ -121,17 +121,19 @@ export function FleetManagement() {
 
   const handleUpdateProfile = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!userRef) return;
+    if (!userRef || !user) return;
     setIsUpdatingProfile(true);
     
     const formData = new FormData(e.currentTarget);
-    updateDocumentNonBlocking(userRef, {
+    setDocumentNonBlocking(userRef, {
+      id: user.uid,
       firstName: formData.get("agencyName"),
       phone: formData.get("contact"),
       basePrice: Number(formData.get("basePrice")),
       city: formData.get("city"),
-      state: formData.get("state")
-    });
+      state: formData.get("state"),
+      role: "Logistics"
+    }, { merge: true });
 
     setIsUpdatingProfile(false);
     toast({ title: "Profile Updated", description: "Agency details have been synchronized across your fleet." });
