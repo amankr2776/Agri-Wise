@@ -10,19 +10,18 @@ import {
   Loader2,
   Database,
   Microscope,
-  Trash2
+  Trash2,
+  Truck
 } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useFirestore, useCollection, useUser, useMemoFirebase } from "@/firebase";
-import { collection, query, where, doc, addDoc, getDocs, deleteDoc, writeBatch } from "firebase/firestore";
+import { collection, query, where, doc, addDoc, getDocs, writeBatch } from "firebase/firestore";
 import { updateDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAppState } from "@/lib/app-state";
 import { useToast } from "@/hooks/use-toast";
-import { errorEmitter } from "@/firebase/error-emitter";
-import { FirestorePermissionError, type SecurityRuleContext } from "@/firebase/errors";
 
 const DEFAULT_CROPS = [
   // Grains
@@ -33,18 +32,48 @@ const DEFAULT_CROPS = [
   // Vegetables
   { name: "Tomato", category: "Vegetable", diseaseName: "Early Blight", severity: "Medium", chemicalCure: "Mancozeb 75% WP", chemicalDosage: "2.5g / L", desiNuskha: "Baking soda and soap water spray.", isCertified: true, imageUrl: "https://images.unsplash.com/photo-1592841200221-a6898f307baa?q=80&w=800&auto=format&fit=crop", irrigationInterval: 4, estimatedPrice: 3200, sowingSeason: "Year-round", soilType: "Sandy Loam" },
   { name: "Potato", category: "Vegetable", diseaseName: "Late Blight", severity: "Critical", chemicalCure: "Metalaxyl 8% + Mancozeb 64%", chemicalDosage: "2g / L", desiNuskha: "Wood ash dusting on damp leaves.", isCertified: true, imageUrl: "https://images.unsplash.com/photo-1518977676601-b53f82aba655?q=80&w=800&auto=format&fit=crop", irrigationInterval: 8, estimatedPrice: 1800, sowingSeason: "Rabi", soilType: "Alluvial" },
+  { name: "Onion", category: "Vegetable", diseaseName: "Purple Blotch", severity: "Medium", chemicalCure: "Chlorothalonil 75% WP", chemicalDosage: "2g / L", desiNuskha: "Baking soda and vegetable oil spray.", isCertified: true, imageUrl: "https://images.unsplash.com/photo-1508747703725-719777637510?q=80&w=800&auto=format&fit=crop", irrigationInterval: 10, estimatedPrice: 2800, sowingSeason: "Winter/Rabi", soilType: "Sandy Loam" },
 
   // Fruits
   { name: "Mango", category: "Fruit", diseaseName: "Anthracnose", severity: "High", chemicalCure: "Carbendazim 50% WP", chemicalDosage: "1g / L", desiNuskha: "Pruning and copper oxychloride paste on cuts.", isCertified: true, imageUrl: "https://images.unsplash.com/photo-1553279768-865429fa0078?q=80&w=800&auto=format&fit=crop", irrigationInterval: 15, estimatedPrice: 8500, sowingSeason: "Summer", soilType: "Laterite" },
   { name: "Banana", category: "Fruit", diseaseName: "Panama Wilt", severity: "Critical", chemicalCure: "Carbendazim injection", chemicalDosage: "3ml / plant", desiNuskha: "Crop rotation with paddy and liming of soil.", isCertified: true, imageUrl: "https://images.unsplash.com/photo-1603833665858-e61d17a86224?q=80&w=800&auto=format&fit=crop", irrigationInterval: 5, estimatedPrice: 3500, sowingSeason: "Spring", soilType: "Rich Loam" },
+  { name: "Grapes", category: "Fruit", diseaseName: "Downy Mildew", severity: "High", chemicalCure: "Bordeaux Mixture (1%)", chemicalDosage: "10g / L", desiNuskha: "Garlic extract spray with sticker soap.", isCertified: true, imageUrl: "https://images.unsplash.com/photo-1537640538966-79f369143f8c?q=80&w=800&auto=format&fit=crop", irrigationInterval: 7, estimatedPrice: 6500, sowingSeason: "Winter", soilType: "Well-drained Sandy" },
 
-  // Seeds (Example crops often grown from specific seed types)
+  // Seeds
   { name: "Mustard Seed", category: "Seed", diseaseName: "Alternaria Blight", severity: "Medium", chemicalCure: "Mancozeb 75% WP", chemicalDosage: "2.5g / L", desiNuskha: "Ginger-Garlic-Chili extract spray.", isCertified: true, imageUrl: "https://images.unsplash.com/photo-1508013861974-9f6347163ebe?q=80&w=800&auto=format&fit=crop", irrigationInterval: 20, estimatedPrice: 5400, sowingSeason: "Rabi", soilType: "Light Loam" },
   { name: "Soybean Seed", category: "Seed", diseaseName: "Yellow Mosaic", severity: "High", chemicalCure: "Thiamethoxam 25% WG", chemicalDosage: "0.5g / L", desiNuskha: "Removal of infected plants and neem oil spray.", isCertified: true, imageUrl: "https://images.unsplash.com/photo-1599599810694-b5b37304c041?q=80&w=800&auto=format&fit=crop", irrigationInterval: 10, estimatedPrice: 4200, sowingSeason: "Kharif", soilType: "Black Cotton Soil" },
 
-  // Plants (Plantation/Ornamental/Others)
+  // Plants
   { name: "Cotton Plant", category: "Plant", diseaseName: "Pink Bollworm", severity: "Critical", chemicalCure: "Profenophos 50% EC", chemicalDosage: "2ml / L", desiNuskha: "Pheromone traps and light traps.", isCertified: true, imageUrl: "https://images.unsplash.com/photo-1594904351111-a072f80b1a71?q=80&w=800&auto=format&fit=crop", irrigationInterval: 14, estimatedPrice: 7200, sowingSeason: "Kharif", soilType: "Black Cotton" },
-  { name: "Tea Plant", category: "Plant", diseaseName: "Blister Blight", severity: "High", chemicalCure: "Copper Oxychloride", chemicalDosage: "2g / L", desiNuskha: "Early pruning and shade management.", isCertified: true, imageUrl: "https://images.unsplash.com/photo-1594631252845-29fc458695d7?q=80&w=800&auto=format&fit=crop", irrigationInterval: 1, estimatedPrice: 12000, sowingSeason: "Perennial", soilType: "Acidic Forest Soil" },
+  { name: "Sugarcane", category: "Plant", diseaseName: "Red Rot", severity: "Critical", chemicalCure: "Tricoderma viride treatment", chemicalDosage: "Soil application", desiNuskha: "Hot water treatment of setts (50C for 2hrs).", isCertified: true, imageUrl: "https://images.unsplash.com/photo-1591871937573-74dbba515c4c?q=80&w=800&auto=format&fit=crop", irrigationInterval: 12, estimatedPrice: 380, sowingSeason: "Spring/Autumn", soilType: "Deep Alluvial" },
+];
+
+const DEFAULT_VEHICLES = [
+  // Punjab
+  { agencyName: "Amritsar Agri-Logistics", type: "Heavy Truck", plateNumber: "PB-02-AT-1122", pricePerKm: 35, city: "Amritsar", state: "Punjab", isAvailable: true, contact: "+919814000000" },
+  { agencyName: "Ludhiana Mandi Link", type: "Mini Truck", plateNumber: "PB-10-ML-4545", pricePerKm: 18, city: "Ludhiana", state: "Punjab", isAvailable: true, contact: "+919814100000" },
+  { agencyName: "Bathinda Harvest Movers", type: "Pickup Van", plateNumber: "PB-03-HM-9988", pricePerKm: 14, city: "Bathinda", state: "Punjab", isAvailable: true, contact: "+919814200000" },
+  
+  // Maharashtra
+  { agencyName: "Nashik Onion Express", type: "Heavy Truck", plateNumber: "MH-15-OE-7711", pricePerKm: 32, city: "Nashik", state: "Maharashtra", isAvailable: true, contact: "+919922000000" },
+  { agencyName: "Pune Perishable Pros", type: "Refrigerated Van", plateNumber: "MH-12-PP-3322", pricePerKm: 45, city: "Pune", state: "Maharashtra", isAvailable: true, contact: "+919922100000" },
+  { agencyName: "Nagpur Orange Haul", type: "Mini Truck", plateNumber: "MH-31-OH-5544", pricePerKm: 20, city: "Nagpur", state: "Maharashtra", isAvailable: true, contact: "+919922200000" },
+  
+  // Uttar Pradesh
+  { agencyName: "Agra Potato Carriers", type: "Heavy Truck", plateNumber: "UP-80-PC-8899", pricePerKm: 30, city: "Agra", state: "Uttar Pradesh", isAvailable: true, contact: "+919415000000" },
+  { agencyName: "Varanasi Vegi-Link", type: "Mini Truck", plateNumber: "UP-65-VL-1122", pricePerKm: 19, city: "Varanasi", state: "Uttar Pradesh", isAvailable: true, contact: "+919415100000" },
+  
+  // Karnataka
+  { agencyName: "Gulbarga Pulse Transit", type: "Heavy Truck", plateNumber: "KA-32-PT-4455", pricePerKm: 34, city: "Gulbarga", state: "Karnataka", isAvailable: true, contact: "+919900000000" },
+  { agencyName: "Haveri Seed Shifters", type: "Pickup Van", plateNumber: "KA-27-SS-9900", pricePerKm: 15, city: "Haveri", state: "Karnataka", isAvailable: true, contact: "+919900100000" },
+  
+  // Haryana
+  { agencyName: "Karnal Rice Runners", type: "Heavy Truck", plateNumber: "HR-05-RR-6677", pricePerKm: 36, city: "Karnal", state: "Haryana", isAvailable: true, contact: "+919812000000" },
+  { agencyName: "Rohtak Mandi Express", type: "Mini Truck", plateNumber: "HR-12-ME-8899", pricePerKm: 21, city: "Rohtak", state: "Haryana", isAvailable: true, contact: "+919812100000" },
+  
+  // West Bengal
+  { agencyName: "Bardhaman Paddy Express", type: "Heavy Truck", plateNumber: "WB-34-PE-1144", pricePerKm: 33, city: "Bardhaman", state: "West Bengal", isAvailable: true, contact: "+919830000000" },
+  { agencyName: "Hooghly Horti-Haul", type: "Pickup Van", plateNumber: "WB-15-HH-2255", pricePerKm: 16, city: "Hooghly", state: "West Bengal", isAvailable: true, contact: "+919830100000" }
 ];
 
 export function ExpertVerificationPortal() {
@@ -78,23 +107,36 @@ export function ExpertVerificationPortal() {
   const purgeAndSeed = async () => {
     if (!firestore) return;
     setSeeding(true);
-    toast({ title: "Syncing Registry", description: "Purging old data and re-seeding advanced profiles..." });
+    toast({ title: "Syncing Grid", description: "Purging old records and re-seeding Pan-India professional data..." });
 
-    const colRef = collection(firestore, "crops");
     try {
-      const existing = await getDocs(colRef);
+      const cropsCol = collection(firestore, "crops");
+      const vehiclesCol = collection(firestore, "vehicles");
+      
+      const existingCrops = await getDocs(cropsCol);
+      const existingVehicles = await getDocs(vehiclesCol);
+      
       const batch = writeBatch(firestore);
       
-      // Purge
-      existing.docs.forEach(d => batch.delete(d.ref));
+      // Purge everything
+      existingCrops.docs.forEach(d => batch.delete(d.ref));
+      existingVehicles.docs.forEach(d => batch.delete(d.ref));
       await batch.commit();
 
-      // Seed
+      // Seed Crops
       for (const crop of DEFAULT_CROPS) {
-        await addDoc(colRef, { ...crop, createdAt: new Date().toISOString() });
+        await addDoc(cropsCol, { ...crop, createdAt: new Date().toISOString() });
       }
 
-      toast({ title: "Registry Re-Seeded", description: `Successfully added ${DEFAULT_CROPS.length} optimized profiles.` });
+      // Seed Vehicles
+      for (const vehicle of DEFAULT_VEHICLES) {
+        await addDoc(vehiclesCol, { ...vehicle, createdAt: new Date().toISOString() });
+      }
+
+      toast({ 
+        title: "Grid Re-Seeded", 
+        description: `Successfully deployed ${DEFAULT_CROPS.length} Crops and ${DEFAULT_VEHICLES.length} Logistics Providers.` 
+      });
     } catch (e: any) {
       toast({ variant: "destructive", title: "Sync Failed", description: e.message });
     } finally {
@@ -122,17 +164,43 @@ export function ExpertVerificationPortal() {
             <FlaskConical className="h-8 w-8 text-primary" />
             Advanced Verification Queue
           </h2>
-          <p className="text-muted-foreground font-medium mt-1">Manage high-fidelity crop profiles and certification.</p>
+          <p className="text-muted-foreground font-medium mt-1">Manage high-fidelity Pan-India crop profiles and logistics certification.</p>
         </div>
-        <Button 
-          variant="outline" 
-          onClick={purgeAndSeed} 
-          disabled={seeding}
-          className="rounded-full border-primary/20 text-primary hover:bg-primary/5 font-black px-6 h-12"
-        >
-          {seeding ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Trash2 className="h-4 w-4 mr-2" />}
-          Purge & Re-Seed Registry
-        </Button>
+        <div className="flex gap-4">
+          <Button 
+            variant="outline" 
+            onClick={purgeAndSeed} 
+            disabled={seeding}
+            className="rounded-full border-primary/20 text-primary hover:bg-primary/5 font-black px-6 h-12"
+          >
+            {seeding ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Trash2 className="h-4 w-4 mr-2" />}
+            Purge & Re-Seed Pan-India Data
+          </Button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <Card className="border-none shadow-sm p-6 bg-primary/5 rounded-3xl">
+          <div className="flex items-center gap-3 mb-2">
+            <Microscope className="h-5 w-5 text-primary" />
+            <h4 className="text-[10px] font-black uppercase tracking-widest text-primary">Protocol Status</h4>
+          </div>
+          <p className="text-2xl font-black">Active Grid</p>
+        </Card>
+        <Card className="border-none shadow-sm p-6 bg-blue-50 rounded-3xl">
+          <div className="flex items-center gap-3 mb-2">
+            <Truck className="h-5 w-5 text-blue-600" />
+            <h4 className="text-[10px] font-black uppercase tracking-widest text-blue-600">Logistics Oversight</h4>
+          </div>
+          <p className="text-2xl font-black">{DEFAULT_VEHICLES.length} Regional Hubs</p>
+        </Card>
+        <Card className="border-none shadow-sm p-6 bg-slate-50 rounded-3xl">
+          <div className="flex items-center gap-3 mb-2">
+            <Database className="h-5 w-5 text-slate-500" />
+            <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-500">Registry Depth</h4>
+          </div>
+          <p className="text-2xl font-black">{DEFAULT_CROPS.length} Crop Profiles</p>
+        </Card>
       </div>
 
       {isLoading ? (
@@ -143,19 +211,28 @@ export function ExpertVerificationPortal() {
         <Card className="border-dashed border-2 p-24 text-center bg-muted/20 rounded-[3rem]">
           <ClipboardCheck className="h-12 w-12 text-primary opacity-50 mx-auto mb-8" />
           <h3 className="text-2xl font-black text-slate-800">No Pending Submissions</h3>
+          <p className="text-muted-foreground mt-2 font-medium">Perform a "New AI Scan" in the Farmer interface to see submissions here.</p>
         </Card>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {pendingCerts.map((cert) => (
-            <Card key={cert.id} className="border-none shadow-xl bg-white rounded-[2.5rem] overflow-hidden flex flex-col">
-              <img src={cert.imageUrl} className="aspect-video w-full object-cover" alt={cert.name} />
+            <Card key={cert.id} className="border-none shadow-xl bg-white rounded-[2.5rem] overflow-hidden flex flex-col hover:shadow-2xl transition-all duration-300">
+              <div className="relative aspect-video">
+                <img src={cert.imageUrl} className="w-full h-full object-cover" alt={cert.name} />
+                <div className="absolute top-4 left-4">
+                  <Badge className="bg-white/90 text-black border-none font-black text-[8px] uppercase">{cert.category}</Badge>
+                </div>
+              </div>
               <CardHeader className="p-8">
                 <CardTitle className="text-2xl font-black">{cert.name}</CardTitle>
-                <Badge variant="secondary" className="w-fit mt-2">{cert.category}</Badge>
+                <div className="space-y-2 mt-4">
+                  <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Diagnosed Problem</p>
+                  <p className="text-sm font-bold text-destructive">{cert.diseaseName}</p>
+                </div>
               </CardHeader>
               <CardFooter className="p-8 pt-0 mt-auto">
-                <Button className="w-full h-12 rounded-xl font-bold" onClick={() => handleVerify(cert.id)}>
-                  <ShieldCheck className="h-4 w-4 mr-2" /> Certify Protocol
+                <Button className="w-full h-12 rounded-xl font-black shadow-lg shadow-primary/20" onClick={() => handleVerify(cert.id)}>
+                  <ShieldCheck className="h-4 w-4 mr-2" /> Certify Professional Protocol
                 </Button>
               </CardFooter>
             </Card>
