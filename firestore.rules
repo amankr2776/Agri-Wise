@@ -32,6 +32,17 @@ service cloud.firestore {
       allow read, write: if true;
     }
 
+    // --- Vehicles Collection ---
+    match /vehicles/{vehicleId} {
+      allow read: if true;
+      allow write: if isSignedIn();
+    }
+
+    // --- Bookings Collection ---
+    match /bookings/{bookingId} {
+      allow read, write: if isSignedIn();
+    }
+
     match /users/{userId} {
       allow get, list: if isOwner(userId);
       allow create: if isOwner(userId) && request.resource.data.id == userId;
