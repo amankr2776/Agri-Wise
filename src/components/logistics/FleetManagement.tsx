@@ -21,7 +21,8 @@ import {
   MoreVertical,
   User,
   Building2,
-  DollarSign
+  DollarSign,
+  Zap
 } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -51,6 +52,14 @@ import { updateDocumentNonBlocking, addDocumentNonBlocking, setDocumentNonBlocki
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 
+const STANDARD_FLEET_TEMPLATES = [
+  { type: "Mini Truck (2T)", price: 18, platePrefix: "MT" },
+  { type: "Heavy Truck (15T)", price: 35, platePrefix: "HT" },
+  { type: "Pickup Van (1T)", price: 14, platePrefix: "PV" },
+  { type: "Refrigerated Van (5T)", price: 45, platePrefix: "RV" },
+  { type: "Tractor Trailer (8T)", price: 22, platePrefix: "TT" }
+];
+
 export function FleetManagement() {
   const firestore = useFirestore();
   const { user } = useUser();
@@ -59,6 +68,7 @@ export function FleetManagement() {
   const [activeTab, setActiveTab] = useState("bookings");
   const [isAddVehicleOpen, setIsAddVehicleOpen] = useState(false);
   const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
+  const [isSeeding, setIsSeeding] = useState(false);
 
   // Fetch Agency Profile from User Doc
   const userRef = useMemoFirebase(() => {
@@ -77,7 +87,6 @@ export function FleetManagement() {
   // Fetch Active Bookings for this Provider
   const bookingsQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
-    // In a real app, bookings would be assigned to a specific provider ID
     return query(collection(firestore, "bookings"));
   }, [firestore, user]);
   const { data: incomingBookings, isLoading: loadingBookings } = useCollection(bookingsQuery);
@@ -96,6 +105,42 @@ export function FleetManagement() {
     });
   };
 
+  const handleInitializeDefaultFleet = async () => {
+    if (!firestore || !user || !profile) {
+      toast({ 
+        variant: "destructive", 
+        title: "Profile Incomplete", 
+        description: "Please complete your Agency Profile first so we can assign your location and contact to the fleet." 
+      });
+      return;
+    }
+
+    setIsSeeding(true);
+    try {
+      for (const template of STANDARD_FLEET_TEMPLATES) {
+        const plate = `${profile.state?.substring(0,2).toUpperCase() || 'IN'}-${Math.floor(10 + Math.random() * 89)}-${template.platePrefix}-${Math.floor(1000 + Math.random() * 8999)}`;
+        
+        addDocumentNonBlocking(collection(firestore, "vehicles"), {
+          ownerId: user.uid,
+          agencyName: profile.firstName || "My Logistics Agency",
+          type: template.type,
+          plateNumber: plate,
+          pricePerKm: template.price,
+          contact: profile.phone || "+919876543210",
+          city: profile.city || "Local Hub",
+          state: profile.state || "Local State",
+          isAvailable: true,
+          createdAt: new Date().toISOString()
+        });
+      }
+      toast({ title: "Fleet Initialized", description: "Your standard professional fleet has been deployed." });
+    } catch (e) {
+      toast({ variant: "destructive", title: "Initialization Failed", description: "Could not seed default fleet." });
+    } finally {
+      setIsSeeding(false);
+    }
+  };
+
   const handleAddVehicle = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!firestore || !user) return;
@@ -105,8 +150,8 @@ export function FleetManagement() {
       ownerId: user.uid,
       agencyName: profile?.firstName || "My Logistics Agency",
       type: formData.get("type") as string,
-      plateNumber: formData.get("plateNumber") as string,
-      pricePerKm: profile?.basePrice || 25,
+      plateNumber: (formData.get("plateNumber") as string).toUpperCase(),
+      pricePerKm: Number(formData.get("pricePerKm")) || profile?.basePrice || 25,
       contact: profile?.phone || "+919876543210",
       city: profile?.city || "Local Hub",
       state: profile?.state || "Local State",
@@ -145,7 +190,7 @@ export function FleetManagement() {
     if (newPrice && !isNaN(Number(newPrice))) {
       const docRef = doc(firestore, "vehicles", vehicleId);
       updateDocumentNonBlocking(docRef, { pricePerKm: Number(newPrice) });
-      toast({ title: "Price Updated", description: "Vehicle rate adjusted successfully." });
+      toast({ title: "Price Adjusted", description: "Market rate has been updated for this vehicle." });
     }
   };
 
@@ -175,26 +220,31 @@ export function FleetManagement() {
             <DialogContent className="rounded-[2rem] sm:max-w-[425px]">
               <DialogHeader>
                 <DialogTitle className="text-2xl font-black">Register New Vehicle</DialogTitle>
-                <DialogDescription>Add a new unit to your active service fleet.</DialogDescription>
+                <DialogDescription>Add a new custom unit to your active service fleet.</DialogDescription>
               </DialogHeader>
               <form onSubmit={handleAddVehicle} className="space-y-6 pt-4">
                 <div className="space-y-2">
                   <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Vehicle Type</Label>
-                  <Select name="type" defaultValue="Mini Truck">
+                  <Select name="type" defaultValue="Mini Truck (2T)">
                     <SelectTrigger className="rounded-xl h-12 border-none bg-muted/30 font-bold">
                       <SelectValue placeholder="Select Type" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Heavy Truck">Heavy Truck (15T)</SelectItem>
-                      <SelectItem value="Mini Truck">Mini Truck (2T)</SelectItem>
-                      <SelectItem value="Pickup Van">Pickup Van (1T)</SelectItem>
-                      <SelectItem value="Refrigerated Van">Refrigerated Van (Perishables)</SelectItem>
+                      <SelectItem value="Heavy Truck (15T)">Heavy Truck (15T)</SelectItem>
+                      <SelectItem value="Mini Truck (2T)">Mini Truck (2T)</SelectItem>
+                      <SelectItem value="Pickup Van (1T)">Pickup Van (1T)</SelectItem>
+                      <SelectItem value="Refrigerated Van (5T)">Refrigerated Van (5T)</SelectItem>
+                      <SelectItem value="Tractor Trailer (8T)">Tractor Trailer (8T)</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-2">
                   <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Plate Number</Label>
                   <Input name="plateNumber" placeholder="e.g. PB-02-AT-1234" required className="rounded-xl h-12 bg-muted/30 border-none font-bold uppercase" />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Price per KM (₹)</Label>
+                  <Input name="pricePerKm" type="number" defaultValue={profile?.basePrice || 25} className="rounded-xl h-12 bg-muted/30 border-none font-bold" />
                 </div>
                 <DialogFooter>
                   <Button type="submit" className="w-full h-12 rounded-xl font-black">Register in Fleet</Button>
@@ -304,15 +354,37 @@ export function FleetManagement() {
           {loadingFleet ? (
             <div className="flex justify-center py-20"><Loader2 className="animate-spin text-primary" /></div>
           ) : !myFleet?.length ? (
-            <div className="text-center py-32 bg-muted/10 rounded-[3rem] border-2 border-dashed">
-              <Truck className="h-16 w-16 text-muted-foreground/30 mx-auto mb-6" />
-              <h3 className="text-2xl font-black">Fleet Empty</h3>
-              <p className="text-muted-foreground mt-2 font-medium">Click "Add Vehicle" to register your first transport unit.</p>
+            <div className="text-center py-32 bg-muted/10 rounded-[4rem] border-2 border-dashed flex flex-col items-center gap-6">
+              <Truck className="h-16 w-16 text-muted-foreground/30 mx-auto" />
+              <div className="space-y-2">
+                <h3 className="text-2xl font-black">Your Fleet is Empty</h3>
+                <p className="text-muted-foreground max-w-md mx-auto font-medium">
+                  Initialize your professional inventory with standard agricultural vehicle types or add custom units manually.
+                </p>
+              </div>
+              <div className="flex flex-col sm:flex-row gap-4 pt-4">
+                <Button 
+                  onClick={handleInitializeDefaultFleet} 
+                  disabled={isSeeding}
+                  className="h-14 px-10 rounded-2xl font-black bg-slate-900 text-white shadow-xl hover:bg-slate-800"
+                >
+                  {isSeeding ? <Loader2 className="animate-spin mr-2" /> : <Zap className="h-5 w-5 mr-2 text-primary" />}
+                  Initialize Standard Fleet
+                </Button>
+                <Button 
+                  variant="outline"
+                  onClick={() => setIsAddVehicleOpen(true)}
+                  className="h-14 px-10 rounded-2xl font-black border-slate-200 hover:bg-muted"
+                >
+                  <Plus className="h-5 w-5 mr-2" />
+                  Add Custom Vehicle
+                </Button>
+              </div>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {myFleet.map((v) => (
-                <Card key={v.id} className="border-none shadow-xl rounded-[2.5rem] bg-white p-8 space-y-6 group">
+                <Card key={v.id} className="border-none shadow-xl rounded-[2.5rem] bg-white p-8 space-y-6 group hover:shadow-2xl transition-all">
                   <div className="flex justify-between items-start">
                     <div className="h-14 w-14 bg-slate-100 rounded-2xl flex items-center justify-center text-slate-500 group-hover:bg-primary/10 group-hover:text-primary transition-colors">
                       <Truck className="h-8 w-8" />
@@ -328,7 +400,7 @@ export function FleetManagement() {
                     <h4 className="text-xl font-black">{v.type}</h4>
                     <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">{v.plateNumber}</p>
                     <p className="text-xs font-bold text-muted-foreground flex items-center gap-1 mt-2">
-                      <MapPin className="h-3.5 w-3.5" /> {v.city}, {v.state}
+                      <MapPin className="h-3.5 w-3.5 text-primary" /> {v.city}, {v.state}
                     </p>
                   </div>
                   <div className="pt-4 border-t space-y-4">
@@ -338,14 +410,16 @@ export function FleetManagement() {
                         variant="ghost" 
                         size="sm" 
                         onClick={() => handleUpdateVehiclePrice(v.id, v.pricePerKm)}
-                        className="h-8 rounded-xl font-black text-primary hover:bg-primary/5"
+                        className="h-10 px-4 rounded-xl font-black text-primary bg-primary/5 hover:bg-primary/10"
                       >
                         ₹{v.pricePerKm}/km <Edit3 className="h-3 w-3 ml-2" />
                       </Button>
                     </div>
-                    <div className="flex justify-between items-center">
+                    <div className="flex justify-between items-center p-3 bg-slate-50 rounded-xl">
                       <span className="text-[10px] font-black text-muted-foreground uppercase">Fleet Contact</span>
-                      <span className="text-xs font-bold">{v.contact}</span>
+                      <span className="text-xs font-bold flex items-center gap-2">
+                        <Phone className="h-3 w-3" /> {v.contact}
+                      </span>
                     </div>
                   </div>
                 </Card>
