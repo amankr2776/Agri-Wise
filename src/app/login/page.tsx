@@ -15,9 +15,12 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useAppState, UserRole } from "@/lib/app-state";
+import { useAuth } from "@/firebase";
+import { initiateAnonymousSignIn } from "@/firebase/non-blocking-login";
 
 export default function LoginPage() {
   const router = useRouter();
+  const auth = useAuth();
   const { login } = useAppState();
 
   const roles = [
@@ -56,6 +59,10 @@ export default function LoginPage() {
   ];
 
   const handleRoleSelection = (roleId: UserRole) => {
+    // Authenticate the user anonymously to provide a valid Firebase user context
+    if (auth) {
+      initiateAnonymousSignIn(auth);
+    }
     login(roleId);
     router.push("/");
   };

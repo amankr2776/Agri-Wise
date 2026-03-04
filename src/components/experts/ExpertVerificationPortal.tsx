@@ -92,12 +92,20 @@ export function ExpertVerificationPortal() {
   const { data: pendingCerts, isLoading } = useCollection(pendingCertsQuery);
 
   const handleVerify = (certId: string) => {
-    if (!firestore || !certId || !user) return;
+    if (!firestore || !certId) {
+       toast({
+        variant: "destructive",
+        title: "Error",
+        description: "System not ready. Please try again.",
+      });
+      return;
+    }
+    
     const docRef = doc(firestore, "crops", certId);
     
     updateDocumentNonBlocking(docRef, {
       isCertified: true,
-      expertId: user.uid,
+      expertId: user?.uid || "anonymous_expert",
       verifiedAt: new Date().toISOString()
     });
 
