@@ -32,6 +32,8 @@ export const UI_MESSAGES: Record<string, any> = {
     theme: "Theme Mode",
     commodity: "Commodity",
     jurisdiction: "State",
+    district: "District",
+    local_mandi: "Local Mandi",
     forecast: "Market Forecast",
     recommended_action: "Recommended Action",
     pathogen_intel: "Pathogen Intelligence",
@@ -48,7 +50,13 @@ export const UI_MESSAGES: Record<string, any> = {
     remedy_plan: "Mitigation Plan",
     city: "City/Region",
     full_name: "Full Name",
-    update_profile: "Update Grid Profile"
+    update_profile: "Update Grid Profile",
+    net_profit: "Net Profit",
+    transport_cost: "Transport Cost",
+    per_quintal: "per Quintal",
+    price_change: "24h Change",
+    seven_day_trend: "7-Day Trend",
+    nearby_markets: "Nearby Mandi Comparison"
   },
   Hindi: {
     dashboard: "डैशबोर्ड",
@@ -82,6 +90,8 @@ export const UI_MESSAGES: Record<string, any> = {
     theme: "थीम मोड",
     commodity: "वस्तु",
     jurisdiction: "राज्य",
+    district: "ज़िला",
+    local_mandi: "स्थानीय मंडी",
     forecast: "बाजार पूर्वानुमान",
     recommended_action: "अनुशंसित कार्रवाई",
     pathogen_intel: "रोगजनक इंटेलिजेंस",
@@ -98,7 +108,13 @@ export const UI_MESSAGES: Record<string, any> = {
     remedy_plan: "शमन योजना",
     city: "शहर/क्षेत्र",
     full_name: "पूरा नाम",
-    update_profile: "ग्रिड प्रोफ़ाइल अपडेट करें"
+    update_profile: "ग्रिड प्रोफ़ाइल अपडेट करें",
+    net_profit: "शुद्ध लाभ",
+    transport_cost: "परिवहन लागत",
+    per_quintal: "प्रति क्विंटल",
+    price_change: "24 घंटे का बदलाव",
+    seven_day_trend: "7-दिन का रुझान",
+    nearby_markets: "निकटतम मंडी तुलना"
   },
   Punjabi: {
     dashboard: "ਡੈਸ਼ਬੋਰਡ",
@@ -127,7 +143,12 @@ export const UI_MESSAGES: Record<string, any> = {
     profile: "ਪ੍ਰੋਫਾਈਲ ਪਛਾਣ",
     language: "ਭਾਸ਼ਾ ਤਰਜੀਹ",
     track_order: "ਟ੍ਰੈਕ ਕਰੋ",
-    last_updated: "ਅੰਤਿਮ ਅਪਡੇਟ"
+    last_updated: "ਅੰਤਿਮ ਅਪਡੇਟ",
+    net_profit: "ਸ਼ੁੱਧ ਮੁਨਾਫਾ",
+    transport_cost: "ਟਰਾਂਸਪੋਰਟ ਖਰਚਾ",
+    per_quintal: "ਪ੍ਰਤੀ ਕੁਇੰਟਲ",
+    price_change: "24 ਘੰਟੇ ਦੀ ਤਬਦੀਲੀ",
+    seven_day_trend: "7-ਦਿਨ ਦਾ ਰੁਝਾਨ"
   }
 };
 
