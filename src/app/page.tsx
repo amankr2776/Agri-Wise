@@ -44,6 +44,9 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useAppState } from "@/lib/app-state";
 import { useTranslation } from "@/hooks/use-translation";
 import { cn } from "@/lib/utils";
+import { useFirestore, useUser } from "@/firebase";
+import { doc } from "firebase/firestore";
+import { setDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 
 // Section Components
 import { DashboardHome } from "@/components/dashboard/DashboardHome";
@@ -59,6 +62,8 @@ import { MinistryIntelligence } from "@/components/gov/MinistryIntelligence";
 export default function KisanMitraApp() {
   const router = useRouter();
   const { t } = useTranslation();
+  const firestore = useFirestore();
+  const { user } = useUser();
   const { 
     role, 
     isAuthenticated, 
@@ -66,6 +71,7 @@ export default function KisanMitraApp() {
     notifications, 
     markNotificationsAsRead,
     name,
+    city,
     profileImage 
   } = useAppState();
   const [activeSection, setActiveSection] = useState("dashboard");
@@ -73,6 +79,20 @@ export default function KisanMitraApp() {
   useEffect(() => {
     if (!isAuthenticated) router.push("/login");
   }, [isAuthenticated, router]);
+
+  // Sync user profile to Firestore for role-based security rules
+  useEffect(() => {
+    if (user && firestore && role) {
+      const userRef = doc(firestore, "users", user.uid);
+      setDocumentNonBlocking(userRef, {
+        id: user.uid,
+        role: role,
+        firstName: name,
+        city: city,
+        lastActive: new Date().toISOString()
+      }, { merge: true });
+    }
+  }, [user, firestore, role, name, city]);
 
   if (!isAuthenticated || !role) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="animate-spin text-primary" /></div>;
 
