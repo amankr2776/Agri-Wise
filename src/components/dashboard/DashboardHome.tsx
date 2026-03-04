@@ -22,7 +22,8 @@ import {
   Info,
   FlaskConical,
   ClipboardCheck,
-  RefreshCw
+  RefreshCw,
+  Tool
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -61,14 +62,13 @@ interface AlertDetail {
 }
 
 export function DashboardHome({ onNavigate }: DashboardHomeProps) {
-  const { name, city, role } = useAppState();
+  const { name, city, role, setFleetActiveTab } = useAppState();
   const { t } = useTranslation();
   const [selectedAlert, setSelectedAlert] = useState<AlertDetail | null>(null);
   const [currentTime, setCurrentTime] = useState<string>("");
   const [currentDate, setCurrentDate] = useState<string>("");
 
   useEffect(() => {
-    // Avoid hydration mismatch by setting time/date on mount
     const updateTime = () => {
       const now = new Date();
       setCurrentTime(now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }));
@@ -84,7 +84,11 @@ export function DashboardHome({ onNavigate }: DashboardHomeProps) {
     return () => clearInterval(interval);
   }, []);
 
-  // Role-Aware Statistics with specific event handlers
+  const handleDeepNavigate = (section: string, tab?: string) => {
+    if (tab) setFleetActiveTab(tab);
+    onNavigate(section);
+  };
+
   const stats = useMemo(() => {
     if (role === "Farmer") {
       return [
@@ -102,15 +106,14 @@ export function DashboardHome({ onNavigate }: DashboardHomeProps) {
       ];
     } else {
       return [
-        { id: "fleet", label: "Total Fleet", value: "45", icon: Truck, color: "text-primary", bg: "bg-primary/10" },
-        { id: "fleet", label: "Active Loads", value: "28", icon: Package, color: "text-blue-500", bg: "bg-blue-500/10" },
-        { id: "fleet", label: "Available Units", value: "12", icon: Activity, color: "text-green-500", bg: "bg-green-500/10" },
-        { id: "fleet", label: "Maintenance", value: "5", icon: RefreshCw, color: "text-amber-500", bg: "bg-amber-500/10" },
+        { id: "fleet", tab: "fleet", label: "Total Fleet", value: "45", icon: Truck, color: "text-primary", bg: "bg-primary/10" },
+        { id: "fleet", tab: "bookings", label: "Active Loads", value: "28", icon: Package, color: "text-blue-500", bg: "bg-blue-500/10" },
+        { id: "fleet", tab: "fleet", label: "Available Units", value: "12", icon: Activity, color: "text-green-500", bg: "bg-green-500/10" },
+        { id: "fleet", tab: "maintenance", label: "Maintenance", value: "5", icon: RefreshCw, color: "text-amber-500", bg: "bg-amber-500/10" },
       ];
     }
   }, [role, t]);
 
-  // Role-Aware Quick Actions
   const quickActions = useMemo(() => {
     if (role === "Farmer") {
       return [
@@ -128,10 +131,10 @@ export function DashboardHome({ onNavigate }: DashboardHomeProps) {
       ];
     } else {
       return [
-        { id: "fleet", label: "Manage Fleet", icon: Truck, desc: "All-India Units", color: "text-primary", bg: "bg-primary/10" },
-        { id: "fleet", label: "Active Loads", icon: Package, desc: "Track Shipments", color: "text-blue-500", bg: "bg-blue-500/10" },
-        { id: "settings", label: "Update Rates", icon: TrendingUp, desc: "Agency Profile", color: "text-amber-500", bg: "bg-amber-500/10" },
-        { id: "network", label: "Mandi Network", icon: Users, desc: "Community News", color: "text-purple-500", bg: "bg-purple-500/10" },
+        { id: "fleet", tab: "fleet", label: "Manage Fleet", icon: Truck, desc: "All-India Units", color: "text-primary", bg: "bg-primary/10" },
+        { id: "fleet", tab: "bookings", label: "Active Loads", icon: Package, desc: "Track Shipments", color: "text-blue-500", bg: "bg-blue-500/10" },
+        { id: "fleet", tab: "settings", label: "Update Rates", icon: TrendingUp, desc: "Agency Profile", color: "text-amber-500", bg: "bg-amber-500/10" },
+        { id: "fleet", tab: "maintenance", label: "Service Logs", icon: RefreshCw, desc: "Fleet Health", color: "text-purple-500", bg: "bg-purple-500/10" },
       ];
     }
   }, [role, t]);
@@ -156,7 +159,6 @@ export function DashboardHome({ onNavigate }: DashboardHomeProps) {
 
   return (
     <div className="space-y-10">
-      {/* Hero Banner with Identity Correction */}
       <motion.div 
         initial={{ opacity: 0, y: 20 }} 
         animate={{ opacity: 1, y: 0 }}
@@ -183,18 +185,17 @@ export function DashboardHome({ onNavigate }: DashboardHomeProps) {
         </div>
       </motion.div>
 
-      {/* Intelligence Grid Status Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {stats.map((stat, i) => (
           <motion.div
-            key={`stat-${i}`}
+            key={`stat-${role}-${i}`}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.1 }}
           >
             <Card 
               className="glass-card cursor-pointer group hover:scale-[1.02] transition-all rounded-[2.5rem]" 
-              onClick={() => onNavigate(stat.id)}
+              onClick={() => handleDeepNavigate(stat.id, (stat as any).tab)}
             >
               <CardContent className="p-8 flex items-center justify-between">
                 <div>
@@ -219,11 +220,11 @@ export function DashboardHome({ onNavigate }: DashboardHomeProps) {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             {quickActions.map((action, i) => (
               <motion.button 
-                key={`action-${i}`} 
+                key={`action-${role}-${i}`} 
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: i * 0.1 }}
-                onClick={() => onNavigate(action.id)} 
+                onClick={() => handleDeepNavigate(action.id, (action as any).tab)} 
                 className="flex items-center gap-8 p-10 glass-card rounded-[3rem] hover:bg-primary group transition-all text-left"
               >
                 <div className={cn("two-tone-icon shrink-0 group-hover:bg-white/20", action.bg)}>

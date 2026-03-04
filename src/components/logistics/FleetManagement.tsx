@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { 
   Truck, 
   MapPin, 
@@ -25,7 +25,8 @@ import {
   Zap,
   X,
   Check,
-  Globe2
+  Globe2,
+  Tool
 } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -55,6 +56,7 @@ import { updateDocumentNonBlocking, addDocumentNonBlocking, setDocumentNonBlocki
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { INDIA_STATES } from "@/lib/india-data";
+import { useAppState } from "@/lib/app-state";
 
 const STANDARD_FLEET_TEMPLATES = [
   { type: "Mini Truck (2T)", price: 18, platePrefix: "MT" },
@@ -68,16 +70,11 @@ export function FleetManagement() {
   const firestore = useFirestore();
   const { user } = useUser();
   const { toast } = useToast();
+  const { fleetActiveTab, setFleetActiveTab } = useAppState();
   
-  const [activeTab, setActiveTab] = useState("bookings");
   const [isAddVehicleOpen, setIsAddVehicleOpen] = useState(false);
   const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
   const [isSeeding, setIsSeeding] = useState(false);
-  
-  // Inline editing state
-  const [editingVehicleId, setEditingVehicleId] = useState<string | null>(null);
-  const [editPrice, setEditPrice] = useState<string>("");
-  const [editContact, setEditContact] = useState<string>("");
 
   // Fetch Agency Profile
   const userRef = useMemoFirebase(() => {
@@ -120,7 +117,6 @@ export function FleetManagement() {
     
     try {
       const vehiclesCol = collection(firestore, "vehicles");
-      // Seed 2 vehicles for every state to show national reach
       for (const state of INDIA_STATES) {
         for (let i = 0; i < 2; i++) {
           const template = STANDARD_FLEET_TEMPLATES[Math.floor(Math.random() * STANDARD_FLEET_TEMPLATES.length)];
@@ -137,6 +133,8 @@ export function FleetManagement() {
             city: district,
             state: state.name,
             isAvailable: true,
+            status: Math.random() > 0.8 ? "Maintenance" : "Ready",
+            lastService: "2024-01-15",
             createdAt: new Date().toISOString()
           });
         }
@@ -164,6 +162,7 @@ export function FleetManagement() {
       city: formData.get("city") as string,
       state: formData.get("state") as string,
       isAvailable: true,
+      status: "Ready",
       createdAt: new Date().toISOString()
     };
 
@@ -272,13 +271,16 @@ export function FleetManagement() {
         </div>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+      <Tabs value={fleetActiveTab} onValueChange={setFleetActiveTab} className="w-full">
         <TabsList className="bg-muted/50 rounded-full p-1 h-12 mb-10 w-fit">
           <TabsTrigger value="bookings" className="rounded-full px-8 h-10 data-[state=active]:bg-primary data-[state=active]:text-white font-black text-xs uppercase tracking-widest">
             Incoming Loads
           </TabsTrigger>
           <TabsTrigger value="fleet" className="rounded-full px-8 h-10 data-[state=active]:bg-primary data-[state=active]:text-white font-black text-xs uppercase tracking-widest">
             My Fleet ({myFleet?.length || 0})
+          </TabsTrigger>
+          <TabsTrigger value="maintenance" className="rounded-full px-8 h-10 data-[state=active]:bg-primary data-[state=active]:text-white font-black text-xs uppercase tracking-widest">
+            Maintenance
           </TabsTrigger>
           <TabsTrigger value="settings" className="rounded-full px-8 h-10 data-[state=active]:bg-primary data-[state=active]:text-white font-black text-xs uppercase tracking-widest">
             Agency Profile
@@ -368,13 +370,13 @@ export function FleetManagement() {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {myFleet.map((v) => (
+              {myFleet.filter(v => v.status === "Ready").map((v) => (
                 <Card key={v.id} className="border-none shadow-xl rounded-[2.5rem] bg-white p-8 space-y-6 group hover:shadow-2xl transition-all">
                   <div className="flex justify-between items-start">
                     <div className="h-14 w-14 bg-slate-100 rounded-2xl flex items-center justify-center text-slate-500 group-hover:bg-primary/10 group-hover:text-primary transition-colors">
                       <Truck className="h-8 w-8" />
                     </div>
-                    <Badge className="rounded-full h-8 px-4 font-bold text-[10px] uppercase bg-green-100 text-green-700">Active</Badge>
+                    <Badge className="rounded-full h-8 px-4 font-bold text-[10px] uppercase bg-green-100 text-green-700">Ready</Badge>
                   </div>
                   <div className="space-y-1">
                     <h4 className="text-xl font-black">{v.type}</h4>
@@ -393,6 +395,39 @@ export function FleetManagement() {
               ))}
             </div>
           )}
+        </TabsContent>
+
+        <TabsContent value="maintenance" className="space-y-8">
+          <div className="grid grid-cols-1 gap-6">
+            {myFleet?.filter(v => v.status === "Maintenance").map((v) => (
+              <Card key={v.id} className="border-none shadow-xl rounded-[2.5rem] bg-white p-8 flex flex-col md:flex-row items-center justify-between gap-8 border-l-8 border-amber-500">
+                <div className="flex items-center gap-6">
+                  <div className="h-16 w-16 bg-amber-50 rounded-2xl flex items-center justify-center text-amber-600">
+                    <RefreshCw className="h-8 w-8 animate-spin-slow" />
+                  </div>
+                  <div className="space-y-1">
+                    <h4 className="text-xl font-black">{v.type} - {v.plateNumber}</h4>
+                    <p className="text-xs font-bold text-slate-500 uppercase">Status: Routine Maintenance</p>
+                    <p className="text-[10px] text-muted-foreground font-medium italic">Last Service: {v.lastService || "Unknown"}</p>
+                  </div>
+                </div>
+                <div className="flex gap-4">
+                  <Button variant="outline" className="rounded-xl h-12 font-black border-primary/20 text-primary" onClick={() => updateDocumentNonBlocking(doc(firestore!, "vehicles", v.id), { status: "Ready" })}>
+                    Mark as Ready
+                  </Button>
+                  <Button variant="ghost" className="rounded-xl h-12 font-black text-destructive">
+                    View Logs
+                  </Button>
+                </div>
+              </Card>
+            ))}
+            {!myFleet?.some(v => v.status === "Maintenance") && (
+              <div className="py-20 text-center opacity-40">
+                <CheckCircle2 className="h-12 w-12 mx-auto mb-2 text-primary" />
+                <p className="font-black uppercase text-xs">All units operational</p>
+              </div>
+            )}
+          </div>
         </TabsContent>
 
         <TabsContent value="settings">

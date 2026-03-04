@@ -4,7 +4,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
-export type UserRole = "Farmer" | "Expert" | "Logistics";
+export type UserRole = "Farmer" | "Expert" | "Logistics" | "Authority";
 
 export type AppLanguage = 
   | "English" | "Hindi" | "Bhojpuri" | "Punjabi" | "Haryanvi" 
@@ -31,6 +31,7 @@ interface AppState {
   language: AppLanguage;
   theme: AppTheme;
   notifications: Notification[];
+  fleetActiveTab: string;
   
   // Actions
   login: (role: UserRole) => void;
@@ -40,6 +41,7 @@ interface AppState {
   setProfileImage: (img: string | null) => void;
   setLanguage: (lang: AppLanguage) => void;
   setTheme: (theme: AppTheme) => void;
+  setFleetActiveTab: (tab: string) => void;
   markNotificationsAsRead: () => void;
 }
 
@@ -53,6 +55,7 @@ export const useAppState = create<AppState>()(
       profileImage: null,
       language: "English",
       theme: "farmer",
+      fleetActiveTab: "bookings",
       notifications: [
         { id: "1", type: 'alert', title: "Pest Alert", message: "Locust swarm spotted in nearby sector.", createdAt: new Date().toISOString(), isRead: false },
         { id: "2", type: 'system', title: "Market Update", message: "Wheat prices rising in local Mandi.", createdAt: new Date().toISOString(), isRead: false }
@@ -75,12 +78,13 @@ export const useAppState = create<AppState>()(
           document.documentElement.setAttribute('data-theme', theme);
         }
       },
+      setFleetActiveTab: (fleetActiveTab) => set({ fleetActiveTab }),
       markNotificationsAsRead: () => set((state) => ({
         notifications: state.notifications.map(n => ({ ...n, isRead: true }))
       })),
     }),
     {
-      name: "kisan-mitra-storage-v2",
+      name: "kisan-mitra-storage-v3",
     }
   )
 );
