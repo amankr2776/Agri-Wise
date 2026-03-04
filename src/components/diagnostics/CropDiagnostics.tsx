@@ -47,15 +47,17 @@ export function CropDiagnostics() {
 
   const filteredCrops = useMemo(() => {
     if (!crops) return [];
-    // Only show certified crops in the main registry
-    return crops.filter(c => {
-      const isCertified = c.isCertified === true;
-      const matchesSearch = c.name.toLowerCase().includes(search.toLowerCase()) || 
-                          c.category.toLowerCase().includes(search.toLowerCase()) ||
-                          c.diseaseName.toLowerCase().includes(search.toLowerCase());
-      const matchesCategory = selectedCategory === "All" || c.category === selectedCategory;
-      return isCertified && matchesSearch && matchesCategory;
-    });
+    // Show verified crops in registry, sorted by category then name
+    return crops
+      .filter(c => {
+        const isCertified = c.isCertified === true;
+        const matchesSearch = c.name.toLowerCase().includes(search.toLowerCase()) || 
+                            c.category.toLowerCase().includes(search.toLowerCase()) ||
+                            c.diseaseName.toLowerCase().includes(search.toLowerCase());
+        const matchesCategory = selectedCategory === "All" || c.category === selectedCategory;
+        return isCertified && matchesSearch && matchesCategory;
+      })
+      .sort((a, b) => a.category.localeCompare(b.category) || a.name.localeCompare(b.name));
   }, [crops, search, selectedCategory]);
 
   const selectedCrop = useMemo(() => 
@@ -99,7 +101,7 @@ export function CropDiagnostics() {
           </TabsList>
           
           <div className="hidden md:flex items-center gap-2">
-            <Badge variant="outline" className="border-primary/20 text-primary font-bold">{filteredCrops.length} Verified Solutions</Badge>
+            <Badge variant="outline" className="border-primary/20 text-primary font-bold">{filteredCrops.length} Pro Profiles</Badge>
           </div>
         </div>
 
@@ -172,7 +174,7 @@ export function CropDiagnostics() {
                       <Database className="h-12 w-12 text-muted-foreground/30" />
                       <div className="space-y-1">
                         <p className="text-xs font-black uppercase tracking-widest">Registry Empty</p>
-                        <p className="text-[10px] max-w-[200px] mx-auto leading-relaxed">Switch identity to 'Expert' and use the 'Populate' tool in the portal to seed the diagnostic data.</p>
+                        <p className="text-[10px] max-w-[200px] mx-auto leading-relaxed">Switch identity to 'Expert' and click 'Populate' in the portal to seed 30+ crop profiles.</p>
                       </div>
                     </div>
                   )}
@@ -213,7 +215,7 @@ export function CropDiagnostics() {
                       </div>
                       <h2 className="text-4xl font-black tracking-tighter">{selectedCrop.diseaseName}</h2>
                       <p className="text-white/70 text-sm font-medium italic">
-                        Critical diagnostic profile for {selectedCrop.name} crop.
+                        Professional diagnostic profile for {selectedCrop.name}.
                       </p>
                     </div>
                   </div>
@@ -223,12 +225,12 @@ export function CropDiagnostics() {
                       {/* Pathogen Profile */}
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div className="p-4 bg-muted/30 rounded-2xl space-y-1 border border-border/50">
-                          <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">Target Pathogen/Pest</p>
-                          <p className="text-sm font-bold flex items-center gap-2"><Bug className="h-4 w-4 text-primary" /> {selectedCrop.diseaseName}</p>
+                          <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">Target Pathogen</p>
+                          <p className="text-sm font-bold flex items-center gap-2 text-slate-800"><Bug className="h-4 w-4 text-primary" /> {selectedCrop.diseaseName}</p>
                         </div>
                         <div className="p-4 bg-muted/30 rounded-2xl space-y-1 border border-border/50">
-                          <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">Crop Category</p>
-                          <p className="text-sm font-bold flex items-center gap-2"><Leaf className="h-4 w-4 text-primary" /> {selectedCrop.category}</p>
+                          <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">Agricultural Type</p>
+                          <p className="text-sm font-bold flex items-center gap-2 text-slate-800"><Leaf className="h-4 w-4 text-primary" /> {selectedCrop.category}</p>
                         </div>
                         <div className="p-4 bg-muted/30 rounded-2xl space-y-1 border border-border/50">
                           <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">Biosecurity Severity</p>
@@ -257,7 +259,7 @@ export function CropDiagnostics() {
                               <div className="space-y-4">
                                 <div>
                                   <p className="text-2xl font-black text-slate-900">{selectedCrop.chemicalCure || 'Scanning...'}</p>
-                                  <p className="text-xs font-bold text-muted-foreground mt-1 uppercase tracking-tight">Main Pesticide/Fungicide</p>
+                                  <p className="text-xs font-bold text-muted-foreground mt-1 uppercase tracking-tight">Main Formulation</p>
                                 </div>
                                 <div className="pt-4 border-t flex justify-between items-center">
                                   <span className="text-[10px] font-black uppercase text-muted-foreground">Standard Dosage</span>
@@ -274,7 +276,7 @@ export function CropDiagnostics() {
                                 {[
                                   'Apply during low wind speeds',
                                   'Use certified spray equipment',
-                                  'Maintain 7-10 day interval if re-applying',
+                                  'Maintain 7-14 day interval',
                                   'Wear PPE during formulation'
                                 ].map((s, i) => (
                                   <li key={i} className="flex items-center gap-3 text-sm font-bold text-slate-700">
@@ -300,14 +302,14 @@ export function CropDiagnostics() {
                               </div>
                               
                               <p className="text-xl font-medium leading-relaxed text-slate-800 italic border-l-4 border-amber-200 pl-6 py-2 bg-white/40 rounded-r-2xl">
-                                "{selectedCrop.desiNuskha || 'No traditional remedy recorded for this specific variant.'}"
+                                "{selectedCrop.desiNuskha || 'Heritage wisdom being compiled for this variant.'}"
                               </p>
                             </div>
                           </div>
                           <div className="p-6 bg-primary/5 rounded-2xl border border-primary/10 flex gap-4">
                             <Info className="h-6 w-6 text-primary shrink-0" />
                             <p className="text-sm text-slate-600 font-medium leading-relaxed">
-                              Desi Nuskhas are regional. For precision results, combine with optimized irrigation and soil management practices.
+                              Traditional remedies are region-specific. Combine with optimized soil management for precision results.
                             </p>
                           </div>
                         </TabsContent>
@@ -321,14 +323,13 @@ export function CropDiagnostics() {
                     <FlaskConical className="h-16 w-16 text-primary/30" />
                   </div>
                   <div className="space-y-2">
-                    <h3 className="text-2xl font-black tracking-tight">Select Diagnostic Profile</h3>
+                    <h3 className="text-2xl font-black tracking-tight text-slate-800">Select Diagnostic Profile</h3>
                     <p className="text-muted-foreground max-w-sm mx-auto font-medium">
-                      Browse the registry to view high-fidelity diagnostic data, verified chemical cures, and traditional Indian remedies.
+                      Browse the registry to view high-fidelity diagnostic data, verified chemical cures, and heritage wisdom.
                     </p>
                   </div>
                   <div className="flex gap-2">
-                    <Badge variant="outline" className="opacity-40">{filteredCrops?.length || 0} Crops Tracked</Badge>
-                    <Badge variant="outline" className="opacity-40">Verified Remedies</Badge>
+                    <Badge variant="outline" className="opacity-40">{filteredCrops?.length || 0} Profiles Available</Badge>
                   </div>
                 </div>
               )}

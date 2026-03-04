@@ -42,6 +42,7 @@ const DEFAULT_CROPS = [
   { name: "Brinjal", category: "Vegetable", diseaseName: "Shoot & Fruit Borer", severity: "High", chemicalCure: "Chlorantraniliprole 18.5% SC", chemicalDosage: "0.4ml / L", desiNuskha: "Ginger-Garlic-Chili paste mixed with water.", isCertified: true, imageUrl: "https://picsum.photos/seed/brinjal1/800/400" },
   { name: "Cabbage", category: "Vegetable", diseaseName: "Diamondback Moth", severity: "High", chemicalCure: "Spinosad 45% SC", chemicalDosage: "0.3ml / L", desiNuskha: "Mustard intercropping as trap crop.", isCertified: true, imageUrl: "https://picsum.photos/seed/cabbage1/800/400" },
   { name: "Cauliflower", category: "Vegetable", diseaseName: "Downy Mildew", severity: "Medium", chemicalCure: "Ridomil Gold", chemicalDosage: "2g / L", desiNuskha: "Cow dung and urine extract spray.", isCertified: true, imageUrl: "https://picsum.photos/seed/cauliflower1/800/400" },
+  { name: "Okra (Bhindi)", category: "Vegetable", diseaseName: "Yellow Vein Mosaic", severity: "High", chemicalCure: "Dimethoate 30% EC", chemicalDosage: "2ml / L", desiNuskha: "Neem oil and soap spray weekly.", isCertified: true, imageUrl: "https://picsum.photos/seed/okra1/800/400" },
 
   // Fruits
   { name: "Mango", category: "Fruit", diseaseName: "Anthracnose", severity: "High", chemicalCure: "Carbendazim 50% WP", chemicalDosage: "1g / L", desiNuskha: "Pruning and copper oxychloride paste on cuts.", isCertified: true, imageUrl: "https://picsum.photos/seed/mango1/800/400" },
@@ -50,6 +51,7 @@ const DEFAULT_CROPS = [
   { name: "Apple", category: "Fruit", diseaseName: "Scab", severity: "High", chemicalCure: "Captan 50% WP", chemicalDosage: "2.5g / L", desiNuskha: "Urea spray (5%) after leaf fall.", isCertified: true, imageUrl: "https://picsum.photos/seed/apple1/800/400" },
   { name: "Guava", category: "Fruit", diseaseName: "Wilt", severity: "Critical", chemicalCure: "Benomyl soil drench", chemicalDosage: "2g / L", desiNuskha: "Application of Aspergillus niger in soil.", isCertified: true, imageUrl: "https://picsum.photos/seed/guava1/800/400" },
   { name: "Pomegranate", category: "Fruit", diseaseName: "Bacterial Blight", severity: "Critical", chemicalCure: "Streptocycline + Copper Oxychloride", chemicalDosage: "0.5g + 2.5g / L", desiNuskha: "Garlic extract and neem oil mixture.", isCertified: true, imageUrl: "https://picsum.photos/seed/pom1/800/400" },
+  { name: "Citrus (Lemon)", category: "Fruit", diseaseName: "Canker", severity: "Medium", chemicalCure: "Streptomycin sulphate", chemicalDosage: "100 ppm", desiNuskha: "Removal of infected twigs and spraying neem oil.", isCertified: true, imageUrl: "https://picsum.photos/seed/citrus1/800/400" },
 
   // Oilseeds
   { name: "Mustard", category: "Oilseed", diseaseName: "Alternaria Blight", severity: "Medium", chemicalCure: "Mancozeb 75% WP", chemicalDosage: "2.5g / L", desiNuskha: "Ginger-Garlic-Chili extract spray.", isCertified: true, imageUrl: "https://picsum.photos/seed/mustard1/800/400" },
@@ -60,6 +62,7 @@ const DEFAULT_CROPS = [
   // Plantation & Spices
   { name: "Coffee", category: "Plantation", diseaseName: "Leaf Rust", severity: "High", chemicalCure: "Hexaconazole 5% EC", chemicalDosage: "1ml / L", desiNuskha: "Providing shade and improving air circulation.", isCertified: true, imageUrl: "https://picsum.photos/seed/coffee1/800/400" },
   { name: "Tea", category: "Plantation", diseaseName: "Blister Blight", severity: "High", chemicalCure: "Copper Oxychloride + Nickel Chloride", chemicalDosage: "2g + 1g / L", desiNuskha: "Removal of shade trees and early pruning.", isCertified: true, imageUrl: "https://picsum.photos/seed/tea1/800/400" },
+  { name: "Coconut", category: "Plantation", diseaseName: "Bud Rot", severity: "Critical", chemicalCure: "Bordeaux paste application", chemicalDosage: "Standard application", desiNuskha: "Clean the crown and apply sand-salt mixture.", isCertified: true, imageUrl: "https://picsum.photos/seed/coconut1/800/400" },
   { name: "Turmeric", category: "Spice", diseaseName: "Leaf Spot", severity: "Medium", chemicalCure: "Propiconazole 25% EC", chemicalDosage: "1ml / L", desiNuskha: "Rhizome treatment with cow dung slurry.", isCertified: true, imageUrl: "https://picsum.photos/seed/turmeric1/800/400" },
   { name: "Ginger", category: "Spice", diseaseName: "Soft Rot", severity: "Critical", chemicalCure: "Metalaxyl-M 4% + Mancozeb 64%", chemicalDosage: "2.5g / L", desiNuskha: "Proper drainage and crop rotation.", isCertified: true, imageUrl: "https://picsum.photos/seed/ginger1/800/400" },
   { name: "Black Pepper", category: "Spice", diseaseName: "Quick Wilt", severity: "Critical", chemicalCure: "Potassium Phosphonate", chemicalDosage: "3ml / L", desiNuskha: "Trichoderma harzianum soil application.", isCertified: true, imageUrl: "https://picsum.photos/seed/pepper1/800/400" },
@@ -134,7 +137,7 @@ export function ExpertVerificationPortal() {
             })
             .catch(async (serverError) => {
               const permissionError = new FirestorePermissionError({
-                path: `${colRef.path}/AUTO_ID`,
+                path: colRef.path,
                 operation: 'create',
                 requestResourceData: crop,
               } satisfies SecurityRuleContext);
@@ -160,7 +163,7 @@ export function ExpertVerificationPortal() {
       toast({
         variant: "destructive",
         title: "Sync Failed",
-        description: "Insufficient permissions to seed the database.",
+        description: "Missing or insufficient permissions to populate database.",
       });
       
       const permissionError = new FirestorePermissionError({
