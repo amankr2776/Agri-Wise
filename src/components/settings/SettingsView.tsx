@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState } from "react";
@@ -18,6 +17,7 @@ import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -113,11 +113,11 @@ export function SettingsView() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
                 <div className="space-y-2">
                   <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest ml-4">{t("full_name")}</Label>
-                  <Input value={localName} onChange={(e) => setLocalName(e.target.value)} className="h-14 rounded-2xl bg-muted/30 border-none font-black text-lg px-6" />
+                  <Input value={localName} onChange={(e) => setLocalName(localName)} className="h-14 rounded-2xl bg-muted/30 border-none font-black text-lg px-6" />
                 </div>
                 <div className="space-y-2">
                   <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest ml-4">{t("city")}</Label>
-                  <Input value={localCity} onChange={(e) => setLocalCity(e.target.value)} className="h-14 rounded-2xl bg-muted/30 border-none font-black text-lg px-6" />
+                  <Input value={localCity} onChange={(e) => setLocalCity(localCity)} className="h-14 rounded-2xl bg-muted/30 border-none font-black text-lg px-6" />
                 </div>
               </div>
             </div>
