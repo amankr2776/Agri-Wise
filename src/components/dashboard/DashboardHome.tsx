@@ -43,6 +43,8 @@ import { useAppState } from "@/lib/app-state";
 import { useTranslation } from "@/hooks/use-translation";
 import { cn } from "@/lib/utils";
 import { motion, useSpring, useTransform, animate } from "framer-motion";
+import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
+import { collection, query, where } from "firebase/firestore";
 
 interface DashboardHomeProps {
   onNavigate: (section: string) => void;
@@ -83,6 +85,7 @@ function Counter({ value }: { value: number }) {
 export function DashboardHome({ onNavigate }: DashboardHomeProps) {
   const { name, city, role, setFleetActiveTab } = useAppState();
   const { t } = useTranslation();
+  const firestore = useFirestore();
   const [selectedAlert, setSelectedAlert] = useState<AlertDetail | null>(null);
   const [currentTime, setCurrentTime] = useState<string>("");
   const [currentDate, setCurrentDate] = useState<string>("");
@@ -103,6 +106,22 @@ export function DashboardHome({ onNavigate }: DashboardHomeProps) {
     return () => clearInterval(interval);
   }, []);
 
+  // --- Real-Time Data Fetching for Expert ---
+  const pendingPostsQuery = useMemoFirebase(() => {
+    if (!firestore || (role !== "Expert" && role !== "Authority")) return null;
+    return query(collection(firestore, "posts"), where("isVerified", "==", false));
+  }, [firestore, role]);
+
+  const { data: pendingPosts, isLoading: loadingPending } = useCollection(pendingPostsQuery);
+
+  const outbreaksQuery = useMemoFirebase(() => {
+    if (!firestore || (role !== "Expert" && role !== "Authority")) return null;
+    // For demo purposes, we monitor outbreaks in Karnataka (where Bengaluru is)
+    return query(collection(firestore, "pestOutbreaks"), where("state", "==", "Karnataka"));
+  }, [firestore, role]);
+
+  const { data: outbreaks, isLoading: loadingOutbreaks } = useCollection(outbreaksQuery);
+
   const handleDeepNavigate = (section: string, tab?: string) => {
     if (tab) setFleetActiveTab(tab);
     onNavigate(section);
@@ -118,8 +137,8 @@ export function DashboardHome({ onNavigate }: DashboardHomeProps) {
       ];
     } else if (role === "Expert" || role === "Authority") {
       return [
-        { id: "expert-portal", label: "Pending Verifications", value: 15, icon: FlaskConical, color: "text-blue-500", bg: "bg-blue-500/10" },
-        { id: "surveillance", label: "Active Outbreaks", value: 8, icon: Bug, color: "text-cyan-500", bg: "bg-cyan-500/10" },
+        { id: "expert-portal", label: "Pending Verifications", value: pendingPosts?.length ?? 0, isLoading: loadingPending, icon: FlaskConical, color: "text-blue-500", bg: "bg-blue-500/10" },
+        { id: "surveillance", label: "Active Outbreaks", value: outbreaks?.length ?? 0, isLoading: loadingOutbreaks, icon: Bug, color: "text-cyan-500", bg: "bg-cyan-500/10" },
         { id: "network", label: "Expert Insights", value: 45, icon: ClipboardCheck, color: "text-teal-500", bg: "bg-teal-500/10" },
         { id: "network", label: "Farmer Queries", value: 24, icon: MessageCircle, color: "text-sky-500", bg: "bg-sky-500/10" },
       ];
@@ -131,7 +150,7 @@ export function DashboardHome({ onNavigate }: DashboardHomeProps) {
         { id: "fleet", tab: "maintenance", label: "Maintenance", value: 5, icon: RefreshCw, color: "text-amber-500", bg: "bg-amber-500/10" },
       ];
     }
-  }, [role, t]);
+  }, [role, t, pendingPosts, loadingPending, outbreaks, loadingOutbreaks]);
 
   const quickActions = useMemo(() => {
     if (role === "Farmer") {
@@ -223,7 +242,11 @@ export function DashboardHome({ onNavigate }: DashboardHomeProps) {
                 <div>
                   <p className="text-[10px] font-black uppercase text-muted-foreground tracking-widest mb-1">{stat.label}</p>
                   <p className="text-3xl font-black">
-                    {typeof stat.value === 'number' ? <Counter value={stat.value} /> : stat.value}
+                    {(stat as any).isLoading ? (
+                      <span className="animate-pulse opacity-20">...</span>
+                    ) : (
+                      typeof stat.value === 'number' ? <Counter value={stat.value} /> : stat.value
+                    )}
                   </p>
                   {stat.sub && <p className="text-[10px] font-bold text-primary mt-1">{stat.sub}</p>}
                 </div>
