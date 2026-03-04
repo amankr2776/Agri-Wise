@@ -1,21 +1,21 @@
 
 'use client';
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { 
   LayoutDashboard, 
   Leaf, 
   TrendingUp, 
   Truck, 
   Users, 
-  ShieldCheck, 
   Search, 
   Bell, 
   Settings,
   LogOut,
   FlaskConical,
   Globe,
-  Lock
+  Loader2
 } from "lucide-react";
 import { 
   SidebarProvider, 
@@ -32,7 +32,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { useAppState, UserRole } from "@/lib/app-state";
+import { useAppState } from "@/lib/app-state";
 
 // Section Components
 import { DashboardHome } from "@/components/dashboard/DashboardHome";
@@ -40,14 +40,31 @@ import { CropDiagnostics } from "@/components/diagnostics/CropDiagnostics";
 import { MarketIntelligence } from "@/components/market/MarketIntelligence";
 import { MandiLink } from "@/components/logistics/MandiLink";
 import { KisanNetwork } from "@/components/social/KisanNetwork";
-import { AuthorityDashboard } from "@/components/gov/AuthorityDashboard";
 import { ExpertVerificationPortal } from "@/components/experts/ExpertVerificationPortal";
 import { MinistryIntelligence } from "@/components/gov/MinistryIntelligence";
 import { FleetManagement } from "@/components/logistics/FleetManagement";
 
 export default function KisanMitraApp() {
+  const router = useRouter();
+  const { role, isAuthenticated, logout } = useAppState();
   const [activeSection, setActiveSection] = useState("dashboard");
-  const { role, setRole } = useAppState();
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      router.push("/login");
+    }
+  }, [isAuthenticated, router]);
+
+  if (!isAuthenticated || !role) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="h-10 w-10 animate-spin text-primary" />
+          <p className="text-sm font-black uppercase tracking-widest text-muted-foreground">Verifying Identity...</p>
+        </div>
+      </div>
+    );
+  }
 
   const renderSection = () => {
     switch (activeSection) {
@@ -64,16 +81,22 @@ export default function KisanMitraApp() {
   };
 
   const menuItems = [
-    { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, roles: ["Expert", "Authority", "Logistics"] },
-    { id: "diagnostics", label: "Crop Diagnostics", icon: Leaf, roles: ["Expert", "Authority", "Logistics"] },
-    { id: "market", label: "Market Intelligence", icon: TrendingUp, roles: ["Expert", "Authority", "Logistics"] },
+    { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, roles: ["Farmer", "Expert", "Authority", "Logistics"] },
+    { id: "diagnostics", label: "Crop Diagnostics", icon: Leaf, roles: ["Farmer", "Expert", "Authority", "Logistics"] },
+    { id: "market", label: "Market Intelligence", icon: TrendingUp, roles: ["Farmer", "Expert", "Authority", "Logistics"] },
     { id: "expert-portal", label: "Verification Portal", icon: FlaskConical, roles: ["Expert"] },
     { id: "gov-intel", label: "Ministry Intel", icon: Globe, roles: ["Authority"] },
     { id: "fleet", label: "My Fleet", icon: Truck, roles: ["Logistics"] },
-    { id: "network", label: "Kisan Network", icon: Users, roles: ["Expert", "Authority", "Logistics"] },
+    { id: "logistics", label: "Mandi-Link", icon: Truck, roles: ["Farmer"] },
+    { id: "network", label: "Kisan Network", icon: Users, roles: ["Farmer", "Expert", "Authority", "Logistics"] },
   ];
 
   const filteredMenu = menuItems.filter(item => item.roles.includes(role));
+
+  const handleLogout = () => {
+    logout();
+    router.push("/login");
+  };
 
   return (
     <SidebarProvider>
@@ -105,27 +128,14 @@ export default function KisanMitraApp() {
             </SidebarMenu>
           </SidebarContent>
           <SidebarFooter className="border-t p-4 space-y-2">
-            <div className="px-2 mb-2 group-data-[collapsible=icon]:hidden">
-              <label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest block mb-2">Switch Identity</label>
-              <div className="grid grid-cols-1 gap-1">
-                {(["Expert", "Authority", "Logistics"] as UserRole[]).map((r) => (
-                  <Button 
-                    key={r}
-                    variant={role === r ? "default" : "ghost"} 
-                    size="sm" 
-                    className="justify-start h-8 text-[10px] font-bold rounded-lg"
-                    onClick={() => {
-                      setRole(r);
-                      setActiveSection("dashboard");
-                    }}
-                  >
-                    <Lock className="h-3 w-3 mr-2 opacity-50" /> {r}
-                  </Button>
-                ))}
-              </div>
-            </div>
             <SidebarMenuButton tooltip="Settings" className="h-12"><Settings className="h-5 w-5" /> <span>Settings</span></SidebarMenuButton>
-            <SidebarMenuButton tooltip="Logout" className="h-12 text-destructive"><LogOut className="h-5 w-5" /> <span>Logout</span></SidebarMenuButton>
+            <SidebarMenuButton 
+              tooltip="Logout" 
+              onClick={handleLogout}
+              className="h-12 text-destructive hover:bg-destructive/10 hover:text-destructive"
+            >
+              <LogOut className="h-5 w-5" /> <span>Logout</span>
+            </SidebarMenuButton>
           </SidebarFooter>
         </Sidebar>
 
