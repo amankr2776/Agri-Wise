@@ -1,3 +1,4 @@
+
 "use client";
 
 import { create } from "zustand";
@@ -17,8 +18,14 @@ interface Notification {
 interface AppState {
   role: UserRole | null;
   isAuthenticated: boolean;
+  name: string;
+  city: string;
+  profileImage: string | null;
   login: (role: UserRole) => void;
   logout: () => void;
+  setName: (name: string) => void;
+  setCity: (city: string) => void;
+  setProfileImage: (img: string | null) => void;
   language: string;
   setLanguage: (lang: string) => void;
   verifiedRemedies: string[];
@@ -34,8 +41,14 @@ export const useAppState = create<AppState>()(
     (set) => ({
       role: null,
       isAuthenticated: false,
+      name: "Aman Kumar",
+      city: "Bengaluru",
+      profileImage: null,
       login: (role) => set({ role, isAuthenticated: true }),
       logout: () => set({ role: null, isAuthenticated: false }),
+      setName: (name) => set({ name }),
+      setCity: (city) => set({ city }),
+      setProfileImage: (profileImage) => set({ profileImage }),
       language: "English",
       setLanguage: (language) => set({ language }),
       verifiedRemedies: [],

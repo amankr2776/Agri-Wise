@@ -1,6 +1,7 @@
+
 'use client';
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { 
   User, 
   Moon, 
@@ -11,13 +12,15 @@ import {
   ShieldCheck, 
   Settings,
   Eye,
-  Check
+  Camera,
+  Upload
 } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { 
   Select, 
   SelectContent, 
@@ -31,27 +34,32 @@ import { cn } from "@/lib/utils";
 
 export function SettingsView() {
   const { toast } = useToast();
-  const { language, setLanguage, role } = useAppState();
+  const { 
+    language, 
+    setLanguage, 
+    role, 
+    name, 
+    setName, 
+    city, 
+    setCity, 
+    profileImage, 
+    setProfileImage 
+  } = useAppState();
   
-  const [name, setName] = useState("");
-  const [city, setCity] = useState("");
+  const [localName, setLocalName] = useState(name);
+  const [localCity, setLocalCity] = useState(city);
   const [theme, setTheme] = useState("farmer");
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    // Load local storage profile data
-    const savedName = localStorage.getItem("km_user_name") || "Rajesh Kumar";
-    const savedCity = localStorage.getItem("km_user_city") || "Ludhiana";
     const savedTheme = localStorage.getItem("km_theme") || "farmer";
-    
-    setName(savedName);
-    setCity(savedCity);
     setTheme(savedTheme);
     document.documentElement.setAttribute("data-theme", savedTheme);
   }, []);
 
   const handleSave = () => {
-    localStorage.setItem("km_user_name", name);
-    localStorage.setItem("km_user_city", city);
+    setName(localName);
+    setCity(localCity);
     localStorage.setItem("km_theme", theme);
     document.documentElement.setAttribute("data-theme", theme);
     
@@ -64,6 +72,21 @@ export function SettingsView() {
   const handleThemeChange = (newTheme: string) => {
     setTheme(newTheme);
     document.documentElement.setAttribute("data-theme", newTheme);
+  };
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setProfileImage(reader.result as string);
+        toast({
+          title: "Profile Photo Updated",
+          description: "Your new avatar is ready.",
+        });
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   return (
@@ -89,21 +112,48 @@ export function SettingsView() {
               </CardTitle>
               <CardDescription className="font-medium">Update your core identity details.</CardDescription>
             </CardHeader>
-            <CardContent className="p-8 pt-0 space-y-6">
+            <CardContent className="p-8 pt-0 space-y-8">
+              {/* Image Upload UI */}
+              <div className="flex flex-col items-center sm:flex-row gap-6 p-6 bg-muted/20 rounded-3xl border-2 border-dashed border-primary/10">
+                <Avatar className="h-24 w-24 border-4 border-white shadow-xl">
+                  <AvatarImage src={profileImage || ""} />
+                  <AvatarFallback className="bg-primary text-white text-2xl font-black">{localName[0]}</AvatarFallback>
+                </Avatar>
+                <div className="space-y-3 text-center sm:text-left">
+                  <h4 className="font-black text-sm uppercase tracking-widest">Profile Identity</h4>
+                  <p className="text-xs text-muted-foreground font-medium max-w-xs">Upload a professional field photo for your grid identity.</p>
+                  <input 
+                    type="file" 
+                    ref={fileInputRef} 
+                    className="hidden" 
+                    accept="image/*" 
+                    onChange={handleImageUpload}
+                  />
+                  <Button 
+                    onClick={() => fileInputRef.current?.click()}
+                    size="sm" 
+                    variant="outline" 
+                    className="rounded-full h-10 px-6 font-black text-[10px] uppercase tracking-widest gap-2"
+                  >
+                    <Upload className="h-3.5 w-3.5" /> Choose Photo
+                  </Button>
+                </div>
+              </div>
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-2">Display Name</Label>
                   <Input 
-                    value={name} 
-                    onChange={(e) => setName(e.target.value)}
+                    value={localName} 
+                    onChange={(e) => setLocalName(e.target.value)}
                     className="h-12 rounded-xl bg-background/50 border-none font-bold" 
                   />
                 </div>
                 <div className="space-y-2">
                   <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-2">Base City</Label>
                   <Input 
-                    value={city} 
-                    onChange={(e) => setCity(e.target.value)}
+                    value={localCity} 
+                    onChange={(e) => setLocalCity(e.target.value)}
                     className="h-12 rounded-xl bg-background/50 border-none font-bold" 
                   />
                 </div>

@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useEffect } from "react";
@@ -56,7 +57,15 @@ import { SettingsView } from "@/components/settings/SettingsView";
 export default function KisanMitraApp() {
   const router = useRouter();
   const { toast } = useToast();
-  const { role, isAuthenticated, logout, notifications, markNotificationsAsRead } = useAppState();
+  const { 
+    role, 
+    isAuthenticated, 
+    logout, 
+    notifications, 
+    markNotificationsAsRead,
+    name,
+    profileImage 
+  } = useAppState();
   const [activeSection, setActiveSection] = useState("dashboard");
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearching, setIsSearching] = useState(false);
@@ -252,12 +261,12 @@ export default function KisanMitraApp() {
               <div className="h-8 w-px bg-border hidden sm:block" />
               <div className="flex items-center gap-3 bg-muted/30 px-3 py-1.5 rounded-full border border-border/50">
                 <div className="hidden sm:block text-right">
-                  <p className="text-xs font-black leading-none uppercase">{role} Portal</p>
-                  <p className="text-[9px] text-primary font-bold mt-1 tracking-tighter uppercase">Verified Access</p>
+                  <p className="text-xs font-black leading-none uppercase">{name || role}</p>
+                  <p className="text-[9px] text-primary font-bold mt-1 tracking-tighter uppercase">Verified {role}</p>
                 </div>
                 <Avatar className="h-8 w-8 border-2 border-primary/20 shadow-sm">
-                  <AvatarImage src={`https://picsum.photos/seed/${role}/40/40`} />
-                  <AvatarFallback>{role[0]}</AvatarFallback>
+                  <AvatarImage src={profileImage || ""} />
+                  <AvatarFallback>{(name || role)[0]}</AvatarFallback>
                 </Avatar>
               </div>
             </div>

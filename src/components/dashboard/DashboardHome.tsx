@@ -1,6 +1,7 @@
+
 'use client';
 
-import React from "react";
+import React, { useMemo } from "react";
 import { 
   AlertTriangle, 
   TrendingUp, 
@@ -15,16 +16,34 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { useAppState } from "@/lib/app-state";
 
 interface DashboardHomeProps {
   onNavigate: (section: string) => void;
 }
 
 export function DashboardHome({ onNavigate }: DashboardHomeProps) {
+  const { name, city, role } = useAppState();
+
+  const today = useMemo(() => {
+    return new Date().toLocaleDateString('en-IN', { 
+      month: 'long', 
+      day: 'numeric', 
+      year: 'numeric' 
+    });
+  }, []);
+
   const stats = [
     { id: "market", label: "Active Alerts", value: "3", icon: AlertTriangle, color: "text-destructive", bg: "bg-destructive/10" },
     { id: "market", label: "Best Price Today", value: "₹2,150/q", sub: "Wheat (Nashik)", icon: TrendingUp, color: "text-primary", bg: "bg-primary/10" },
-    { id: "fleet", label: "Active Shipments", value: "2", icon: Truck, color: "text-blue-500", bg: "bg-blue-500/10" },
+    { 
+      id: role === "Logistics" ? "fleet" : "logistics", 
+      label: "Active Shipments", 
+      value: "2", 
+      icon: Truck, 
+      color: "text-blue-500", 
+      bg: "bg-blue-500/10" 
+    },
     { id: "network", label: "Community Posts", value: "12", icon: Users, color: "text-amber-500", bg: "bg-amber-500/10" },
   ];
 
@@ -50,11 +69,11 @@ export function DashboardHome({ onNavigate }: DashboardHomeProps) {
         </div>
         <div className="relative z-10 space-y-2">
           <Badge className="bg-white/20 text-white border-none backdrop-blur-md px-3 py-1 mb-2">
-            October 24, 2023
+            {today}
           </Badge>
-          <h1 className="text-3xl md:text-5xl font-bold tracking-tight">Namaste, Rajesh Ji!</h1>
+          <h1 className="text-3xl md:text-5xl font-bold tracking-tight">Namaste, {name || 'Farmer'} Ji!</h1>
           <p className="text-lg md:text-xl text-primary-foreground/80 max-w-xl">
-            Your fields in Ludhiana are looking healthy. Wheat prices are rising in nearby Mandis.
+            Your fields in {city || 'your region'} are looking healthy. Wheat prices are rising in nearby Mandis.
           </p>
         </div>
       </div>
