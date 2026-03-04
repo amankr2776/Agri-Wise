@@ -41,6 +41,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { useFirestore, useCollection, useUser, useMemoFirebase } from "@/firebase";
@@ -375,13 +376,15 @@ function CommentDrawer({ postId, postAuthor }: { postId: string, postAuthor: str
 
   return (
     <div className="flex flex-col h-[600px] bg-white">
-      <div className="p-8 border-b bg-slate-50/50">
-        <h3 className="text-xl font-black flex items-center gap-3">
+      <DialogHeader className="p-8 border-b bg-slate-50/50">
+        <DialogTitle className="text-xl font-black flex items-center gap-3">
           <MessageCircle className="h-6 w-6 text-primary" />
           Comments for {postAuthor}
-        </h3>
-        <p className="text-xs text-muted-foreground font-bold uppercase tracking-widest mt-1">Community Insights & Advice</p>
-      </div>
+        </DialogTitle>
+        <DialogDescription className="text-xs text-muted-foreground font-bold uppercase tracking-widest mt-1">
+          Community Insights & Advice
+        </DialogDescription>
+      </DialogHeader>
 
       <div className="flex-1 overflow-y-auto p-8 space-y-6">
         {isLoading ? (
