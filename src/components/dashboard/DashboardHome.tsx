@@ -251,6 +251,11 @@ export function DashboardHome({ onNavigate }: DashboardHomeProps) {
         <DialogContent className="max-w-2xl rounded-[2.5rem] p-0 overflow-hidden border-none shadow-2xl">
           {selectedAlert && (
             <div className="flex flex-col">
+              <DialogHeader className="sr-only">
+                <DialogTitle>{selectedAlert.title}</DialogTitle>
+                <DialogDescription>{selectedAlert.details}</DialogDescription>
+              </DialogHeader>
+
               <div className={cn(
                 "p-10 text-white space-y-4",
                 selectedAlert.type === 'Critical' ? 'bg-destructive' : 
