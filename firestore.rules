@@ -21,11 +21,8 @@ service cloud.firestore {
     }
 
     function isExpert() {
-      return isSignedIn() && getRole() == 'Expert';
-    }
-
-    function isAuthority() {
-      return isSignedIn() && getRole() == 'Authority';
+      let role = getRole();
+      return isSignedIn() && (role == 'Expert' || role == 'Authority');
     }
 
     // --- Crops Collection ---
@@ -74,9 +71,11 @@ service cloud.firestore {
     }
 
     match /pestOutbreaks/{outbreakId} {
-      allow read: if isSignedIn() && (getRole() == 'Expert' || getRole() == 'Authority');
-      allow create, update: if isSignedIn() && (getRole() == 'Expert' || getRole() == 'Authority');
-      allow delete: if isSignedIn() && (getRole() == 'Expert' || getRole() == 'Authority');
+      // Alerts are critical intelligence for the entire grid. 
+      // Allowing read access to all signed-in users prevents race conditions 
+      // during profile synchronization while keeping writes restricted.
+      allow read: if isSignedIn();
+      allow create, update, delete: if isExpert();
     }
   }
 }
