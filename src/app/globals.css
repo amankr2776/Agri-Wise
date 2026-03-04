@@ -43,3 +43,22 @@
 .touch-target {
   @apply min-h-[44px] min-w-[44px] flex items-center justify-center;
 }
+
+@keyframes pulse-custom {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+
+.animate-pulse-engagement {
+  animation: pulse-custom 0.5s ease-in-out;
+}
+
+@keyframes gold-glow {
+  0%, 100% { box-shadow: 0 0 5px #eab308, 0 0 10px #eab308; }
+  50% { box-shadow: 0 0 20px #eab308, 0 0 30px #eab308; }
+}
+
+.verified-expert-glow {
+  border: 2px solid #eab308;
+  animation: gold-glow 2s infinite ease-in-out;
+}
