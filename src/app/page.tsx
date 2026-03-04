@@ -55,7 +55,6 @@ import { SettingsView } from "@/components/settings/SettingsView";
 
 export default function KisanMitraApp() {
   const router = useRouter();
-  const { toast } = useToast();
   const { t } = useTranslation();
   const { 
     role, 
@@ -68,30 +67,11 @@ export default function KisanMitraApp() {
   } = useAppState();
   const [activeSection, setActiveSection] = useState("dashboard");
 
-  const unreadCount = notifications.filter(n => !n.isRead).length;
-
   useEffect(() => {
-    if (!isAuthenticated) {
-      router.push("/login");
-    }
+    if (!isAuthenticated) router.push("/login");
   }, [isAuthenticated, router]);
 
-  useEffect(() => {
-    if (role === "Logistics") setActiveSection("fleet");
-    else if (role === "Expert") setActiveSection("expert-portal");
-    else setActiveSection("dashboard");
-  }, [role]);
-
-  if (!isAuthenticated || !role) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="flex flex-col items-center gap-4">
-          <Loader2 className="h-10 w-10 animate-spin text-primary" />
-          <p className="text-sm font-black uppercase tracking-widest text-muted-foreground">Verifying Identity...</p>
-        </div>
-      </div>
-    );
-  }
+  if (!isAuthenticated || !role) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="animate-spin" /></div>;
 
   const renderSection = () => {
     switch (activeSection) {
@@ -117,8 +97,6 @@ export default function KisanMitraApp() {
     { id: "network", label: t("network"), icon: Users, roles: ["Farmer", "Expert", "Logistics"] },
   ];
 
-  const filteredMenu = menuItems.filter(item => item.roles.includes(role));
-
   return (
     <SidebarProvider>
       <div className="flex min-h-screen w-full bg-background text-foreground">
@@ -133,7 +111,7 @@ export default function KisanMitraApp() {
           </SidebarHeader>
           <SidebarContent className="py-4">
             <SidebarMenu>
-              {filteredMenu.map((item) => (
+              {menuItems.filter(i => i.roles.includes(role)).map((item) => (
                 <SidebarMenuItem key={item.id}>
                   <SidebarMenuButton 
                     isActive={activeSection === item.id}
@@ -149,19 +127,10 @@ export default function KisanMitraApp() {
             </SidebarMenu>
           </SidebarContent>
           <SidebarFooter className="border-t p-4 space-y-2">
-            <SidebarMenuButton 
-              isActive={activeSection === "settings"}
-              onClick={() => setActiveSection("settings")}
-              tooltip={t("settings")} 
-              className="h-12 data-[active=true]:bg-primary/10 data-[active=true]:text-primary"
-            >
+            <SidebarMenuButton onClick={() => setActiveSection("settings")} className="h-12">
               <Settings className="h-5 w-5" /> <span>{t("settings")}</span>
             </SidebarMenuButton>
-            <SidebarMenuButton 
-              tooltip={t("logout")} 
-              onClick={() => logout()}
-              className="h-12 text-destructive hover:bg-destructive/10"
-            >
+            <SidebarMenuButton onClick={() => logout()} className="h-12 text-destructive">
               <LogOut className="h-5 w-5" /> <span>{t("logout")}</span>
             </SidebarMenuButton>
           </SidebarFooter>
@@ -171,65 +140,16 @@ export default function KisanMitraApp() {
           <header className="h-16 flex items-center justify-between px-6 border-b glass-card sticky top-0 z-30">
             <div className="flex items-center gap-4">
               <SidebarTrigger className="md:hidden" />
-              <div className="hidden md:flex items-center">
-                <h2 className="text-sm font-black uppercase tracking-[0.2em] text-muted-foreground">National Agricultural Grid</h2>
-              </div>
+              <h2 className="text-sm font-black uppercase tracking-[0.2em] text-muted-foreground hidden md:block">Grid Intelligence</h2>
             </div>
             <div className="flex items-center gap-4">
-              <Popover onOpenChange={(open) => open && markNotificationsAsRead()}>
-                <PopoverTrigger asChild>
-                  <Button variant="ghost" size="icon" className="relative touch-target rounded-full hover:bg-muted">
-                    <Bell className="h-5 w-5" />
-                    {unreadCount > 0 && (
-                      <Badge className="absolute top-1 right-1 h-4 w-4 flex items-center justify-center p-0 bg-destructive text-[9px] border-2 border-white">
-                        {unreadCount}
-                      </Badge>
-                    )}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-80 p-0 rounded-3xl overflow-hidden shadow-2xl border-none">
-                  <div className="bg-primary p-4 text-white">
-                    <h4 className="font-black text-xs uppercase tracking-widest">Grid Notifications</h4>
-                  </div>
-                  <div className="max-h-[400px] overflow-y-auto">
-                    {notifications.length === 0 ? (
-                      <div className="p-8 text-center text-muted-foreground">
-                        <CheckCircle2 className="h-10 w-10 mx-auto mb-2 opacity-20" />
-                        <p className="text-xs font-bold uppercase tracking-tighter">Your grid is clear</p>
-                      </div>
-                    ) : (
-                      notifications.map((n) => (
-                        <div key={n.id} className="p-4 border-b last:border-0 hover:bg-muted/30 transition-colors cursor-pointer">
-                          <div className="flex gap-3">
-                            <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary shrink-0">
-                              {n.type === 'like' ? <MessageCircle className="h-4 w-4" /> : <Users className="h-4 w-4" />}
-                            </div>
-                            <div className="space-y-1">
-                              <p className="text-xs font-bold text-slate-800">{n.message}</p>
-                              <p className="text-[10px] text-muted-foreground uppercase font-black">{n.from}</p>
-                            </div>
-                          </div>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </PopoverContent>
-              </Popover>
-              <div className="h-8 w-px bg-border hidden sm:block" />
-              <div className="flex items-center gap-3 bg-muted/30 px-3 py-1.5 rounded-full border border-border/50">
-                <div className="hidden sm:block text-right">
-                  <p className="text-xs font-black leading-none uppercase">{name || role}</p>
-                  <p className="text-[9px] text-primary font-bold mt-1 tracking-tighter uppercase">Verified {role}</p>
-                </div>
-                <Avatar className="h-8 w-8 border-2 border-primary/20 shadow-sm">
-                  <AvatarImage src={profileImage || ""} />
-                  <AvatarFallback className="bg-primary text-white font-black">{(name || role)[0]}</AvatarFallback>
-                </Avatar>
-              </div>
+              <Avatar className="h-8 w-8 border-2 border-primary/20">
+                <AvatarImage src={profileImage || ""} />
+                <AvatarFallback>{(name || role)[0]}</AvatarFallback>
+              </Avatar>
             </div>
           </header>
-
-          <main className="flex-1 p-6 md:p-8 animate-in fade-in duration-500 overflow-x-hidden">
+          <main className="flex-1 p-6 md:p-8 overflow-x-hidden">
             {renderSection()}
           </main>
         </SidebarInset>
