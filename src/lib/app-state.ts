@@ -54,8 +54,8 @@ export const useAppState = create<AppState>()(
       language: "English",
       theme: "farmer",
       notifications: [
-        { id: "1", type: "alert", title: "Pest Alert", message: "Locust swarm spotted in nearby sector.", createdAt: new Date().toISOString(), isRead: false },
-        { id: "2", type: "system", title: "Market Update", message: "Wheat prices rising in local Mandi.", createdAt: new Date().toISOString(), isRead: false }
+        { id: "1", type: 'alert', title: "Pest Alert", message: "Locust swarm spotted in nearby sector.", createdAt: new Date().toISOString(), isRead: false },
+        { id: "2", type: 'system', title: "Market Update", message: "Wheat prices rising in local Mandi.", createdAt: new Date().toISOString(), isRead: false }
       ],
       
       login: (role) => set({ role, isAuthenticated: true }),

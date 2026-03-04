@@ -24,7 +24,7 @@ import {
   ClipboardCheck,
   RefreshCw
 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { 
@@ -65,29 +65,31 @@ export function DashboardHome({ onNavigate }: DashboardHomeProps) {
   const { t } = useTranslation();
   const [selectedAlert, setSelectedAlert] = useState<AlertDetail | null>(null);
   const [currentTime, setCurrentTime] = useState<string>("");
+  const [currentDate, setCurrentDate] = useState<string>("");
 
   useEffect(() => {
-    setCurrentTime(new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }));
-    const interval = setInterval(() => {
-      setCurrentTime(new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }));
-    }, 60000);
+    // Avoid hydration mismatch by setting time/date on mount
+    const updateTime = () => {
+      const now = new Date();
+      setCurrentTime(now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }));
+      setCurrentDate(now.toLocaleDateString('en-IN', { 
+        month: 'long', 
+        day: 'numeric', 
+        year: 'numeric' 
+      }));
+    };
+    
+    updateTime();
+    const interval = setInterval(updateTime, 60000);
     return () => clearInterval(interval);
   }, []);
 
-  const today = useMemo(() => {
-    return new Date().toLocaleDateString('en-IN', { 
-      month: 'long', 
-      day: 'numeric', 
-      year: 'numeric' 
-    });
-  }, []);
-
-  // Role-Aware Statistics
+  // Role-Aware Statistics with specific event handlers
   const stats = useMemo(() => {
     if (role === "Farmer") {
       return [
-        { id: "diagnostics", label: "Active Alerts", value: "3", icon: AlertTriangle, color: "text-destructive", bg: "bg-destructive/10" },
-        { id: "market", label: "Best Mandi Price", value: "₹2,150/q", sub: "Wheat (Nashik)", icon: TrendingUp, color: "text-primary", bg: "bg-primary/10" },
+        { id: "diagnostics", label: t("active_alerts"), value: "3", icon: AlertTriangle, color: "text-destructive", bg: "bg-destructive/10" },
+        { id: "market", label: t("best_price"), value: "₹2,150/q", sub: "Wheat (Nashik)", icon: TrendingUp, color: "text-primary", bg: "bg-primary/10" },
         { id: "logistics", label: "My Shipments", value: "2", icon: Truck, color: "text-blue-500", bg: "bg-blue-500/10" },
         { id: "network", label: "Network Posts", value: "12", icon: Users, color: "text-amber-500", bg: "bg-amber-500/10" },
       ];
@@ -106,13 +108,13 @@ export function DashboardHome({ onNavigate }: DashboardHomeProps) {
         { id: "fleet", label: "Maintenance", value: "5", icon: RefreshCw, color: "text-amber-500", bg: "bg-amber-500/10" },
       ];
     }
-  }, [role]);
+  }, [role, t]);
 
   // Role-Aware Quick Actions
   const quickActions = useMemo(() => {
     if (role === "Farmer") {
       return [
-        { id: "diagnostics", label: "AI Field Scan", icon: Leaf, desc: "Multimodal Analysis", color: "text-primary", bg: "bg-primary/10" },
+        { id: "diagnostics", label: t("ai_scan"), icon: Leaf, desc: "Multimodal Analysis", color: "text-primary", bg: "bg-primary/10" },
         { id: "market", label: "Market Trends", icon: Search, desc: "Price Forecasting", color: "text-blue-500", bg: "bg-blue-500/10" },
         { id: "logistics", label: "Book Transport", icon: Truck, desc: "Mandi-Link Pro", color: "text-amber-500", bg: "bg-amber-500/10" },
         { id: "network", label: "Network Hub", icon: Users, desc: "Collaborate", color: "text-purple-500", bg: "bg-purple-500/10" },
@@ -132,7 +134,7 @@ export function DashboardHome({ onNavigate }: DashboardHomeProps) {
         { id: "network", label: "Mandi Network", icon: Users, desc: "Community News", color: "text-purple-500", bg: "bg-purple-500/10" },
       ];
     }
-  }, [role]);
+  }, [role, t]);
 
   const alerts: AlertDetail[] = [
     { 
@@ -154,6 +156,7 @@ export function DashboardHome({ onNavigate }: DashboardHomeProps) {
 
   return (
     <div className="space-y-10">
+      {/* Hero Banner with Identity Correction */}
       <motion.div 
         initial={{ opacity: 0, y: 20 }} 
         animate={{ opacity: 1, y: 0 }}
@@ -164,9 +167,9 @@ export function DashboardHome({ onNavigate }: DashboardHomeProps) {
         </div>
         <div className="relative z-10 space-y-6">
           <div className="flex flex-wrap gap-3">
-            <Badge className="bg-white/20 text-white border-none px-4 py-1.5 font-bold uppercase tracking-widest text-[10px]">{today}</Badge>
+            <Badge className="bg-white/20 text-white border-none px-4 py-1.5 font-bold uppercase tracking-widest text-[10px]">{currentDate || "Loading Date..."}</Badge>
             <Badge className="bg-white/10 text-white border-none px-4 py-1.5 font-bold uppercase tracking-widest text-[10px] flex items-center gap-2">
-              <Clock className="h-3 w-3" /> {t("last_updated")}: {currentTime}
+              <Clock className="h-3 w-3" /> {t("last_updated")}: {currentTime || "--:--"}
             </Badge>
           </div>
           <div className="space-y-2">
@@ -174,16 +177,17 @@ export function DashboardHome({ onNavigate }: DashboardHomeProps) {
               {t("welcome")}, {name} Ji!
             </h1>
             <p className="text-xl md:text-2xl text-primary-foreground/90 font-medium">
-              Your professional grid in {city} is active.
+              Your professional agricultural grid in {city} is active.
             </p>
           </div>
         </div>
       </motion.div>
 
+      {/* Intelligence Grid Status Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {stats.map((stat, i) => (
           <motion.div
-            key={i}
+            key={`stat-${i}`}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.1 }}
@@ -215,7 +219,7 @@ export function DashboardHome({ onNavigate }: DashboardHomeProps) {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             {quickActions.map((action, i) => (
               <motion.button 
-                key={i} 
+                key={`action-${i}`} 
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: i * 0.1 }}

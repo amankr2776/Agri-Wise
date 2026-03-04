@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState } from "react";
@@ -13,14 +14,13 @@ import {
   Loader2,
   CheckCircle2
 } from "lucide-react";
-import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAppState, AppLanguage, AppTheme } from "@/lib/app-state";
 import { useToast } from "@/hooks/use-toast";
 import { useTranslation } from "@/hooks/use-translation";
@@ -63,9 +63,11 @@ export function SettingsView() {
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
-      reader.onloadend = () => setProfileImage(reader.result as string);
+      reader.onloadend = () => {
+        setProfileImage(reader.result as string);
+        toast({ title: "Photo Updated", description: "Your profile image has been synchronized." });
+      };
       reader.readAsDataURL(file);
-      toast({ title: "Photo Updated", description: "Your profile image has been synchronized." });
     }
   };
 
@@ -113,11 +115,11 @@ export function SettingsView() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
                 <div className="space-y-2">
                   <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest ml-4">{t("full_name")}</Label>
-                  <Input value={localName} onChange={(e) => setLocalName(localName)} className="h-14 rounded-2xl bg-muted/30 border-none font-black text-lg px-6" />
+                  <Input value={localName} onChange={(e) => setLocalName(e.target.value)} className="h-14 rounded-2xl bg-muted/30 border-none font-black text-lg px-6" />
                 </div>
                 <div className="space-y-2">
                   <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest ml-4">{t("city")}</Label>
-                  <Input value={localCity} onChange={(e) => setLocalCity(localCity)} className="h-14 rounded-2xl bg-muted/30 border-none font-black text-lg px-6" />
+                  <Input value={localCity} onChange={(e) => setLocalCity(e.target.value)} className="h-14 rounded-2xl bg-muted/30 border-none font-black text-lg px-6" />
                 </div>
               </div>
             </div>
