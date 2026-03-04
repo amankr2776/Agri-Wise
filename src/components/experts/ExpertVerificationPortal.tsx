@@ -11,14 +11,38 @@ import {
   Database,
   Microscope,
   Trash2,
-  Truck
+  Truck,
+  Plus,
+  Bug,
+  MapPin,
+  Zap,
+  Send
 } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle, 
+  DialogTrigger,
+  DialogFooter,
+  DialogDescription
+} from "@/components/ui/dialog";
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from "@/components/ui/select";
 import { useFirestore, useCollection, useUser, useMemoFirebase } from "@/firebase";
 import { collection, query, where, doc, addDoc, getDocs, writeBatch } from "firebase/firestore";
-import { updateDocumentNonBlocking } from "@/firebase/non-blocking-updates";
+import { updateDocumentNonBlocking, addDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAppState } from "@/lib/app-state";
 import { useToast } from "@/hooks/use-toast";
@@ -62,18 +86,6 @@ const DEFAULT_VEHICLES = [
   // Uttar Pradesh
   { agencyName: "Agra Potato Carriers", type: "Heavy Truck", plateNumber: "UP-80-PC-8899", pricePerKm: 30, city: "Agra", state: "Uttar Pradesh", isAvailable: true, contact: "+919415000000" },
   { agencyName: "Varanasi Vegi-Link", type: "Mini Truck", plateNumber: "UP-65-VL-1122", pricePerKm: 19, city: "Varanasi", state: "Uttar Pradesh", isAvailable: true, contact: "+919415100000" },
-  
-  // Karnataka
-  { agencyName: "Gulbarga Pulse Transit", type: "Heavy Truck", plateNumber: "KA-32-PT-4455", pricePerKm: 34, city: "Gulbarga", state: "Karnataka", isAvailable: true, contact: "+919900000000" },
-  { agencyName: "Haveri Seed Shifters", type: "Pickup Van", plateNumber: "KA-27-SS-9900", pricePerKm: 15, city: "Haveri", state: "Karnataka", isAvailable: true, contact: "+919900100000" },
-  
-  // Haryana
-  { agencyName: "Karnal Rice Runners", type: "Heavy Truck", plateNumber: "HR-05-RR-6677", pricePerKm: 36, city: "Karnal", state: "Haryana", isAvailable: true, contact: "+919812000000" },
-  { agencyName: "Rohtak Mandi Express", type: "Mini Truck", plateNumber: "HR-12-ME-8899", pricePerKm: 21, city: "Rohtak", state: "Haryana", isAvailable: true, contact: "+919812100000" },
-  
-  // West Bengal
-  { agencyName: "Bardhaman Paddy Express", type: "Heavy Truck", plateNumber: "WB-34-PE-1144", pricePerKm: 33, city: "Bardhaman", state: "West Bengal", isAvailable: true, contact: "+919830000000" },
-  { agencyName: "Hooghly Horti-Haul", type: "Pickup Van", plateNumber: "WB-15-HH-2255", pricePerKm: 16, city: "Hooghly", state: "West Bengal", isAvailable: true, contact: "+919830100000" }
 ];
 
 export function ExpertVerificationPortal() {
@@ -82,6 +94,8 @@ export function ExpertVerificationPortal() {
   const { user } = useUser();
   const { toast } = useToast();
   const [seeding, setSeeding] = useState(false);
+  const [isAdvisoryDialogOpen, setIsAdvisoryDialogOpen] = useState(false);
+  const [isSubmittingAdvisory, setIsSubmittingAdvisory] = useState(false);
 
   const pendingCertsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
@@ -102,6 +116,36 @@ export function ExpertVerificationPortal() {
       verifiedAt: new Date().toISOString()
     });
     toast({ title: "Protocol Certified", description: "Verified and added to the registry." });
+  };
+
+  const handleIssueAdvisory = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!firestore || !user) return;
+    setIsSubmittingAdvisory(true);
+
+    const formData = new FormData(e.currentTarget);
+    const advisoryData = {
+      authorId: user.uid,
+      authorName: user.displayName || "Certified Scientist",
+      authorRole: "Expert",
+      content: `BUG ALERT: ${formData.get("pestName")} is spreading in ${formData.get("region")}. URGENT: Apply ${formData.get("pesticide")} immediately.`,
+      category: "Issue Alert",
+      isAdvisory: true,
+      isVerified: true,
+      pestName: formData.get("pestName"),
+      region: formData.get("region"),
+      recommendedAction: formData.get("pesticide"),
+      createdAt: new Date().toISOString(),
+      reactions: { "🌾": 0, "👍": 0, "🙏": 0 }
+    };
+
+    addDocumentNonBlocking(collection(firestore, "posts"), advisoryData);
+    setIsAdvisoryDialogOpen(false);
+    setIsSubmittingAdvisory(false);
+    toast({ 
+      title: "Field Advisory Deployed", 
+      description: "Farmers in the affected region have been notified via the Kisan Network." 
+    });
   };
 
   const purgeAndSeed = async () => {
@@ -160,21 +204,57 @@ export function ExpertVerificationPortal() {
     <div className="space-y-8 max-w-7xl mx-auto pb-12 animate-in fade-in duration-500">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
-          <h2 className="text-3xl font-black tracking-tight flex items-center gap-3">
+          <h2 className="text-3xl font-black tracking-tight flex items-center gap-3 text-slate-900">
             <FlaskConical className="h-8 w-8 text-primary" />
-            Advanced Verification Queue
+            Scientist Surveillance Hub
           </h2>
-          <p className="text-muted-foreground font-medium mt-1">Manage high-fidelity Pan-India crop profiles and logistics certification.</p>
+          <p className="text-muted-foreground font-medium mt-1">Deploy regional pest advisories and certify community field protocols.</p>
         </div>
         <div className="flex gap-4">
+          <Dialog open={isAdvisoryDialogOpen} onOpenChange={setIsAdvisoryDialogOpen}>
+            <DialogTrigger asChild>
+              <Button className="rounded-2xl h-14 px-8 font-black text-lg bg-destructive hover:bg-destructive/90 shadow-xl shadow-destructive/20">
+                <Bug className="h-6 w-6 mr-2" /> Deploy Field Advisory
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="rounded-[2.5rem] sm:max-w-[500px] p-10">
+              <DialogHeader>
+                <DialogTitle className="text-3xl font-black tracking-tight flex items-center gap-3">
+                  <Zap className="h-7 w-7 text-destructive" />
+                  Issue Pest Alert
+                </DialogTitle>
+                <DialogDescription className="text-muted-foreground font-medium italic">Notify farmers about active insect spread and specify the required pesticide protocol.</DialogDescription>
+              </DialogHeader>
+              <form onSubmit={handleIssueAdvisory} className="space-y-6 pt-6">
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-muted-foreground ml-2">Insect / Pest Species</Label>
+                  <Input name="pestName" placeholder="e.g. Locust Swarm, Fall Armyworm" required className="h-12 rounded-xl bg-muted/30 border-none font-bold" />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-muted-foreground ml-2">Affected Region / Area</Label>
+                  <Input name="region" placeholder="e.g. Ludhiana Sector, Punjab Border" required className="h-12 rounded-xl bg-muted/30 border-none font-bold" />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-muted-foreground ml-2">Recommended Action / Pesticide</Label>
+                  <Textarea name="pesticide" placeholder="Specify exactly what farmers should apply (e.g. Spray Chlorpyrifos 20% EC @ 2ml/L)" required className="rounded-xl bg-muted/30 border-none min-h-[100px] font-medium" />
+                </div>
+                <DialogFooter>
+                  <Button type="submit" disabled={isSubmittingAdvisory} className="w-full h-14 rounded-2xl font-black text-lg bg-destructive hover:bg-destructive/90">
+                    {isSubmittingAdvisory ? <Loader2 className="animate-spin" /> : <><Send className="h-5 w-5 mr-2" /> Broadcast to Grid</>}
+                  </Button>
+                </DialogFooter>
+              </form>
+            </DialogContent>
+          </Dialog>
+          
           <Button 
             variant="outline" 
             onClick={purgeAndSeed} 
             disabled={seeding}
-            className="rounded-full border-primary/20 text-primary hover:bg-primary/5 font-black px-6 h-12"
+            className="rounded-2xl border-slate-200 text-slate-600 hover:bg-slate-50 font-black px-6 h-14"
           >
             {seeding ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Trash2 className="h-4 w-4 mr-2" />}
-            Purge & Re-Seed Pan-India Data
+            Reset Grid
           </Button>
         </div>
       </div>
@@ -185,21 +265,21 @@ export function ExpertVerificationPortal() {
             <Microscope className="h-5 w-5 text-primary" />
             <h4 className="text-[10px] font-black uppercase tracking-widest text-primary">Protocol Status</h4>
           </div>
-          <p className="text-2xl font-black">Active Grid</p>
+          <p className="text-2xl font-black text-slate-900">Active Grid</p>
         </Card>
-        <Card className="border-none shadow-sm p-6 bg-blue-50 rounded-3xl">
+        <Card className="border-none shadow-sm p-6 bg-destructive/5 rounded-3xl">
           <div className="flex items-center gap-3 mb-2">
-            <Truck className="h-5 w-5 text-blue-600" />
-            <h4 className="text-[10px] font-black uppercase tracking-widest text-blue-600">Logistics Oversight</h4>
+            <Bug className="h-5 w-5 text-destructive" />
+            <h4 className="text-[10px] font-black uppercase tracking-widest text-destructive">Pathogen Intelligence</h4>
           </div>
-          <p className="text-2xl font-black">{DEFAULT_VEHICLES.length} Regional Hubs</p>
+          <p className="text-2xl font-black text-slate-900">Active Surveillance</p>
         </Card>
         <Card className="border-none shadow-sm p-6 bg-slate-50 rounded-3xl">
           <div className="flex items-center gap-3 mb-2">
             <Database className="h-5 w-5 text-slate-500" />
             <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-500">Registry Depth</h4>
           </div>
-          <p className="text-2xl font-black">{DEFAULT_CROPS.length} Crop Profiles</p>
+          <p className="text-2xl font-black text-slate-900">{DEFAULT_CROPS.length} Professional Profiles</p>
         </Card>
       </div>
 
@@ -210,8 +290,8 @@ export function ExpertVerificationPortal() {
       ) : !pendingCerts || pendingCerts.length === 0 ? (
         <Card className="border-dashed border-2 p-24 text-center bg-muted/20 rounded-[3rem]">
           <ClipboardCheck className="h-12 w-12 text-primary opacity-50 mx-auto mb-8" />
-          <h3 className="text-2xl font-black text-slate-800">No Pending Submissions</h3>
-          <p className="text-muted-foreground mt-2 font-medium">Perform a "New AI Scan" in the Farmer interface to see submissions here.</p>
+          <h3 className="text-2xl font-black text-slate-800">Queue Clear</h3>
+          <p className="text-muted-foreground mt-2 font-medium">No pending user-submitted protocols for verification.</p>
         </Card>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

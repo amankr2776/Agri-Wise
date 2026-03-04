@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useMemo } from "react";
@@ -17,7 +18,10 @@ import {
   Star,
   Send,
   Loader2,
-  CheckCircle2
+  CheckCircle2,
+  ShieldAlert,
+  Bug,
+  Zap
 } from "lucide-react";
 import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -220,6 +224,57 @@ export function KisanNetwork() {
 function PostCard({ post, role, onReaction, onVerify }: { post: any, role: string | null, onReaction: any, onVerify: any }) {
   const [isLiked, setIsLiked] = useState(false);
   const [showComments, setShowComments] = useState(false);
+
+  if (post.isAdvisory) {
+    return (
+      <Card className="border-none shadow-2xl rounded-[2.5rem] overflow-hidden bg-destructive/5 border-l-8 border-destructive animate-in slide-in-from-left-4 duration-500">
+        <CardHeader className="p-8 pb-4">
+          <div className="flex justify-between items-start">
+            <div className="flex items-center gap-4">
+              <div className="h-14 w-14 bg-destructive text-white rounded-2xl flex items-center justify-center shadow-lg animate-pulse">
+                <Bug className="h-8 w-8" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="font-black text-lg text-slate-900">Professional Field Advisory</span>
+                  <Badge className="bg-destructive text-white border-none font-black text-[8px] uppercase px-2 py-0.5">Urgent Protocol</Badge>
+                </div>
+                <p className="text-[10px] font-black uppercase text-muted-foreground flex items-center gap-1 mt-1">
+                  <ShieldAlert className="h-3 w-3 text-destructive" /> Issued by {post.authorName} • {post.createdAt ? formatDistanceToNow(new Date(post.createdAt)) + " ago" : "Just now"}
+                </p>
+              </div>
+            </div>
+            <Zap className="h-6 w-6 text-destructive opacity-20" />
+          </div>
+        </CardHeader>
+        <CardContent className="px-10 py-6 space-y-6">
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 text-destructive">
+              <MapPin className="h-4 w-4" />
+              <span className="text-xs font-black uppercase tracking-widest">Detection Zone: {post.region}</span>
+            </div>
+            <p className="text-xl font-black text-slate-900 tracking-tight leading-tight">
+              Pathogen Alert: {post.pestName}
+            </p>
+            <div className="p-6 bg-white rounded-3xl border-2 border-destructive/10 shadow-sm space-y-2">
+              <p className="text-[10px] font-black text-destructive uppercase tracking-[0.2em]">Mandatory Professional Action</p>
+              <p className="text-lg font-bold text-slate-800 leading-relaxed italic">
+                "{post.recommendedAction}"
+              </p>
+            </div>
+          </div>
+        </CardContent>
+        <CardFooter className="p-8 pt-0 flex justify-between items-center">
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" className="h-10 px-6 rounded-xl font-black text-[10px] uppercase text-destructive hover:bg-destructive/10">
+              <MessageCircle className="h-4 w-4 mr-2" /> Discussion Hub
+            </Button>
+          </div>
+          <Badge variant="outline" className="border-destructive/20 text-destructive font-black text-[8px] uppercase">Scientific Verification Confirmed</Badge>
+        </CardFooter>
+      </Card>
+    );
+  }
 
   return (
     <Card className={cn(
