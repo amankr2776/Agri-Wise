@@ -6,20 +6,17 @@ import {
   ShieldCheck, 
   FlaskConical, 
   AlertCircle, 
-  Leaf, 
-  Bug, 
   ClipboardCheck,
   Loader2,
   Database,
-  CheckCircle2,
-  Zap,
-  Microscope
+  Microscope,
+  Trash2
 } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useFirestore, useCollection, useUser, useMemoFirebase } from "@/firebase";
-import { collection, query, where, doc, addDoc, getDocs } from "firebase/firestore";
+import { collection, query, where, doc, addDoc, getDocs, deleteDoc, writeBatch } from "firebase/firestore";
 import { updateDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAppState } from "@/lib/app-state";
@@ -29,49 +26,25 @@ import { FirestorePermissionError, type SecurityRuleContext } from "@/firebase/e
 
 const DEFAULT_CROPS = [
   // Grains
-  { name: "Paddy", category: "Grain", diseaseName: "Rice Blast", severity: "High", chemicalCure: "Tricyclazole 75% WP", chemicalDosage: "0.6g / L", desiNuskha: "Neem oil spray (3%) mixed with cow urine.", isCertified: true, imageUrl: "https://picsum.photos/seed/paddy1/800/400" },
-  { name: "Wheat", category: "Grain", diseaseName: "Brown Rust", severity: "High", chemicalCure: "Propiconazole 25% EC", chemicalDosage: "1ml / L", desiNuskha: "Butter milk spray after fermentation for 3 days.", isCertified: true, imageUrl: "https://picsum.photos/seed/wheat1/800/400" },
-  { name: "Maize", category: "Grain", diseaseName: "Fall Armyworm", severity: "Critical", chemicalCure: "Spinetoram 11.7% SC", chemicalDosage: "0.5ml / L", desiNuskha: "Sand and lime mixture in the whorls.", isCertified: true, imageUrl: "https://picsum.photos/seed/maize1/800/400" },
-  { name: "Bajra", category: "Grain", diseaseName: "Downy Mildew", severity: "High", chemicalCure: "Metalaxyl 35% WS", chemicalDosage: "6g / kg seed", desiNuskha: "Salt water seed treatment (20% salt solution).", isCertified: true, imageUrl: "https://picsum.photos/seed/bajra1/800/400" },
+  { name: "Paddy", category: "Grain", diseaseName: "Rice Blast", severity: "High", chemicalCure: "Tricyclazole 75% WP", chemicalDosage: "0.6g / L", desiNuskha: "Neem oil spray (3%) mixed with cow urine.", isCertified: true, imageUrl: "https://images.unsplash.com/photo-1536633340743-0974bb27c7a3?q=80&w=800&auto=format&fit=crop", irrigationInterval: 3, estimatedPrice: 2150, sowingSeason: "Kharif", soilType: "Clayey Loam" },
+  { name: "Wheat", category: "Grain", diseaseName: "Brown Rust", severity: "High", chemicalCure: "Propiconazole 25% EC", chemicalDosage: "1ml / L", desiNuskha: "Butter milk spray after fermentation for 3 days.", isCertified: true, imageUrl: "https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?q=80&w=800&auto=format&fit=crop", irrigationInterval: 12, estimatedPrice: 2450, sowingSeason: "Rabi", soilType: "Loamy" },
+  { name: "Maize", category: "Grain", diseaseName: "Fall Armyworm", severity: "Critical", chemicalCure: "Spinetoram 11.7% SC", chemicalDosage: "0.5ml / L", desiNuskha: "Sand and lime mixture in the whorls.", isCertified: true, imageUrl: "https://images.unsplash.com/photo-1551731589-23178d64cb21?q=80&w=800&auto=format&fit=crop", irrigationInterval: 7, estimatedPrice: 1950, sowingSeason: "Kharif", soilType: "Well-drained Loam" },
 
   // Vegetables
-  { name: "Tomato", category: "Vegetable", diseaseName: "Early Blight", severity: "Medium", chemicalCure: "Mancozeb 75% WP", chemicalDosage: "2.5g / L", desiNuskha: "Baking soda and soap water spray.", isCertified: true, imageUrl: "https://picsum.photos/seed/tomato1/800/400" },
-  { name: "Potato", category: "Vegetable", diseaseName: "Late Blight", severity: "Critical", chemicalCure: "Metalaxyl 8% + Mancozeb 64%", chemicalDosage: "2g / L", desiNuskha: "Wood ash dusting on damp leaves.", isCertified: true, imageUrl: "https://picsum.photos/seed/potato1/800/400" },
-  { name: "Onion", category: "Vegetable", diseaseName: "Purple Blotch", severity: "Medium", chemicalCure: "Tebuconazole 25.9% EC", chemicalDosage: "1ml / L", desiNuskha: "Onion peel extract fermented for 48 hours.", isCertified: true, imageUrl: "https://picsum.photos/seed/onion1/800/400" },
-  { name: "Chili", category: "Vegetable", diseaseName: "Leaf Curl", severity: "High", chemicalCure: "Imidacloprid 17.8% SL", chemicalDosage: "0.5ml / L", desiNuskha: "Sour buttermilk spray (5 days old).", isCertified: true, imageUrl: "https://picsum.photos/seed/chili1/800/400" },
-  { name: "Brinjal", category: "Vegetable", diseaseName: "Shoot & Fruit Borer", severity: "High", chemicalCure: "Chlorantraniliprole 18.5% SC", chemicalDosage: "0.4ml / L", desiNuskha: "Ginger-Garlic-Chili paste mixed with water.", isCertified: true, imageUrl: "https://picsum.photos/seed/brinjal1/800/400" },
-  { name: "Cabbage", category: "Vegetable", diseaseName: "Diamondback Moth", severity: "High", chemicalCure: "Spinosad 45% SC", chemicalDosage: "0.3ml / L", desiNuskha: "Mustard intercropping as trap crop.", isCertified: true, imageUrl: "https://picsum.photos/seed/cabbage1/800/400" },
-  { name: "Cauliflower", category: "Vegetable", diseaseName: "Downy Mildew", severity: "Medium", chemicalCure: "Ridomil Gold", chemicalDosage: "2g / L", desiNuskha: "Cow dung and urine extract spray.", isCertified: true, imageUrl: "https://picsum.photos/seed/cauliflower1/800/400" },
-  { name: "Okra (Bhindi)", category: "Vegetable", diseaseName: "Yellow Vein Mosaic", severity: "High", chemicalCure: "Dimethoate 30% EC", chemicalDosage: "2ml / L", desiNuskha: "Neem oil and soap spray weekly.", isCertified: true, imageUrl: "https://picsum.photos/seed/okra1/800/400" },
+  { name: "Tomato", category: "Vegetable", diseaseName: "Early Blight", severity: "Medium", chemicalCure: "Mancozeb 75% WP", chemicalDosage: "2.5g / L", desiNuskha: "Baking soda and soap water spray.", isCertified: true, imageUrl: "https://images.unsplash.com/photo-1592841200221-a6898f307baa?q=80&w=800&auto=format&fit=crop", irrigationInterval: 4, estimatedPrice: 3200, sowingSeason: "Year-round", soilType: "Sandy Loam" },
+  { name: "Potato", category: "Vegetable", diseaseName: "Late Blight", severity: "Critical", chemicalCure: "Metalaxyl 8% + Mancozeb 64%", chemicalDosage: "2g / L", desiNuskha: "Wood ash dusting on damp leaves.", isCertified: true, imageUrl: "https://images.unsplash.com/photo-1518977676601-b53f82aba655?q=80&w=800&auto=format&fit=crop", irrigationInterval: 8, estimatedPrice: 1800, sowingSeason: "Rabi", soilType: "Alluvial" },
 
   // Fruits
-  { name: "Mango", category: "Fruit", diseaseName: "Anthracnose", severity: "High", chemicalCure: "Carbendazim 50% WP", chemicalDosage: "1g / L", desiNuskha: "Pruning and copper oxychloride paste on cuts.", isCertified: true, imageUrl: "https://picsum.photos/seed/mango1/800/400" },
-  { name: "Banana", category: "Fruit", diseaseName: "Panama Wilt", severity: "Critical", chemicalCure: "Carbendazim injection", chemicalDosage: "3ml / plant", desiNuskha: "Crop rotation with paddy and liming of soil.", isCertified: true, imageUrl: "https://picsum.photos/seed/banana1/800/400" },
-  { name: "Grapes", category: "Fruit", diseaseName: "Downy Mildew", severity: "High", chemicalCure: "Bordeaux Mixture 1%", chemicalDosage: "10g / L", desiNuskha: "Garlic and cinnamon oil emulsion.", isCertified: true, imageUrl: "https://picsum.photos/seed/grapes1/800/400" },
-  { name: "Apple", category: "Fruit", diseaseName: "Scab", severity: "High", chemicalCure: "Captan 50% WP", chemicalDosage: "2.5g / L", desiNuskha: "Urea spray (5%) after leaf fall.", isCertified: true, imageUrl: "https://picsum.photos/seed/apple1/800/400" },
-  { name: "Guava", category: "Fruit", diseaseName: "Wilt", severity: "Critical", chemicalCure: "Benomyl soil drench", chemicalDosage: "2g / L", desiNuskha: "Application of Aspergillus niger in soil.", isCertified: true, imageUrl: "https://picsum.photos/seed/guava1/800/400" },
-  { name: "Pomegranate", category: "Fruit", diseaseName: "Bacterial Blight", severity: "Critical", chemicalCure: "Streptocycline + Copper Oxychloride", chemicalDosage: "0.5g + 2.5g / L", desiNuskha: "Garlic extract and neem oil mixture.", isCertified: true, imageUrl: "https://picsum.photos/seed/pom1/800/400" },
-  { name: "Citrus (Lemon)", category: "Fruit", diseaseName: "Canker", severity: "Medium", chemicalCure: "Streptomycin sulphate", chemicalDosage: "100 ppm", desiNuskha: "Removal of infected twigs and spraying neem oil.", isCertified: true, imageUrl: "https://picsum.photos/seed/citrus1/800/400" },
+  { name: "Mango", category: "Fruit", diseaseName: "Anthracnose", severity: "High", chemicalCure: "Carbendazim 50% WP", chemicalDosage: "1g / L", desiNuskha: "Pruning and copper oxychloride paste on cuts.", isCertified: true, imageUrl: "https://images.unsplash.com/photo-1553279768-865429fa0078?q=80&w=800&auto=format&fit=crop", irrigationInterval: 15, estimatedPrice: 8500, sowingSeason: "Summer", soilType: "Laterite" },
+  { name: "Banana", category: "Fruit", diseaseName: "Panama Wilt", severity: "Critical", chemicalCure: "Carbendazim injection", chemicalDosage: "3ml / plant", desiNuskha: "Crop rotation with paddy and liming of soil.", isCertified: true, imageUrl: "https://images.unsplash.com/photo-1603833665858-e61d17a86224?q=80&w=800&auto=format&fit=crop", irrigationInterval: 5, estimatedPrice: 3500, sowingSeason: "Spring", soilType: "Rich Loam" },
 
-  // Oilseeds
-  { name: "Mustard", category: "Oilseed", diseaseName: "Alternaria Blight", severity: "Medium", chemicalCure: "Mancozeb 75% WP", chemicalDosage: "2.5g / L", desiNuskha: "Ginger-Garlic-Chili extract spray.", isCertified: true, imageUrl: "https://picsum.photos/seed/mustard1/800/400" },
-  { name: "Sunflower", category: "Oilseed", diseaseName: "Head Rot", severity: "High", chemicalCure: "Sulfur 80% WP", chemicalDosage: "3g / L", desiNuskha: "Application of Trichoderma viride in soil.", isCertified: true, imageUrl: "https://picsum.photos/seed/sunflower1/800/400" },
-  { name: "Groundnut", category: "Oilseed", diseaseName: "Tikka Disease", severity: "High", chemicalCure: "Chlorothalonil 75% WP", chemicalDosage: "2g / L", desiNuskha: "Seed treatment with Bijamrita.", isCertified: true, imageUrl: "https://picsum.photos/seed/groundnut1/800/400" },
-  { name: "Soybean", category: "Oilseed", diseaseName: "Yellow Mosaic", severity: "High", chemicalCure: "Thiamethoxam 25% WG", chemicalDosage: "0.5g / L", desiNuskha: "Removal of infected plants and neem oil spray.", isCertified: true, imageUrl: "https://picsum.photos/seed/soy1/800/400" },
+  // Seeds (Example crops often grown from specific seed types)
+  { name: "Mustard Seed", category: "Seed", diseaseName: "Alternaria Blight", severity: "Medium", chemicalCure: "Mancozeb 75% WP", chemicalDosage: "2.5g / L", desiNuskha: "Ginger-Garlic-Chili extract spray.", isCertified: true, imageUrl: "https://images.unsplash.com/photo-1508013861974-9f6347163ebe?q=80&w=800&auto=format&fit=crop", irrigationInterval: 20, estimatedPrice: 5400, sowingSeason: "Rabi", soilType: "Light Loam" },
+  { name: "Soybean Seed", category: "Seed", diseaseName: "Yellow Mosaic", severity: "High", chemicalCure: "Thiamethoxam 25% WG", chemicalDosage: "0.5g / L", desiNuskha: "Removal of infected plants and neem oil spray.", isCertified: true, imageUrl: "https://images.unsplash.com/photo-1599599810694-b5b37304c041?q=80&w=800&auto=format&fit=crop", irrigationInterval: 10, estimatedPrice: 4200, sowingSeason: "Kharif", soilType: "Black Cotton Soil" },
 
-  // Plantation & Spices
-  { name: "Coffee", category: "Plantation", diseaseName: "Leaf Rust", severity: "High", chemicalCure: "Hexaconazole 5% EC", chemicalDosage: "1ml / L", desiNuskha: "Providing shade and improving air circulation.", isCertified: true, imageUrl: "https://picsum.photos/seed/coffee1/800/400" },
-  { name: "Tea", category: "Plantation", diseaseName: "Blister Blight", severity: "High", chemicalCure: "Copper Oxychloride + Nickel Chloride", chemicalDosage: "2g + 1g / L", desiNuskha: "Removal of shade trees and early pruning.", isCertified: true, imageUrl: "https://picsum.photos/seed/tea1/800/400" },
-  { name: "Coconut", category: "Plantation", diseaseName: "Bud Rot", severity: "Critical", chemicalCure: "Bordeaux paste application", chemicalDosage: "Standard application", desiNuskha: "Clean the crown and apply sand-salt mixture.", isCertified: true, imageUrl: "https://picsum.photos/seed/coconut1/800/400" },
-  { name: "Turmeric", category: "Spice", diseaseName: "Leaf Spot", severity: "Medium", chemicalCure: "Propiconazole 25% EC", chemicalDosage: "1ml / L", desiNuskha: "Rhizome treatment with cow dung slurry.", isCertified: true, imageUrl: "https://picsum.photos/seed/turmeric1/800/400" },
-  { name: "Ginger", category: "Spice", diseaseName: "Soft Rot", severity: "Critical", chemicalCure: "Metalaxyl-M 4% + Mancozeb 64%", chemicalDosage: "2.5g / L", desiNuskha: "Proper drainage and crop rotation.", isCertified: true, imageUrl: "https://picsum.photos/seed/ginger1/800/400" },
-  { name: "Black Pepper", category: "Spice", diseaseName: "Quick Wilt", severity: "Critical", chemicalCure: "Potassium Phosphonate", chemicalDosage: "3ml / L", desiNuskha: "Trichoderma harzianum soil application.", isCertified: true, imageUrl: "https://picsum.photos/seed/pepper1/800/400" },
-  { name: "Cardamom", category: "Spice", diseaseName: "Katte Disease", severity: "High", chemicalCure: "Monocrotophos 36% SL", chemicalDosage: "1.5ml / L", desiNuskha: "Rogue out infected plants immediately.", isCertified: true, imageUrl: "https://picsum.photos/seed/card1/800/400" },
-
-  // Cash Crops
-  { name: "Cotton", category: "Cash Crop", diseaseName: "Pink Bollworm", severity: "Critical", chemicalCure: "Profenophos 50% EC", chemicalDosage: "2ml / L", desiNuskha: "Pheromone traps and light traps.", isCertified: true, imageUrl: "https://picsum.photos/seed/cotton1/800/400" },
-  { name: "Sugarcane", category: "Cash Crop", diseaseName: "Red Rot", severity: "Critical", chemicalCure: "Carbendazim 50% WP", chemicalDosage: "1g / L", desiNuskha: "Use of healthy setts and soil liming.", isCertified: true, imageUrl: "https://picsum.photos/seed/sugarcane1/800/400" },
-  { name: "Jute", category: "Cash Crop", diseaseName: "Stem Rot", severity: "High", chemicalCure: "Carbendazim 50% WP", chemicalDosage: "2g / L", desiNuskha: "Seed treatment with Garlic extract (2%).", isCertified: true, imageUrl: "https://picsum.photos/seed/jute1/800/400" },
+  // Plants (Plantation/Ornamental/Others)
+  { name: "Cotton Plant", category: "Plant", diseaseName: "Pink Bollworm", severity: "Critical", chemicalCure: "Profenophos 50% EC", chemicalDosage: "2ml / L", desiNuskha: "Pheromone traps and light traps.", isCertified: true, imageUrl: "https://images.unsplash.com/photo-1594904351111-a072f80b1a71?q=80&w=800&auto=format&fit=crop", irrigationInterval: 14, estimatedPrice: 7200, sowingSeason: "Kharif", soilType: "Black Cotton" },
+  { name: "Tea Plant", category: "Plant", diseaseName: "Blister Blight", severity: "High", chemicalCure: "Copper Oxychloride", chemicalDosage: "2g / L", desiNuskha: "Early pruning and shade management.", isCertified: true, imageUrl: "https://images.unsplash.com/photo-1594631252845-29fc458695d7?q=80&w=800&auto=format&fit=crop", irrigationInterval: 1, estimatedPrice: 12000, sowingSeason: "Perennial", soilType: "Acidic Forest Soil" },
 ];
 
 export function ExpertVerificationPortal() {
@@ -92,93 +65,38 @@ export function ExpertVerificationPortal() {
   const { data: pendingCerts, isLoading } = useCollection(pendingCertsQuery);
 
   const handleVerify = (certId: string) => {
-    if (!firestore || !certId) {
-       toast({
-        variant: "destructive",
-        title: "Error",
-        description: "System not ready. Please try again.",
-      });
-      return;
-    }
-    
+    if (!firestore || !certId) return;
     const docRef = doc(firestore, "crops", certId);
-    
     updateDocumentNonBlocking(docRef, {
       isCertified: true,
       expertId: user?.uid || "anonymous_expert",
       verifiedAt: new Date().toISOString()
     });
-
-    toast({
-      title: "Protocol Certified",
-      description: "Remedy has been verified and added to the public registry.",
-    });
+    toast({ title: "Protocol Certified", description: "Verified and added to the registry." });
   };
 
-  const seedDatabase = async () => {
-    if (!firestore) {
-      toast({
-        variant: "destructive",
-        title: "Connection Error",
-        description: "Firestore instance is not available.",
-      });
-      return;
-    }
-
+  const purgeAndSeed = async () => {
+    if (!firestore) return;
     setSeeding(true);
-    toast({
-      title: "Seeding Started",
-      description: "Populating the agricultural registry with professional data...",
-    });
+    toast({ title: "Syncing Registry", description: "Purging old data and re-seeding advanced profiles..." });
 
     const colRef = collection(firestore, "crops");
-    
     try {
       const existing = await getDocs(colRef);
+      const batch = writeBatch(firestore);
       
-      if (existing.empty) {
-        let count = 0;
-        const promises = DEFAULT_CROPS.map(async (crop) => {
-          return addDoc(colRef, crop)
-            .then(() => {
-              count++;
-            })
-            .catch(async (serverError) => {
-              const permissionError = new FirestorePermissionError({
-                path: colRef.path,
-                operation: 'create',
-                requestResourceData: crop,
-              } satisfies SecurityRuleContext);
-              errorEmitter.emit('permission-error', permissionError);
-            });
-        });
+      // Purge
+      existing.docs.forEach(d => batch.delete(d.ref));
+      await batch.commit();
 
-        await Promise.all(promises);
-
-        if (count > 0) {
-          toast({
-            title: "Database Synced",
-            description: `Successfully added ${count} professional crop profiles.`,
-          });
-        }
-      } else {
-        toast({
-          title: "Registry Active",
-          description: "Agricultural database is already populated.",
-        });
+      // Seed
+      for (const crop of DEFAULT_CROPS) {
+        await addDoc(colRef, { ...crop, createdAt: new Date().toISOString() });
       }
-    } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "Sync Failed",
-        description: "Missing or insufficient permissions to populate database.",
-      });
-      
-      const permissionError = new FirestorePermissionError({
-        path: colRef.path,
-        operation: 'list',
-      } satisfies SecurityRuleContext);
-      errorEmitter.emit('permission-error', permissionError);
+
+      toast({ title: "Registry Re-Seeded", description: `Successfully added ${DEFAULT_CROPS.length} optimized profiles.` });
+    } catch (e: any) {
+      toast({ variant: "destructive", title: "Sync Failed", description: e.message });
     } finally {
       setSeeding(false);
     }
@@ -191,17 +109,7 @@ export function ExpertVerificationPortal() {
           <AlertCircle className="h-10 w-10" />
         </div>
         <h3 className="text-2xl font-black">Expert Access Required</h3>
-        <p className="text-muted-foreground max-w-sm">This portal is reserved for certified agricultural scientists to verify regional remedies.</p>
-      </div>
-    );
-  }
-
-  if (isLoading) {
-    return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-7xl mx-auto">
-        {[1, 2, 3].map((i) => (
-          <Skeleton key={i} className="h-80 rounded-[2.5rem]" />
-        ))}
+        <p className="text-muted-foreground max-w-sm">This portal is reserved for certified agricultural scientists.</p>
       </div>
     );
   }
@@ -212,96 +120,42 @@ export function ExpertVerificationPortal() {
         <div>
           <h2 className="text-3xl font-black tracking-tight flex items-center gap-3">
             <FlaskConical className="h-8 w-8 text-primary" />
-            Verification Queue
+            Advanced Verification Queue
           </h2>
-          <p className="text-muted-foreground font-medium mt-1 italic">Review field diagnostic requests and AI-generated protocols.</p>
+          <p className="text-muted-foreground font-medium mt-1">Manage high-fidelity crop profiles and certification.</p>
         </div>
-        <div className="flex gap-3">
-          <Button 
-            variant="outline" 
-            onClick={seedDatabase} 
-            disabled={seeding}
-            className="rounded-full border-primary/20 text-primary hover:bg-primary/5 font-black px-6 shadow-sm h-12"
-          >
-            {seeding ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                Seeding...
-              </>
-            ) : (
-              <>
-                <Database className="h-4 w-4 mr-2" />
-                Populate Agri-Registry
-              </>
-            )}
-          </Button>
-        </div>
+        <Button 
+          variant="outline" 
+          onClick={purgeAndSeed} 
+          disabled={seeding}
+          className="rounded-full border-primary/20 text-primary hover:bg-primary/5 font-black px-6 h-12"
+        >
+          {seeding ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Trash2 className="h-4 w-4 mr-2" />}
+          Purge & Re-Seed Registry
+        </Button>
       </div>
 
-      {!pendingCerts || pendingCerts.length === 0 ? (
+      {isLoading ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {[1, 2, 3].map((i) => <Skeleton key={i} className="h-80 rounded-[2.5rem]" />)}
+        </div>
+      ) : !pendingCerts || pendingCerts.length === 0 ? (
         <Card className="border-dashed border-2 p-24 text-center bg-muted/20 rounded-[3rem]">
-          <div className="bg-primary/10 h-24 w-24 rounded-full flex items-center justify-center mx-auto mb-8 shadow-inner">
-            <ClipboardCheck className="h-12 w-12 text-primary opacity-50" />
-          </div>
-          <h3 className="text-2xl font-black text-slate-800">Queue is Empty</h3>
-          <p className="text-muted-foreground max-w-sm mx-auto mt-4 font-medium leading-relaxed">
-            All regional field reports have been verified. New farmer scans requesting expert certification will appear here automatically.
-          </p>
+          <ClipboardCheck className="h-12 w-12 text-primary opacity-50 mx-auto mb-8" />
+          <h3 className="text-2xl font-black text-slate-800">No Pending Submissions</h3>
         </Card>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {pendingCerts.map((cert) => (
-            <Card key={cert.id} className="border-none shadow-xl bg-white rounded-[2.5rem] overflow-hidden hover:translate-y-[-8px] transition-all duration-300 group flex flex-col">
-              <div className="aspect-video w-full overflow-hidden relative">
-                <img src={cert.imageUrl} className="w-full h-full object-cover" alt={cert.name} />
-                <div className="absolute top-4 left-4">
-                  <Badge className="bg-amber-500 text-white border-none font-black text-[10px] uppercase">
-                    <Zap className="h-3 w-3 mr-1" /> AI Preliminary
-                  </Badge>
-                </div>
-              </div>
-              <CardHeader className="bg-muted/30 border-b p-8">
-                <div className="flex justify-between items-start mb-4">
-                  <Badge variant="outline" className="bg-white border-primary/20 text-primary text-[10px] font-black uppercase tracking-widest px-3">
-                    {cert.category}
-                  </Badge>
-                  <div className="h-10 w-10 bg-primary/10 rounded-xl flex items-center justify-center text-primary shadow-sm">
-                    <Microscope className="h-5 w-5" />
-                  </div>
-                </div>
-                <CardTitle className="text-2xl font-black text-slate-900">{cert.name}</CardTitle>
-                <div className="flex items-center gap-2 mt-2">
-                   <p className="text-xs font-black text-muted-foreground uppercase tracking-wider">{cert.diseaseName}</p>
-                   {cert.submittedByAI && <Badge variant="secondary" className="text-[8px] h-4">Field Scan</Badge>}
-                </div>
+            <Card key={cert.id} className="border-none shadow-xl bg-white rounded-[2.5rem] overflow-hidden flex flex-col">
+              <img src={cert.imageUrl} className="aspect-video w-full object-cover" alt={cert.name} />
+              <CardHeader className="p-8">
+                <CardTitle className="text-2xl font-black">{cert.name}</CardTitle>
+                <Badge variant="secondary" className="w-fit mt-2">{cert.category}</Badge>
               </CardHeader>
-              <CardContent className="p-8 space-y-6 flex-1">
-                {cert.symptomsLog && (
-                  <div className="space-y-2">
-                    <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">Farmer Observations</p>
-                    <p className="text-sm font-medium text-slate-600 bg-slate-50 p-4 rounded-2xl italic border border-slate-100">
-                      "{cert.symptomsLog}"
-                    </p>
-                  </div>
-                )}
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1">
-                    <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">AI Rec: Chemical</p>
-                    <p className="text-xs font-bold text-destructive">{cert.chemicalCure}</p>
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">AI Rec: Desi</p>
-                    <p className="text-xs font-bold text-primary">Heritage Protocol</p>
-                  </div>
-                </div>
-              </CardContent>
-              <CardFooter className="p-8 bg-slate-50/50 border-t">
-                <Button 
-                  className="w-full bg-primary hover:bg-primary/90 font-black rounded-2xl h-14 shadow-lg shadow-primary/20 active:scale-95 transition-all flex items-center justify-center gap-2"
-                  onClick={() => handleVerify(cert.id)}
-                >
-                  <ShieldCheck className="h-5 w-5" />
-                  Certify Professional Protocol
+              <CardFooter className="p-8 pt-0 mt-auto">
+                <Button className="w-full h-12 rounded-xl font-bold" onClick={() => handleVerify(cert.id)}>
+                  <ShieldCheck className="h-4 w-4 mr-2" /> Certify Protocol
                 </Button>
               </CardFooter>
             </Card>

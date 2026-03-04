@@ -11,7 +11,7 @@
         "email": { "type": "string", "format": "email" },
         "firstName": { "type": "string" },
         "lastName": { "type": "string" },
-        "role": { "type": "string", "enum": ["Expert", "Authority", "Logistics"] },
+        "role": { "type": "string", "enum": ["Expert", "Authority", "Logistics", "Farmer"] },
         "preferredLanguage": { "type": "string" }
       },
       "required": ["id", "role"]
@@ -22,7 +22,7 @@
       "properties": {
         "id": { "type": "string" },
         "name": { "type": "string" },
-        "category": { "type": "string" },
+        "category": { "type": "string", "enum": ["Plant", "Seed", "Vegetable", "Fruit", "Grain"] },
         "imageUrl": { "type": "string" },
         "diseaseName": { "type": "string" },
         "severity": { "type": "string", "enum": ["Low", "Medium", "High", "Critical"] },
@@ -30,7 +30,11 @@
         "chemicalCure": { "type": "string" },
         "chemicalDosage": { "type": "string" },
         "desiNuskha": { "type": "string" },
-        "isCertified": { "type": "boolean" }
+        "isCertified": { "type": "boolean" },
+        "irrigationInterval": { "type": "integer", "description": "Interval in days between irrigation cycles." },
+        "estimatedPrice": { "type": "number", "description": "Current market price in INR per quintal." },
+        "sowingSeason": { "type": "string" },
+        "soilType": { "type": "string" }
       }
     },
     "PestOutbreak": {
@@ -74,7 +78,7 @@
     }
   },
   "auth": {
-    "providers": ["password", "phone"]
+    "providers": ["password", "phone", "anonymous"]
   },
   "firestore": {
     "structure": [
