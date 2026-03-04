@@ -15,7 +15,8 @@ import {
   LogOut,
   FlaskConical,
   Globe,
-  Loader2
+  Loader2,
+  Package
 } from "lucide-react";
 import { 
   SidebarProvider, 
@@ -55,6 +56,14 @@ export default function KisanMitraApp() {
     }
   }, [isAuthenticated, router]);
 
+  useEffect(() => {
+    // Set default section based on role
+    if (role === "Logistics") setActiveSection("fleet");
+    else if (role === "Authority") setActiveSection("gov-intel");
+    else if (role === "Expert") setActiveSection("expert-portal");
+    else setActiveSection("dashboard");
+  }, [role]);
+
   if (!isAuthenticated || !role) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -86,8 +95,8 @@ export default function KisanMitraApp() {
     { id: "market", label: "Market Intelligence", icon: TrendingUp, roles: ["Farmer", "Expert", "Authority", "Logistics"] },
     { id: "expert-portal", label: "Verification Portal", icon: FlaskConical, roles: ["Expert"] },
     { id: "gov-intel", label: "Ministry Intel", icon: Globe, roles: ["Authority"] },
-    { id: "fleet", label: "My Fleet", icon: Truck, roles: ["Logistics"] },
-    { id: "logistics", label: "Mandi-Link", icon: Truck, roles: ["Farmer"] },
+    { id: "fleet", label: "Fleet Hub", icon: Truck, roles: ["Logistics"] },
+    { id: "logistics", label: "Mandi-Link", icon: Package, roles: ["Farmer"] },
     { id: "network", label: "Kisan Network", icon: Users, roles: ["Farmer", "Expert", "Authority", "Logistics"] },
   ];
 

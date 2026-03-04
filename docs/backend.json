@@ -16,6 +16,40 @@
       },
       "required": ["id", "role"]
     },
+    "Vehicle": {
+      "title": "Vehicle",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "agencyName": { "type": "string" },
+        "type": { "type": "string", "enum": ["Refrigerated Van", "Mini Truck", "Heavy Truck", "Pickup Van"] },
+        "plateNumber": { "type": "string" },
+        "pricePerKm": { "type": "number" },
+        "city": { "type": "string" },
+        "state": { "type": "string" },
+        "currentLat": { "type": "number" },
+        "currentLng": { "type": "number" },
+        "isAvailable": { "type": "boolean" },
+        "contact": { "type": "string" }
+      }
+    },
+    "Booking": {
+      "title": "Booking",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "farmerId": { "type": "string" },
+        "vehicleId": { "type": "string" },
+        "cropType": { "type": "string" },
+        "origin": { "type": "string" },
+        "destination": { "type": "string" },
+        "distance": { "type": "number" },
+        "estimatedFare": { "type": "number" },
+        "status": { "type": "string", "enum": ["Pending", "Confirmed", "Picked Up", "In Transit", "Reached Destination"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      }
+    },
     "Crop": {
       "title": "Crop",
       "type": "object",
@@ -31,49 +65,10 @@
         "chemicalDosage": { "type": "string" },
         "desiNuskha": { "type": "string" },
         "isCertified": { "type": "boolean" },
-        "irrigationInterval": { "type": "integer", "description": "Interval in days between irrigation cycles." },
-        "estimatedPrice": { "type": "number", "description": "Current market price in INR per quintal." },
+        "irrigationInterval": { "type": "integer" },
+        "estimatedPrice": { "type": "number" },
         "sowingSeason": { "type": "string" },
         "soilType": { "type": "string" }
-      }
-    },
-    "PestOutbreak": {
-      "title": "Pest Outbreak",
-      "type": "object",
-      "properties": {
-        "id": { "type": "string" },
-        "pestName": { "type": "string" },
-        "cropType": { "type": "string" },
-        "severity": { "type": "string", "enum": ["Low", "Medium", "High", "Critical"] },
-        "latitude": { "type": "number" },
-        "longitude": { "type": "number" },
-        "state": { "type": "string" },
-        "reportedAt": { "type": "string", "format": "date-time" },
-        "predictedMovementVector": { "type": "string" }
-      }
-    },
-    "CropCertification": {
-      "title": "Crop Certification",
-      "type": "object",
-      "properties": {
-        "id": { "type": "string" },
-        "cropName": { "type": "string" },
-        "majorPest": { "type": "string" },
-        "traditionalRemedy": { "type": "string" },
-        "isCertified": { "type": "boolean" },
-        "region": { "type": "string" },
-        "expertId": { "type": "string" }
-      }
-    },
-    "SoilData": {
-      "title": "Soil Data",
-      "type": "object",
-      "properties": {
-        "id": { "type": "string" },
-        "userId": { "type": "string" },
-        "phLevel": { "type": "number" },
-        "moisturePercentage": { "type": "number" },
-        "recordedAt": { "type": "string", "format": "date-time" }
       }
     }
   },
@@ -91,16 +86,12 @@
         "definition": { "entityName": "Crop", "schema": { "$ref": "#/backend/entities/Crop" }, "description": "Base crop data with treatments." }
       },
       {
-        "path": "/pestOutbreaks/{outbreakId}",
-        "definition": { "entityName": "PestOutbreak", "schema": { "$ref": "#/backend/entities/PestOutbreak" }, "description": "Real-time pest outbreak reports." }
+        "path": "/vehicles/{vehicleId}",
+        "definition": { "entityName": "Vehicle", "schema": { "$ref": "#/backend/entities/Vehicle" }, "description": "Transport vehicles registry." }
       },
       {
-        "path": "/cropCertifications/{certId}",
-        "definition": { "entityName": "CropCertification", "schema": { "$ref": "#/backend/entities/CropCertification" }, "description": "Records of crop certification status." }
-      },
-      {
-        "path": "/users/{userId}/soilHealth/{dataId}",
-        "definition": { "entityName": "SoilData", "schema": { "$ref": "#/backend/entities/SoilData" }, "description": "Soil health records." }
+        "path": "/bookings/{bookingId}",
+        "definition": { "entityName": "Booking", "schema": { "$ref": "#/backend/entities/Booking" }, "description": "Logistics booking records." }
       }
     ]
   }
