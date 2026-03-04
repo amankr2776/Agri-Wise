@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useMemo } from "react";
@@ -15,7 +14,8 @@ import {
   Loader2,
   Tag,
   Zap,
-  Mic2
+  Mic2,
+  ChevronRight
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -56,9 +56,12 @@ export function CropDiagnostics() {
   const speakSummary = () => {
     if (!selectedCrop) return;
     const text = `${selectedCrop.name}. ${t("diagnostics")}: ${selectedCrop.symptoms || selectedCrop.diseaseName}. ${t("heritage_wisdom")}: ${selectedCrop.desiNuskha}`;
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = language === 'Hindi' ? 'hi-IN' : 'en-IN';
-    window.speechSynthesis.speak(utterance);
+    if ("speechSynthesis" in window) {
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = language === 'Hindi' ? 'hi-IN' : 'en-IN';
+      window.speechSynthesis.speak(utterance);
+    }
   };
 
   const handleManualReport = async (e: React.FormEvent<HTMLFormElement>) => {
