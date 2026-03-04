@@ -26,7 +26,9 @@ import {
   X,
   Check,
   Globe2,
-  Tool
+  Tool,
+  History,
+  FileText
 } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -66,6 +68,13 @@ const STANDARD_FLEET_TEMPLATES = [
   { type: "Tractor Trailer (8T)", price: 22, platePrefix: "TT" }
 ];
 
+const MOCK_MAINTENANCE_LOGS = [
+  { date: "2024-01-15", task: "Oil Filter & Lubrication", provider: "Agri-Care Hub", status: "Completed" },
+  { date: "2023-11-20", task: "Brake Pad Replacement", provider: "National Garage", status: "Completed" },
+  { date: "2023-08-05", task: "Engine Calibration", provider: "Fleet Tech Services", status: "Completed" },
+  { date: "2023-05-12", task: "Tyre Rotation & Alignment", provider: "Agri-Care Hub", status: "Completed" }
+];
+
 export function FleetManagement() {
   const firestore = useFirestore();
   const { user } = useUser();
@@ -75,6 +84,7 @@ export function FleetManagement() {
   const [isAddVehicleOpen, setIsAddVehicleOpen] = useState(false);
   const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
   const [isSeeding, setIsSeeding] = useState(false);
+  const [viewingLogsFor, setViewingLogsFor] = useState<any>(null);
 
   // Fetch Agency Profile
   const userRef = useMemoFirebase(() => {
@@ -415,8 +425,12 @@ export function FleetManagement() {
                   <Button variant="outline" className="rounded-xl h-12 font-black border-primary/20 text-primary" onClick={() => updateDocumentNonBlocking(doc(firestore!, "vehicles", v.id), { status: "Ready" })}>
                     Mark as Ready
                   </Button>
-                  <Button variant="ghost" className="rounded-xl h-12 font-black text-destructive">
-                    View Logs
+                  <Button 
+                    variant="ghost" 
+                    className="rounded-xl h-12 font-black text-destructive hover:bg-destructive/5"
+                    onClick={() => setViewingLogsFor(v)}
+                  >
+                    <History className="h-4 w-4 mr-2" /> View Logs
                   </Button>
                 </div>
               </Card>
@@ -461,6 +475,54 @@ export function FleetManagement() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Maintenance Logs Dialog */}
+      <Dialog open={!!viewingLogsFor} onOpenChange={() => setViewingLogsFor(null)}>
+        <DialogContent className="rounded-[2.5rem] sm:max-w-md p-8 border-none shadow-2xl overflow-hidden">
+          <div className="absolute top-0 right-0 p-8 opacity-5">
+            <FileText className="h-32 w-32 rotate-12" />
+          </div>
+          <DialogHeader className="relative z-10">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="h-10 w-10 bg-primary/10 rounded-xl flex items-center justify-center text-primary">
+                <History className="h-5 w-5" />
+              </div>
+              <DialogTitle className="text-2xl font-black tracking-tight">Maintenance Log</DialogTitle>
+            </div>
+            <DialogDescription className="text-slate-500 font-medium italic">
+              Verified service history for {viewingLogsFor?.type} ({viewingLogsFor?.plateNumber})
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 pt-6 relative z-10">
+            {MOCK_MAINTENANCE_LOGS.map((log, i) => (
+              <div key={i} className="p-5 rounded-2xl bg-muted/30 border border-border/50 flex justify-between items-center group hover:bg-white hover:shadow-md transition-all">
+                <div className="space-y-1">
+                  <p className="text-sm font-black text-slate-900">{log.task}</p>
+                  <div className="flex items-center gap-2">
+                    <p className="text-[9px] text-muted-foreground uppercase font-black tracking-widest">{log.date}</p>
+                    <span className="text-[9px] text-slate-300">•</span>
+                    <p className="text-[9px] text-primary font-bold">{log.provider}</p>
+                  </div>
+                </div>
+                <Badge className="bg-green-100 text-green-700 border-none font-black text-[8px] uppercase px-2.5 py-1">
+                  {log.status}
+                </Badge>
+              </div>
+            ))}
+          </div>
+
+          <DialogFooter className="mt-8 relative z-10">
+            <Button 
+              variant="outline" 
+              className="w-full h-12 rounded-xl font-black text-xs uppercase tracking-widest border-primary/20 text-primary hover:bg-primary/5" 
+              onClick={() => setViewingLogsFor(null)}
+            >
+              Close Records
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
