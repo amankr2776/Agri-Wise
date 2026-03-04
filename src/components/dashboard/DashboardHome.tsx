@@ -215,7 +215,7 @@ export function DashboardHome({ onNavigate }: DashboardHomeProps) {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             {quickActions.map((action, i) => (
               <motion.button 
-                key={action.id} 
+                key={i} 
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: i * 0.1 }}
