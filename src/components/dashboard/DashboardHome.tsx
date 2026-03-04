@@ -43,7 +43,7 @@ import { useAppState } from "@/lib/app-state";
 import { useTranslation } from "@/hooks/use-translation";
 import { cn } from "@/lib/utils";
 import { motion, useSpring, useTransform, animate } from "framer-motion";
-import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
+import { useFirestore, useCollection, useMemoFirebase, useUser } from "@/firebase";
 import { collection, query, where } from "firebase/firestore";
 
 interface DashboardHomeProps {
@@ -86,6 +86,7 @@ export function DashboardHome({ onNavigate }: DashboardHomeProps) {
   const { name, city, role, setFleetActiveTab } = useAppState();
   const { t } = useTranslation();
   const firestore = useFirestore();
+  const { user } = useUser();
   const [selectedAlert, setSelectedAlert] = useState<AlertDetail | null>(null);
   const [currentTime, setCurrentTime] = useState<string>("");
   const [currentDate, setCurrentDate] = useState<string>("");
@@ -116,11 +117,25 @@ export function DashboardHome({ onNavigate }: DashboardHomeProps) {
 
   const outbreaksQuery = useMemoFirebase(() => {
     if (!firestore || (role !== "Expert" && role !== "Authority")) return null;
-    // For demo purposes, we monitor outbreaks in Karnataka (where Bengaluru is)
     return query(collection(firestore, "pestOutbreaks"), where("state", "==", "Karnataka"));
   }, [firestore, role]);
 
   const { data: outbreaks, isLoading: loadingOutbreaks } = useCollection(outbreaksQuery);
+
+  // --- Real-Time Data Fetching for Logistics ---
+  const myVehiclesQuery = useMemoFirebase(() => {
+    if (!firestore || !user || role !== "Logistics") return null;
+    return query(collection(firestore, "vehicles"), where("ownerId", "==", user.uid));
+  }, [firestore, user, role]);
+
+  const { data: myVehicles, isLoading: loadingVehicles } = useCollection(myVehiclesQuery);
+
+  const activeBookingsQuery = useMemoFirebase(() => {
+    if (!firestore || role !== "Logistics") return null;
+    return query(collection(firestore, "bookings"), where("status", "in", ["Confirmed", "Picked Up", "In Transit"]));
+  }, [firestore, role]);
+
+  const { data: activeBookings, isLoading: loadingActiveBookings } = useCollection(activeBookingsQuery);
 
   const handleDeepNavigate = (section: string, tab?: string) => {
     if (tab) setFleetActiveTab(tab);
@@ -142,15 +157,21 @@ export function DashboardHome({ onNavigate }: DashboardHomeProps) {
         { id: "network", label: "Expert Insights", value: 45, icon: ClipboardCheck, color: "text-teal-500", bg: "bg-teal-500/10" },
         { id: "network", label: "Farmer Queries", value: 24, icon: MessageCircle, color: "text-sky-500", bg: "bg-sky-500/10" },
       ];
-    } else {
+    } else if (role === "Logistics") {
+      const totalFleet = myVehicles?.length ?? 0;
+      const activeLoads = activeBookings?.length ?? 0;
+      const availableUnits = myVehicles?.filter(v => v.status === "Ready").length ?? 0;
+      const maintenanceUnits = myVehicles?.filter(v => v.status === "Maintenance").length ?? 0;
+
       return [
-        { id: "fleet", tab: "fleet", label: "Total Fleet", value: 45, icon: Truck, color: "text-primary", bg: "bg-primary/10" },
-        { id: "fleet", tab: "bookings", label: "Active Loads", value: 28, icon: Package, color: "text-blue-500", bg: "bg-blue-500/10" },
-        { id: "fleet", tab: "fleet", label: "Available Units", value: 12, icon: Activity, color: "text-green-500", bg: "bg-green-500/10" },
-        { id: "fleet", tab: "maintenance", label: "Maintenance", value: 5, icon: RefreshCw, color: "text-amber-500", bg: "bg-amber-500/10" },
+        { id: "fleet", tab: "fleet", label: "Total Fleet", value: totalFleet, isLoading: loadingVehicles, icon: Truck, color: "text-primary", bg: "bg-primary/10" },
+        { id: "fleet", tab: "bookings", label: "Active Loads", value: activeLoads, isLoading: loadingActiveBookings, icon: Package, color: "text-blue-500", bg: "bg-blue-500/10" },
+        { id: "fleet", tab: "fleet", label: "Available Units", value: availableUnits, isLoading: loadingVehicles, icon: Activity, color: "text-green-500", bg: "bg-green-500/10" },
+        { id: "fleet", tab: "maintenance", label: "Maintenance", value: maintenanceUnits, isLoading: loadingVehicles, icon: RefreshCw, color: "text-amber-500", bg: "bg-amber-500/10" },
       ];
     }
-  }, [role, t, pendingPosts, loadingPending, outbreaks, loadingOutbreaks]);
+    return [];
+  }, [role, t, pendingPosts, loadingPending, outbreaks, loadingOutbreaks, myVehicles, loadingVehicles, activeBookings, loadingActiveBookings]);
 
   const quickActions = useMemo(() => {
     if (role === "Farmer") {
@@ -167,7 +188,7 @@ export function DashboardHome({ onNavigate }: DashboardHomeProps) {
         { id: "network", label: "Publish Advisory", icon: ShieldCheck, desc: "Grid Broadcast", color: "text-teal-500", bg: "bg-teal-500/10" },
         { id: "settings", label: "Expert Profile", icon: Microscope, desc: "Professional Identity", color: "text-slate-500", bg: "bg-slate-500/10" },
       ];
-    } else {
+    } else if (role === "Logistics") {
       return [
         { id: "fleet", tab: "fleet", label: "Manage Fleet", icon: Truck, desc: "All-India Units", color: "text-primary", bg: "bg-primary/10" },
         { id: "fleet", tab: "bookings", label: "Active Loads", icon: Package, desc: "Track Shipments", color: "text-blue-500", bg: "bg-blue-500/10" },
@@ -175,6 +196,7 @@ export function DashboardHome({ onNavigate }: DashboardHomeProps) {
         { id: "fleet", tab: "maintenance", label: "Service Logs", icon: RefreshCw, desc: "Fleet Health", color: "text-purple-500", bg: "bg-purple-500/10" },
       ];
     }
+    return [];
   }, [role, t]);
 
   const alerts: AlertDetail[] = [
