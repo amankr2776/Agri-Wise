@@ -11,8 +11,6 @@ const FarmerCropPestDiagnosisInputSchema = z.object({
   cropType: z.string().describe('The type of crop being diagnosed.'),
   symptomsDescription: z.string().optional().describe('Description of observed symptoms.'),
   photoDataUri: z.string().optional().describe("Photo data URI."),
-  soilPh: z.number().optional().describe("Soil pH level (0-14)."),
-  soilMoisture: z.number().optional().describe("Soil moisture percentage (0-100)."),
   language: z.string().default("English").describe("The user's preferred language for the output."),
 });
 export type FarmerCropPestDiagnosisInput = z.infer<typeof FarmerCropPestDiagnosisInputSchema>;
@@ -43,8 +41,6 @@ For traditional remedies (Desi Nuskhas), provide heritage wisdom appropriate for
 Input Data:
 Crop: {{{cropType}}}
 {{#if symptomsDescription}}Symptoms: {{{symptomsDescription}}}{{/if}}
-{{#if soilPh}}Soil pH: {{{soilPh}}}{{/if}}
-{{#if soilMoisture}}Soil Moisture: {{{soilMoisture}}}%{{/if}}
 {{#if photoDataUri}}Image Provided: {{media url=photoDataUri}}{{/if}}
 
 Provide detailed analysis in {{{language}}} script.`,

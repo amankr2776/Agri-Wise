@@ -6,7 +6,6 @@ import {
   ArrowLeft, 
   PlusCircle, 
   Droplets, 
-  TrendingUp, 
   ShieldCheck, 
   FlaskConical,
   Loader2,
@@ -14,14 +13,12 @@ import {
   Zap,
   Mic2,
   ChevronRight,
-  Search,
   Calendar,
   Mountain,
   Edit2,
   Save,
-  X,
-  AlertTriangle,
-  Info
+  Info,
+  TrendingUp
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -50,8 +47,8 @@ export function CropDiagnostics() {
   const firestore = useFirestore();
   const { toast } = useToast();
   
-  const [selectedCategory, setSelectedCategory] = useState<string>("Plant");
-  const [activeView, setActiveView] = useState<'gallery' | 'detail' | 'report'>('gallery');
+  const [selectedCategory, setSelectedCategory] = useState<string>("Grain");
+  const [activeView, setActiveView] = useState<'gallery' | 'detail'>('gallery');
   const [selectedCrop, setSelectedCrop] = useState<any>(null);
   const [isReportOpen, setIsReportOpen] = useState(false);
   const [editingPrice, setEditingPrice] = useState(false);
@@ -186,7 +183,7 @@ export function CropDiagnostics() {
               <TabsContent value="diagnosis" className="glass-card p-10 rounded-[3rem] border-none">
                 <h4 className="text-xl font-black mb-4 flex items-center gap-2"><Info className="h-5 w-5 text-primary" /> Diagnosis Summary</h4>
                 <p className="text-lg text-slate-600 leading-relaxed font-medium italic">
-                  {selectedCrop.symptoms || "Intelligence analysis suggests early onset of regional pathogens based on field humidity and soil context."}
+                  {selectedCrop.symptoms || "Intelligence analysis suggests regional onset based on historical vector paths."}
                 </p>
               </TabsContent>
               <TabsContent value="cure" className="glass-card p-10 rounded-[3rem] border-none">
@@ -197,7 +194,7 @@ export function CropDiagnostics() {
               <TabsContent value="natural" className="glass-card p-10 rounded-[3rem] border-none">
                 <h4 className="text-xl font-black mb-4 flex items-center gap-2 text-primary"><Zap className="h-5 w-5" /> Desi Nuskha (Natural)</h4>
                 <p className="text-xl font-medium text-primary italic leading-relaxed">
-                  "{selectedCrop.desiNuskha || "Use a mixture of neem oil and fermented buttermilk spray at dawn."}"
+                  "{selectedCrop.desiNuskha || "Use heritage neem-based soil application for systemic immunity."}"
                 </p>
               </TabsContent>
             </Tabs>
@@ -275,23 +272,6 @@ export function CropDiagnostics() {
                 </motion.div>
               ))}
             </AnimatePresence>
-
-            <motion.div
-              whileHover={{ scale: 1.05 }}
-              onClick={() => setIsReportOpen(true)}
-              className="cursor-pointer"
-            >
-              <Card className="rounded-[2.5rem] border-2 border-dashed border-primary/20 h-[400px] flex flex-col items-center justify-center p-10 text-center space-y-4 hover:bg-primary/5 transition-colors">
-                <div className="h-20 w-20 bg-primary/10 rounded-full flex items-center justify-center text-primary">
-                  <AlertTriangle className="h-10 w-10" />
-                </div>
-                <div>
-                  <h4 className="text-xl font-black tracking-tight">Missing something?</h4>
-                  <p className="text-sm text-muted-foreground font-medium mt-1">Report a new disease or pest observed in your field.</p>
-                </div>
-                <Button variant="ghost" className="rounded-full font-black text-xs uppercase tracking-widest text-primary">Start Manual Report</Button>
-              </Card>
-            </motion.div>
           </div>
         )}
       </div>
@@ -314,10 +294,6 @@ export function CropDiagnostics() {
             <div className="space-y-2">
               <Label className="text-[10px] font-black uppercase text-muted-foreground ml-2">Symptom Description</Label>
               <Textarea name="symptoms" placeholder="Describe spots, curls, or pest behavior..." required className="rounded-xl bg-muted/30 border-none min-h-[120px] font-medium" />
-            </div>
-            <div className="p-6 border-2 border-dashed rounded-2xl text-center space-y-2 bg-muted/20">
-              <PlusCircle className="h-8 w-8 mx-auto text-muted-foreground opacity-50" />
-              <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Upload Field Photo</p>
             </div>
             <DialogFooter>
               <Button type="submit" className="w-full h-14 rounded-2xl font-black text-lg">Submit for Expert Review</Button>
