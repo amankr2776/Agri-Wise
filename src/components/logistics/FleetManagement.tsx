@@ -152,7 +152,7 @@ export function FleetManagement() {
       type: formData.get("type") as string,
       plateNumber: (formData.get("plateNumber") as string).toUpperCase(),
       pricePerKm: Number(formData.get("pricePerKm")) || profile?.basePrice || 25,
-      contact: profile?.phone || "+919876543210",
+      contact: formData.get("contact") as string || profile?.phone || "+919876543210",
       city: profile?.city || "Local Hub",
       state: profile?.state || "Local State",
       isAvailable: true,
@@ -191,6 +191,16 @@ export function FleetManagement() {
       const docRef = doc(firestore, "vehicles", vehicleId);
       updateDocumentNonBlocking(docRef, { pricePerKm: Number(newPrice) });
       toast({ title: "Price Adjusted", description: "Market rate has been updated for this vehicle." });
+    }
+  };
+
+  const handleUpdateVehicleContact = (vehicleId: string, currentContact: string) => {
+    if (!firestore) return;
+    const newContact = prompt("Enter new Contact Number:", currentContact);
+    if (newContact !== null && newContact.trim() !== "") {
+      const docRef = doc(firestore, "vehicles", vehicleId);
+      updateDocumentNonBlocking(docRef, { contact: newContact.trim() });
+      toast({ title: "Contact Updated", description: "Vehicle contact information has been updated." });
     }
   };
 
@@ -241,6 +251,10 @@ export function FleetManagement() {
                 <div className="space-y-2">
                   <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Plate Number</Label>
                   <Input name="plateNumber" placeholder="e.g. PB-02-AT-1234" required className="rounded-xl h-12 bg-muted/30 border-none font-bold uppercase" />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Vehicle Contact</Label>
+                  <Input name="contact" placeholder="e.g. +91 9876543210" defaultValue={profile?.phone || ""} className="rounded-xl h-12 bg-muted/30 border-none font-bold" />
                 </div>
                 <div className="space-y-2">
                   <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Price per KM (₹)</Label>
@@ -410,16 +424,21 @@ export function FleetManagement() {
                         variant="ghost" 
                         size="sm" 
                         onClick={() => handleUpdateVehiclePrice(v.id, v.pricePerKm)}
-                        className="h-10 px-4 rounded-xl font-black text-primary bg-primary/5 hover:bg-primary/10"
+                        className="h-10 px-4 rounded-xl font-black text-primary bg-primary/5 hover:bg-primary/10 transition-all active:scale-95"
                       >
-                        ₹{v.pricePerKm}/km <Edit3 className="h-3 w-3 ml-2" />
+                        ₹{v.pricePerKm}/km <Edit3 className="h-3 w-3 ml-2 opacity-50" />
                       </Button>
                     </div>
                     <div className="flex justify-between items-center p-3 bg-slate-50 rounded-xl">
                       <span className="text-[10px] font-black text-muted-foreground uppercase">Fleet Contact</span>
-                      <span className="text-xs font-bold flex items-center gap-2">
-                        <Phone className="h-3 w-3" /> {v.contact}
-                      </span>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={() => handleUpdateVehicleContact(v.id, v.contact)}
+                        className="h-10 px-4 rounded-xl font-bold flex items-center gap-2 hover:bg-white/50 transition-all active:scale-95"
+                      >
+                        <Phone className="h-3 w-3" /> {v.contact} <Edit3 className="h-3 w-3 ml-1 opacity-50" />
+                      </Button>
                     </div>
                   </div>
                 </Card>
