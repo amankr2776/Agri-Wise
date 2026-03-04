@@ -1,8 +1,7 @@
 'use client';
 
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo } from "react";
 import { 
-  Search, 
   ArrowLeft, 
   PlusCircle, 
   Volume2, 
@@ -12,22 +11,20 @@ import {
   ShieldCheck, 
   LayoutGrid, 
   FlaskConical,
-  X,
-  Camera,
   Loader2,
   Tag,
-  TrendingDown,
-  Info,
-  RefreshCw
+  RefreshCw,
+  Zap,
+  Camera
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
 import { query, collection } from "firebase/firestore";
@@ -36,26 +33,17 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { DiagnosticTool } from "./DiagnosticTool";
 
 const CATEGORIES = ["All", "Plant", "Seed", "Vegetable", "Fruit", "Grain"];
 
-interface CropDiagnosticsProps {
-  searchQuery?: string;
-}
-
-export function CropDiagnostics({ searchQuery = "" }: CropDiagnosticsProps) {
+export function CropDiagnostics() {
   const firestore = useFirestore();
   const { toast } = useToast();
-  const [localSearch, setLocalSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [selectedCropId, setSelectedCropId] = useState<string | null>(null);
   const [isReportOpen, setIsReportOpen] = useState(false);
   const [isSubmittingReport, setIsSubmittingReport] = useState(false);
-
-  // Sync local search with global search query if provided
-  useEffect(() => {
-    if (searchQuery) setLocalSearch(searchQuery);
-  }, [searchQuery]);
 
   const cropsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
@@ -67,16 +55,10 @@ export function CropDiagnostics({ searchQuery = "" }: CropDiagnosticsProps) {
   const filteredCrops = useMemo(() => {
     if (!crops) return [];
     return crops.filter(c => {
-      const name = c.name || "";
-      const disease = c.diseaseName || "";
       const category = c.category || "";
-      
-      const matchesSearch = name.toLowerCase().includes(localSearch.toLowerCase()) || 
-                          disease.toLowerCase().includes(localSearch.toLowerCase());
-      const matchesCategory = selectedCategory === "All" || category === selectedCategory;
-      return matchesSearch && matchesCategory;
+      return selectedCategory === "All" || category === selectedCategory;
     });
-  }, [crops, localSearch, selectedCategory]);
+  }, [crops, selectedCategory]);
 
   const selectedCrop = useMemo(() => {
     return crops?.find(c => c.id === selectedCropId) || null;
@@ -116,11 +98,6 @@ export function CropDiagnostics({ searchQuery = "" }: CropDiagnosticsProps) {
     }
   };
 
-  const resetFilters = () => {
-    setLocalSearch("");
-    setSelectedCategory("All");
-  };
-
   if (isLoading) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -130,7 +107,7 @@ export function CropDiagnostics({ searchQuery = "" }: CropDiagnosticsProps) {
   }
 
   return (
-    <div className="space-y-8 relative">
+    <div className="space-y-12 relative">
       <AnimatePresence mode="wait">
         {!selectedCropId ? (
           <motion.div 
@@ -138,122 +115,116 @@ export function CropDiagnostics({ searchQuery = "" }: CropDiagnosticsProps) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="space-y-10"
+            className="space-y-16"
           >
-            <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-              <div className="flex gap-2 p-1 bg-muted rounded-full w-fit overflow-x-auto scrollbar-hide max-w-full glass-card">
-                {CATEGORIES.map((cat) => (
-                  <Button
-                    key={cat}
-                    variant={selectedCategory === cat ? "default" : "ghost"}
-                    onClick={() => setSelectedCategory(cat)}
-                    className={cn(
-                      "rounded-full px-6 h-10 font-black text-[10px] uppercase tracking-widest whitespace-nowrap",
-                      selectedCategory === cat ? "shadow-lg shadow-primary/20" : "text-muted-foreground"
-                    )}
+            {/* AI Scanning Hero */}
+            <div className="space-y-8">
+              <div className="flex flex-col gap-2">
+                <h2 className="text-4xl font-black tracking-tighter text-slate-900 flex items-center gap-3">
+                  <Zap className="h-10 w-10 text-primary" />
+                  Multimodal AI Field Scan
+                </h2>
+                <p className="text-muted-foreground font-medium max-w-2xl">
+                  Upload a photo of your crop or symptoms. Our AI will identify the pathogen and provide heritage wisdom + certified protocols.
+                </p>
+              </div>
+              <DiagnosticTool />
+            </div>
+
+            <div className="space-y-10">
+              <div className="flex flex-col md:flex-row items-center justify-between gap-6 border-t pt-12">
+                <div className="space-y-1">
+                  <h3 className="text-2xl font-black tracking-tight">Verified Protocol Registry</h3>
+                  <p className="text-sm text-muted-foreground font-medium">Browse expert-certified diagnostic profiles</p>
+                </div>
+                <div className="flex gap-2 p-1 bg-muted rounded-full w-fit overflow-x-auto scrollbar-hide max-w-full glass-card">
+                  {CATEGORIES.map((cat) => (
+                    <Button
+                      key={cat}
+                      variant={selectedCategory === cat ? "default" : "ghost"}
+                      onClick={() => setSelectedCategory(cat)}
+                      className={cn(
+                        "rounded-full px-6 h-10 font-black text-[10px] uppercase tracking-widest whitespace-nowrap",
+                        selectedCategory === cat ? "shadow-lg shadow-primary/20" : "text-muted-foreground"
+                      )}
+                    >
+                      {cat}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+                <Dialog open={isReportOpen} onOpenChange={setIsReportOpen}>
+                  <DialogTrigger asChild>
+                    <motion.button
+                      whileHover={{ scale: 1.02 }}
+                      className="group relative h-80 rounded-[2.5rem] border-2 border-dashed border-primary/30 flex flex-col items-center justify-center gap-4 bg-primary/5 hover:bg-primary/10 transition-all shadow-sm"
+                    >
+                      <div className="h-16 w-16 bg-white rounded-2xl flex items-center justify-center text-primary shadow-xl shadow-primary/10 group-hover:scale-110 transition-transform">
+                        <PlusCircle className="h-10 w-10" />
+                      </div>
+                      <div className="text-center px-4">
+                        <p className="font-black text-lg text-primary">Report New Issue</p>
+                        <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mt-1">Manual Disease Entry</p>
+                      </div>
+                    </motion.button>
+                  </DialogTrigger>
+                  <DialogContent className="rounded-[2.5rem] sm:max-w-[500px] p-10">
+                    <DialogHeader>
+                      <DialogTitle className="text-3xl font-black tracking-tight">Manual Field Report</DialogTitle>
+                      <DialogDescription className="font-medium italic">Describe symptoms and observations for expert verification.</DialogDescription>
+                    </DialogHeader>
+                    <form onSubmit={handleManualReport} className="space-y-6 pt-6">
+                      <div className="space-y-2">
+                        <Label className="text-[10px] font-black uppercase text-muted-foreground ml-2">Crop / Species Name</Label>
+                        <Input name="cropName" placeholder="e.g. Paddy, Mango" required className="h-12 rounded-xl bg-muted/30 border-none font-bold" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-[10px] font-black uppercase text-muted-foreground ml-2">Suspected Disease</Label>
+                        <Input name="diseaseName" placeholder="e.g. Unusual Leaf Spots" className="h-12 rounded-xl bg-muted/30 border-none font-bold" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-[10px] font-black uppercase text-muted-foreground ml-2">Observations</Label>
+                        <Textarea name="symptoms" placeholder="Describe the symptoms in detail..." required className="rounded-xl bg-muted/30 border-none min-h-[100px] font-medium" />
+                      </div>
+                      <Button type="submit" disabled={isSubmittingReport} className="w-full h-14 rounded-2xl font-black text-lg">
+                        {isSubmittingReport ? <Loader2 className="animate-spin" /> : "Submit for Verification"}
+                      </Button>
+                    </form>
+                  </DialogContent>
+                </Dialog>
+
+                {filteredCrops.map((crop) => (
+                  <motion.div
+                    key={crop.id}
+                    whileHover={{ scale: 1.03 }}
+                    onClick={() => setSelectedCropId(crop.id)}
+                    className="group relative h-80 rounded-[2.5rem] overflow-hidden shadow-xl cursor-pointer bg-slate-900"
                   >
-                    {cat}
-                  </Button>
+                    <img 
+                      src={crop.imageUrl || `https://picsum.photos/seed/${crop.id}/800/800`} 
+                      alt={crop.name}
+                      className="w-full h-full object-cover transition-all duration-700 group-hover:scale-110 opacity-80 group-hover:opacity-100"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-60" />
+                    <div className="absolute bottom-0 left-0 right-0 p-8">
+                      <div className="flex justify-between items-end">
+                        <div className="space-y-1">
+                          <Badge className="bg-white/20 backdrop-blur-md text-white border-none text-[8px] font-black uppercase tracking-widest px-3">
+                            {crop.category}
+                          </Badge>
+                          <h2 className="text-3xl font-black text-white tracking-tighter">{crop.name}</h2>
+                        </div>
+                        <div className="h-10 w-10 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity">
+                          <LayoutGrid className="h-5 w-5" />
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
                 ))}
               </div>
-              <div className="relative w-full md:w-96">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input 
-                  placeholder="Filter grid in real-time..." 
-                  value={localSearch}
-                  onChange={(e) => setLocalSearch(e.target.value)}
-                  className="pl-11 rounded-full bg-white border-none shadow-sm h-12 font-bold focus:ring-2 focus:ring-primary/20 transition-all"
-                />
-              </div>
             </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-              <Dialog open={isReportOpen} onOpenChange={setIsReportOpen}>
-                <DialogTrigger asChild>
-                  <motion.button
-                    whileHover={{ scale: 1.02 }}
-                    className="group relative h-80 rounded-[2.5rem] border-2 border-dashed border-primary/30 flex flex-col items-center justify-center gap-4 bg-primary/5 hover:bg-primary/10 transition-all shadow-sm"
-                  >
-                    <div className="h-16 w-16 bg-white rounded-2xl flex items-center justify-center text-primary shadow-xl shadow-primary/10 group-hover:scale-110 transition-transform">
-                      <PlusCircle className="h-10 w-10" />
-                    </div>
-                    <div className="text-center px-4">
-                      <p className="font-black text-lg text-primary">Report New Issue</p>
-                      <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mt-1">Manual Disease Entry</p>
-                    </div>
-                  </motion.button>
-                </DialogTrigger>
-                <DialogContent className="rounded-[2.5rem] sm:max-w-[500px] p-10">
-                  <DialogHeader>
-                    <DialogTitle className="text-3xl font-black tracking-tight">Manual Field Report</DialogTitle>
-                    <DialogDescription className="font-medium italic">Describe symptoms and observations for expert verification.</DialogDescription>
-                  </DialogHeader>
-                  <form onSubmit={handleManualReport} className="space-y-6 pt-6">
-                    <div className="space-y-2">
-                      <Label className="text-[10px] font-black uppercase text-muted-foreground ml-2">Crop / Species Name</Label>
-                      <Input name="cropName" placeholder="e.g. Paddy, Mango" required className="h-12 rounded-xl bg-muted/30 border-none font-bold" />
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-[10px] font-black uppercase text-muted-foreground ml-2">Suspected Disease</Label>
-                      <Input name="diseaseName" placeholder="e.g. Unusual Leaf Spots" className="h-12 rounded-xl bg-muted/30 border-none font-bold" />
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-[10px] font-black uppercase text-muted-foreground ml-2">Observations</Label>
-                      <Textarea name="symptoms" placeholder="Describe the symptoms in detail..." required className="rounded-xl bg-muted/30 border-none min-h-[100px] font-medium" />
-                    </div>
-                    <Button type="submit" disabled={isSubmittingReport} className="w-full h-14 rounded-2xl font-black text-lg">
-                      {isSubmittingReport ? <Loader2 className="animate-spin" /> : "Submit for Verification"}
-                    </Button>
-                  </form>
-                </DialogContent>
-              </Dialog>
-
-              {filteredCrops.map((crop) => (
-                <motion.div
-                  key={crop.id}
-                  whileHover={{ scale: 1.03 }}
-                  onClick={() => setSelectedCropId(crop.id)}
-                  className="group relative h-80 rounded-[2.5rem] overflow-hidden shadow-xl cursor-pointer bg-slate-900"
-                >
-                  <img 
-                    src={crop.imageUrl || `https://picsum.photos/seed/${crop.id}/800/800`} 
-                    alt={crop.name}
-                    className="w-full h-full object-cover transition-all duration-700 group-hover:scale-110 opacity-80 group-hover:opacity-100"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-60" />
-                  <div className="absolute bottom-0 left-0 right-0 p-8">
-                    <div className="flex justify-between items-end">
-                      <div className="space-y-1">
-                        <Badge className="bg-white/20 backdrop-blur-md text-white border-none text-[8px] font-black uppercase tracking-widest px-3">
-                          {crop.category}
-                        </Badge>
-                        <h2 className="text-3xl font-black text-white tracking-tighter">{crop.name}</h2>
-                      </div>
-                      <div className="h-10 w-10 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity">
-                        <LayoutGrid className="h-5 w-5" />
-                      </div>
-                    </div>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-
-            {filteredCrops.length === 0 && (
-              <div className="text-center py-40 bg-white/50 backdrop-blur-md rounded-[4rem] border-2 border-dashed border-primary/20 shadow-sm animate-in zoom-in-95 duration-300">
-                <div className="h-24 w-24 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-6">
-                  <Search className="h-10 w-10 text-primary opacity-20" />
-                </div>
-                <h3 className="text-3xl font-black tracking-tight">No Results for "{localSearch}"</h3>
-                <p className="text-muted-foreground mt-2 font-medium max-w-sm mx-auto">Try broadening your search or resetting the category filters to explore more intelligence.</p>
-                <Button 
-                  onClick={resetFilters}
-                  variant="outline" 
-                  className="mt-8 rounded-full h-12 px-10 font-black text-xs uppercase tracking-widest border-primary/20 text-primary hover:bg-primary/5"
-                >
-                  <RefreshCw className="h-4 w-4 mr-2" /> Reset Intelligence Filters
-                </Button>
-              </div>
-            )}
           </motion.div>
         ) : (
           <motion.div

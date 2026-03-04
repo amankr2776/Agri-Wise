@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useEffect } from "react";
@@ -9,14 +8,12 @@ import {
   TrendingUp, 
   Truck, 
   Users, 
-  Search, 
   Bell, 
   Settings,
   LogOut,
   FlaskConical,
   Loader2,
   Package,
-  X,
   MessageCircle,
   CheckCircle2
 } from "lucide-react";
@@ -67,8 +64,6 @@ export default function KisanMitraApp() {
     profileImage 
   } = useAppState();
   const [activeSection, setActiveSection] = useState("dashboard");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [isSearching, setIsSearching] = useState(false);
 
   const unreadCount = notifications.filter(n => !n.isRead).length;
 
@@ -84,27 +79,6 @@ export default function KisanMitraApp() {
     else setActiveSection("dashboard");
   }, [role]);
 
-  const handleGlobalSearch = () => {
-    if (!searchQuery.trim()) return;
-    setIsSearching(true);
-    
-    setTimeout(() => {
-      setIsSearching(false);
-      toast({
-        title: "Search Intelligence Updated",
-        description: `Filtering ${activeSection} for "${searchQuery}"`,
-      });
-    }, 800);
-  };
-
-  const clearSearch = () => {
-    setSearchQuery("");
-    toast({
-      title: "Search Cleared",
-      description: "Displaying full intelligence grid.",
-    });
-  };
-
   if (!isAuthenticated || !role) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -119,8 +93,8 @@ export default function KisanMitraApp() {
   const renderSection = () => {
     switch (activeSection) {
       case "dashboard": return <DashboardHome onNavigate={setActiveSection} />;
-      case "diagnostics": return <CropDiagnostics searchQuery={searchQuery} />;
-      case "market": return <MarketIntelligence searchQuery={searchQuery} />;
+      case "diagnostics": return <CropDiagnostics />;
+      case "market": return <MarketIntelligence />;
       case "logistics": return <MandiLink />;
       case "network": return <KisanNetwork />;
       case "expert-portal": return <ExpertVerificationPortal />;
@@ -194,29 +168,9 @@ export default function KisanMitraApp() {
           <header className="h-16 flex items-center justify-between px-6 border-b glass-card sticky top-0 z-30">
             <div className="flex items-center gap-4">
               <SidebarTrigger className="md:hidden" />
-              <div className="hidden md:flex items-center gap-2 bg-muted/50 px-4 py-2 rounded-full w-96 border border-border/50 transition-all focus-within:ring-2 focus-within:ring-primary/20">
-                <Search className={cn("h-4 w-4 transition-colors", isSearching ? "text-primary animate-pulse" : "text-muted-foreground")} />
-                <input 
-                  placeholder="Search intelligence, Mandis, or experts..." 
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleGlobalSearch()}
-                  className="bg-transparent border-none text-sm focus:outline-none w-full font-bold"
-                />
-                {searchQuery && (
-                  <button onClick={clearSearch} className="hover:text-primary">
-                    <X className="h-3 w-3" />
-                  </button>
-                )}
+              <div className="hidden md:flex items-center">
+                <h2 className="text-sm font-black uppercase tracking-[0.2em] text-muted-foreground">National Agricultural Grid</h2>
               </div>
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                onClick={handleGlobalSearch}
-                className="h-10 w-10 rounded-full md:hidden"
-              >
-                <Search className="h-5 w-5" />
-              </Button>
             </div>
             <div className="flex items-center gap-4">
               <Popover onOpenChange={(open) => open && markNotificationsAsRead()}>
@@ -266,7 +220,7 @@ export default function KisanMitraApp() {
                 </div>
                 <Avatar className="h-8 w-8 border-2 border-primary/20 shadow-sm">
                   <AvatarImage src={profileImage || ""} />
-                  <AvatarFallback>{(name || role)[0]}</AvatarFallback>
+                  <AvatarFallback className="bg-primary text-white font-black">{(name || role)[0]}</AvatarFallback>
                 </Avatar>
               </div>
             </div>
