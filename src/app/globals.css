@@ -36,12 +36,30 @@
     --muted: 162 20% 15%;
   }
 
-  [data-theme='contrast'] {
-    --background: 0 0% 0%;
-    --foreground: 60 100% 50%; /* High vis yellow */
-    --primary: 60 100% 50%;
-    --primary-foreground: 0 0% 0%;
-    --border: 60 100% 50%;
+  /* Regional Font Logic */
+  [data-lang="Hindi"], [data-lang="Marathi"], [data-lang="Bhojpuri"], [data-lang="Haryanvi"], [data-lang="Rajasthani"], [data-lang="Magahi"], [data-lang="Pahadi"] {
+    font-family: 'Mukta', sans-serif !important;
+    line-height: 1.6;
+  }
+
+  [data-lang="Kannada"] {
+    font-family: 'Noto Sans Kannada', sans-serif !important;
+    line-height: 1.8;
+  }
+
+  [data-lang="Tamil"] {
+    font-family: 'Noto Sans Tamil', sans-serif !important;
+    line-height: 1.8;
+  }
+
+  [data-lang="Telugu"] {
+    font-family: 'Noto Sans Telugu', sans-serif !important;
+    line-height: 1.8;
+  }
+
+  [data-lang="Malayalam"] {
+    font-family: 'Noto Sans Malayalam', sans-serif !important;
+    line-height: 1.8;
   }
 }
 
@@ -56,10 +74,6 @@
 
 .glass-card {
   @apply bg-white/50 backdrop-blur-md border border-white/20 shadow-xl;
-}
-
-.earthy-gradient {
-  background: linear-gradient(135deg, hsl(var(--primary) / 0.1) 0%, hsl(var(--primary) / 0.02) 100%);
 }
 
 .touch-target {

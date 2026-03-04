@@ -1,7 +1,7 @@
 
 'use server';
 /**
- * @fileOverview This file implements the Genkit flow for diagnosing crop problems with soil health context.
+ * @fileOverview This file implements the Genkit flow for diagnosing crop problems with language awareness.
  */
 
 import {ai} from '@/ai/genkit';
@@ -13,6 +13,7 @@ const FarmerCropPestDiagnosisInputSchema = z.object({
   photoDataUri: z.string().optional().describe("Photo data URI."),
   soilPh: z.number().optional().describe("Soil pH level (0-14)."),
   soilMoisture: z.number().optional().describe("Soil moisture percentage (0-100)."),
+  language: z.string().default("English").describe("The user's preferred language for the output."),
 });
 export type FarmerCropPestDiagnosisInput = z.infer<typeof FarmerCropPestDiagnosisInputSchema>;
 
@@ -33,6 +34,8 @@ const diagnoseCropPestPrompt = ai.definePrompt({
   input: { schema: FarmerCropPestDiagnosisInputSchema },
   output: { schema: FarmerCropPestDiagnosisOutputSchema },
   prompt: `You are an expert agricultural diagnostician.
+THE USER PREFERS THE LANGUAGE: {{{language}}}.
+YOU MUST PROVIDE THE ENTIRE RESPONSE (DIAGNOSIS, REMEDIES, FERTILIZERS) STRICTLY IN {{{language}}}.
 
 Crop: {{{cropType}}}
 {{#if symptomsDescription}}Symptoms: {{{symptomsDescription}}}{{/if}}
@@ -40,11 +43,7 @@ Crop: {{{cropType}}}
 {{#if soilMoisture}}Soil Moisture: {{{soilMoisture}}}%{{/if}}
 {{#if photoDataUri}}Image Provided: {{media url=photoDataUri}}{{/if}}
 
-Provide:
-1. Diagnosis.
-2. Chemical remedies.
-3. Traditional 'Desi Nuskha' remedies.
-4. Specific fertilizer recommendations (e.g., Urea, DAP, Potash) based on the soil pH and moisture provided. If pH is acidic or basic, suggest soil amendments like Lime or Gypsum.`,
+Provide detailed analysis in {{{language}}} script.`,
 });
 
 const farmerCropPestDiagnosisFlow = ai.defineFlow(

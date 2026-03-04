@@ -28,9 +28,15 @@ import {
   SelectTrigger, 
   SelectValue 
 } from "@/components/ui/select";
-import { useAppState } from "@/lib/app-state";
+import { useAppState, AppLanguage } from "@/lib/app-state";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+
+const LANGUAGES: AppLanguage[] = [
+  "English", "Hindi", "Bhojpuri", "Punjabi", "Haryanvi", 
+  "Bengali", "Marathi", "Rajasthani", "Gujarati", "Pahadi", 
+  "Kannada", "Tamil", "Telugu", "Malayalam", "Oriya", "Magahi"
+];
 
 export function SettingsView() {
   const { toast } = useToast();
@@ -55,7 +61,8 @@ export function SettingsView() {
     const savedTheme = localStorage.getItem("km_theme") || "farmer";
     setTheme(savedTheme);
     document.documentElement.setAttribute("data-theme", savedTheme);
-  }, []);
+    document.documentElement.setAttribute("data-lang", language);
+  }, [language]);
 
   const handleSave = () => {
     setName(localName);
@@ -103,7 +110,6 @@ export function SettingsView() {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
         <div className="md:col-span-2 space-y-8">
-          {/* Profile Section */}
           <Card className="glass-card rounded-[2.5rem] overflow-hidden border-none">
             <CardHeader className="p-8 pb-4">
               <CardTitle className="flex items-center gap-3 text-xl font-black">
@@ -113,7 +119,6 @@ export function SettingsView() {
               <CardDescription className="font-medium">Update your core identity details.</CardDescription>
             </CardHeader>
             <CardContent className="p-8 pt-0 space-y-8">
-              {/* Image Upload UI */}
               <div className="flex flex-col items-center sm:flex-row gap-6 p-6 bg-muted/20 rounded-3xl border-2 border-dashed border-primary/10">
                 <Avatar className="h-24 w-24 border-4 border-white shadow-xl">
                   <AvatarImage src={profileImage || ""} />
@@ -122,19 +127,8 @@ export function SettingsView() {
                 <div className="space-y-3 text-center sm:text-left">
                   <h4 className="font-black text-sm uppercase tracking-widest">Profile Identity</h4>
                   <p className="text-xs text-muted-foreground font-medium max-w-xs">Upload a professional field photo for your grid identity.</p>
-                  <input 
-                    type="file" 
-                    ref={fileInputRef} 
-                    className="hidden" 
-                    accept="image/*" 
-                    onChange={handleImageUpload}
-                  />
-                  <Button 
-                    onClick={() => fileInputRef.current?.click()}
-                    size="sm" 
-                    variant="outline" 
-                    className="rounded-full h-10 px-6 font-black text-[10px] uppercase tracking-widest gap-2"
-                  >
+                  <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleImageUpload} />
+                  <Button onClick={() => fileInputRef.current?.click()} size="sm" variant="outline" className="rounded-full h-10 px-6 font-black text-[10px] uppercase tracking-widest gap-2">
                     <Upload className="h-3.5 w-3.5" /> Choose Photo
                   </Button>
                 </div>
@@ -143,42 +137,32 @@ export function SettingsView() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-2">Display Name</Label>
-                  <Input 
-                    value={localName} 
-                    onChange={(e) => setLocalName(e.target.value)}
-                    className="h-12 rounded-xl bg-background/50 border-none font-bold" 
-                  />
+                  <Input value={localName} onChange={(e) => setLocalName(e.target.value)} className="h-12 rounded-xl bg-background/50 border-none font-bold" />
                 </div>
                 <div className="space-y-2">
                   <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-2">Base City</Label>
-                  <Input 
-                    value={localCity} 
-                    onChange={(e) => setLocalCity(e.target.value)}
-                    className="h-12 rounded-xl bg-background/50 border-none font-bold" 
-                  />
+                  <Input value={localCity} onChange={(e) => setLocalCity(e.target.value)} className="h-12 rounded-xl bg-background/50 border-none font-bold" />
                 </div>
               </div>
               <div className="space-y-2">
                 <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-2">Language Preference</Label>
-                <Select value={language} onValueChange={setLanguage}>
+                <Select value={language} onValueChange={(v: AppLanguage) => setLanguage(v)}>
                   <SelectTrigger className="h-12 rounded-xl bg-background/50 border-none font-bold">
                     <div className="flex items-center gap-2">
                       <Languages className="h-4 w-4 text-primary" />
                       <SelectValue />
                     </div>
                   </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="English">English (Global)</SelectItem>
-                    <SelectItem value="Hindi">हिन्दी (Hindi)</SelectItem>
-                    <SelectItem value="Punjabi">ਪੰਜਾਬी (Punjabi)</SelectItem>
-                    <SelectItem value="Bengali">বাংলা (Bengali)</SelectItem>
+                  <SelectContent className="max-h-80">
+                    {LANGUAGES.map(lang => (
+                      <SelectItem key={lang} value={lang}>{lang}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
             </CardContent>
           </Card>
 
-          {/* Theme Settings */}
           <Card className="glass-card rounded-[2.5rem] overflow-hidden border-none">
             <CardHeader className="p-8 pb-4">
               <CardTitle className="flex items-center gap-3 text-xl font-black">
@@ -194,16 +178,7 @@ export function SettingsView() {
                   { id: "dark", label: "Dark Mode", icon: Moon, desc: "Low Light Night Ops" },
                   { id: "contrast", label: "High Contrast", icon: ShieldCheck, desc: "Maximum Sun Visibility" },
                 ].map((t) => (
-                  <button
-                    key={t.id}
-                    onClick={() => handleThemeChange(t.id)}
-                    className={cn(
-                      "flex flex-col items-center justify-center p-6 rounded-2xl border-2 transition-all gap-2",
-                      theme === t.id 
-                        ? "bg-primary text-white border-primary shadow-lg shadow-primary/20 scale-105" 
-                        : "bg-background/50 border-transparent hover:border-primary/20"
-                    )}
-                  >
+                  <button key={t.id} onClick={() => handleThemeChange(t.id)} className={cn("flex flex-col items-center justify-center p-6 rounded-2xl border-2 transition-all gap-2", theme === t.id ? "bg-primary text-white border-primary shadow-lg shadow-primary/20 scale-105" : "bg-background/50 border-transparent hover:border-primary/20")}>
                     <t.icon className={cn("h-6 w-6", theme === t.id ? "text-white" : "text-primary")} />
                     <span className="font-bold text-xs">{t.label}</span>
                     <span className={cn("text-[8px] font-medium opacity-60", theme === t.id ? "text-white" : "")}>{t.desc}</span>
@@ -226,24 +201,10 @@ export function SettingsView() {
                   Your profile is verified as a <span className="font-black underline">{role}</span> under the KisanMitra National Grid.
                 </p>
               </div>
-              <Button 
-                onClick={handleSave}
-                className="w-full h-12 rounded-xl bg-white text-primary hover:bg-white/90 font-black gap-2 shadow-xl"
-              >
+              <Button onClick={handleSave} className="w-full h-12 rounded-xl bg-white text-primary hover:bg-white/90 font-black gap-2 shadow-xl">
                 <Save className="h-4 w-4" /> Save All Intelligence
               </Button>
-              <Button variant="ghost" className="w-full text-white hover:bg-white/10 font-bold">
-                Reset Defaults
-              </Button>
             </div>
-          </Card>
-
-          <Card className="glass-card rounded-[2.5rem] border-none p-8">
-            <div className="flex items-center justify-between mb-4">
-              <h4 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Notifications</h4>
-              <Switch checked />
-            </div>
-            <p className="text-xs text-muted-foreground font-medium">Receive real-time alerts for pest outbreaks and price spikes.</p>
           </Card>
         </div>
       </div>

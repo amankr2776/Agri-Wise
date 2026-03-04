@@ -6,6 +6,11 @@ import { persist } from "zustand/middleware";
 
 export type UserRole = "Farmer" | "Expert" | "Authority" | "Logistics";
 
+export type AppLanguage = 
+  | "English" | "Hindi" | "Bhojpuri" | "Punjabi" | "Haryanvi" 
+  | "Bengali" | "Marathi" | "Rajasthani" | "Gujarati" | "Pahadi" 
+  | "Kannada" | "Tamil" | "Telugu" | "Malayalam" | "Oriya" | "Magahi";
+
 interface Notification {
   id: string;
   type: 'like' | 'comment' | 'verify';
@@ -26,8 +31,8 @@ interface AppState {
   setName: (name: string) => void;
   setCity: (city: string) => void;
   setProfileImage: (img: string | null) => void;
-  language: string;
-  setLanguage: (lang: string) => void;
+  language: AppLanguage;
+  setLanguage: (lang: AppLanguage) => void;
   verifiedRemedies: string[];
   addVerifiedRemedy: (id: string) => void;
   notifications: Notification[];
@@ -50,7 +55,12 @@ export const useAppState = create<AppState>()(
       setCity: (city) => set({ city }),
       setProfileImage: (profileImage) => set({ profileImage }),
       language: "English",
-      setLanguage: (language) => set({ language }),
+      setLanguage: (language) => {
+        set({ language });
+        if (typeof document !== 'undefined') {
+          document.documentElement.setAttribute('data-lang', language);
+        }
+      },
       verifiedRemedies: [],
       addVerifiedRemedy: (id) => set((state) => ({ verifiedRemedies: [...state.verifiedRemedies, id] })),
       notifications: [],
