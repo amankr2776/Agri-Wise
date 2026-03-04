@@ -17,7 +17,8 @@ import {
   Package,
   CheckCircle2,
   ShieldCheck,
-  Zap
+  Zap,
+  Globe
 } from "lucide-react";
 import { 
   SidebarProvider, 
@@ -53,6 +54,7 @@ import { KisanNetwork } from "@/components/social/KisanNetwork";
 import { ExpertVerificationPortal } from "@/components/experts/ExpertVerificationPortal";
 import { FleetManagement } from "@/components/logistics/FleetManagement";
 import { SettingsView } from "@/components/settings/SettingsView";
+import { MinistryIntelligence } from "@/components/gov/MinistryIntelligence";
 
 export default function KisanMitraApp() {
   const router = useRouter();
@@ -89,8 +91,11 @@ export default function KisanMitraApp() {
         return <MandiLink />;
       case "network": return <KisanNetwork />;
       case "expert-portal": 
-        if (role !== "Expert") return <DashboardHome onNavigate={setActiveSection} />;
+        if (role !== "Expert" && role !== "Authority") return <DashboardHome onNavigate={setActiveSection} />;
         return <ExpertVerificationPortal />;
+      case "surveillance":
+        if (role !== "Expert" && role !== "Authority") return <DashboardHome onNavigate={setActiveSection} />;
+        return <MinistryIntelligence />;
       case "fleet": 
         if (role !== "Logistics") return <DashboardHome onNavigate={setActiveSection} />;
         return <FleetManagement />;
@@ -100,13 +105,14 @@ export default function KisanMitraApp() {
   };
 
   const menuItems = [
-    { id: "dashboard", label: t("dashboard"), icon: LayoutDashboard, roles: ["Farmer", "Expert", "Logistics"] },
+    { id: "dashboard", label: t("dashboard"), icon: LayoutDashboard, roles: ["Farmer", "Expert", "Logistics", "Authority"] },
     { id: "diagnostics", label: t("diagnostics"), icon: Leaf, roles: ["Farmer", "Expert"] },
     { id: "market", label: t("market"), icon: TrendingUp, roles: ["Farmer", "Expert"] },
-    { id: "expert-portal", label: t("verification_portal"), icon: FlaskConical, roles: ["Expert"] },
+    { id: "expert-portal", label: t("verification_portal"), icon: FlaskConical, roles: ["Expert", "Authority"] },
+    { id: "surveillance", label: "Surveillance", icon: Globe, roles: ["Expert", "Authority"] },
     { id: "fleet", label: t("fleet_hub"), icon: Truck, roles: ["Logistics"] },
     { id: "logistics", label: t("mandi_link"), icon: Package, roles: ["Farmer"] },
-    { id: "network", label: t("network"), icon: Users, roles: ["Farmer", "Expert", "Logistics"] },
+    { id: "network", label: t("network"), icon: Users, roles: ["Farmer", "Expert", "Logistics", "Authority"] },
   ];
 
   const unreadCount = notifications.filter(n => !n.isRead).length;

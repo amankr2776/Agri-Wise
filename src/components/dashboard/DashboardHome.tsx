@@ -23,7 +23,10 @@ import {
   FlaskConical,
   ClipboardCheck,
   RefreshCw,
-  Tool
+  Tool,
+  ShieldCheck,
+  Microscope,
+  Radio
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -39,7 +42,7 @@ import {
 import { useAppState } from "@/lib/app-state";
 import { useTranslation } from "@/hooks/use-translation";
 import { cn } from "@/lib/utils";
-import { motion } from "framer-motion";
+import { motion, useSpring, useTransform, animate } from "framer-motion";
 
 interface DashboardHomeProps {
   onNavigate: (section: string) => void;
@@ -59,6 +62,22 @@ interface AlertDetail {
   icon: any;
   areaAffected: string;
   predictedPath: string;
+}
+
+function Counter({ value }: { value: number }) {
+  const [count, setCount] = useState(0);
+
+  useEffect(() => {
+    const controls = animate(0, value, {
+      duration: 1.5,
+      onUpdate(value) {
+        setCount(Math.floor(value));
+      },
+    });
+    return () => controls.stop();
+  }, [value]);
+
+  return <span>{count}</span>;
 }
 
 export function DashboardHome({ onNavigate }: DashboardHomeProps) {
@@ -92,24 +111,24 @@ export function DashboardHome({ onNavigate }: DashboardHomeProps) {
   const stats = useMemo(() => {
     if (role === "Farmer") {
       return [
-        { id: "diagnostics", label: t("active_alerts"), value: "3", icon: AlertTriangle, color: "text-destructive", bg: "bg-destructive/10" },
-        { id: "market", label: t("best_price"), value: "₹2,150/q", sub: "Wheat (Nashik)", icon: TrendingUp, color: "text-primary", bg: "bg-primary/10" },
-        { id: "logistics", label: "My Shipments", value: "2", icon: Truck, color: "text-blue-500", bg: "bg-blue-500/10" },
-        { id: "network", label: "Network Posts", value: "12", icon: Users, color: "text-amber-500", bg: "bg-amber-500/10" },
+        { id: "diagnostics", label: t("active_alerts"), value: 3, icon: AlertTriangle, color: "text-destructive", bg: "bg-destructive/10" },
+        { id: "market", label: t("best_price"), value: "₹2,150", sub: "Wheat (Nashik)", icon: TrendingUp, color: "text-primary", bg: "bg-primary/10" },
+        { id: "logistics", label: "My Shipments", value: 2, icon: Truck, color: "text-blue-500", bg: "bg-blue-500/10" },
+        { id: "network", label: "Network Posts", value: 12, icon: Users, color: "text-amber-500", bg: "bg-amber-500/10" },
       ];
-    } else if (role === "Expert") {
+    } else if (role === "Expert" || role === "Authority") {
       return [
-        { id: "expert-portal", label: "Pending Verifications", value: "15", icon: FlaskConical, color: "text-blue-500", bg: "bg-blue-500/10" },
-        { id: "diagnostics", label: "Active Outbreaks", value: "8", icon: Bug, color: "text-destructive", bg: "bg-destructive/10" },
-        { id: "network", label: "Expert Insights", value: "45", icon: ClipboardCheck, color: "text-primary", bg: "bg-primary/10" },
-        { id: "network", label: "Farmer Queries", value: "24", icon: MessageCircle, color: "text-amber-500", bg: "bg-amber-500/10" },
+        { id: "expert-portal", label: "Pending Verifications", value: 15, icon: FlaskConical, color: "text-blue-500", bg: "bg-blue-500/10" },
+        { id: "surveillance", label: "Active Outbreaks", value: 8, icon: Bug, color: "text-cyan-500", bg: "bg-cyan-500/10" },
+        { id: "network", label: "Expert Insights", value: 45, icon: ClipboardCheck, color: "text-teal-500", bg: "bg-teal-500/10" },
+        { id: "network", label: "Farmer Queries", value: 24, icon: MessageCircle, color: "text-sky-500", bg: "bg-sky-500/10" },
       ];
     } else {
       return [
-        { id: "fleet", tab: "fleet", label: "Total Fleet", value: "45", icon: Truck, color: "text-primary", bg: "bg-primary/10" },
-        { id: "fleet", tab: "bookings", label: "Active Loads", value: "28", icon: Package, color: "text-blue-500", bg: "bg-blue-500/10" },
-        { id: "fleet", tab: "fleet", label: "Available Units", value: "12", icon: Activity, color: "text-green-500", bg: "bg-green-500/10" },
-        { id: "fleet", tab: "maintenance", label: "Maintenance", value: "5", icon: RefreshCw, color: "text-amber-500", bg: "bg-amber-500/10" },
+        { id: "fleet", tab: "fleet", label: "Total Fleet", value: 45, icon: Truck, color: "text-primary", bg: "bg-primary/10" },
+        { id: "fleet", tab: "bookings", label: "Active Loads", value: 28, icon: Package, color: "text-blue-500", bg: "bg-blue-500/10" },
+        { id: "fleet", tab: "fleet", label: "Available Units", value: 12, icon: Activity, color: "text-green-500", bg: "bg-green-500/10" },
+        { id: "fleet", tab: "maintenance", label: "Maintenance", value: 5, icon: RefreshCw, color: "text-amber-500", bg: "bg-amber-500/10" },
       ];
     }
   }, [role, t]);
@@ -122,12 +141,12 @@ export function DashboardHome({ onNavigate }: DashboardHomeProps) {
         { id: "logistics", label: "Book Transport", icon: Truck, desc: "Mandi-Link Pro", color: "text-amber-500", bg: "bg-amber-500/10" },
         { id: "network", label: "Network Hub", icon: Users, desc: "Collaborate", color: "text-purple-500", bg: "bg-purple-500/10" },
       ];
-    } else if (role === "Expert") {
+    } else if (role === "Expert" || role === "Authority") {
       return [
-        { id: "expert-portal", label: "Verify Protocols", icon: FlaskConical, desc: "Certify Solutions", color: "text-blue-500", bg: "bg-blue-500/10" },
-        { id: "diagnostics", label: "Pest Surveillance", icon: Bug, desc: "Monitor Outbreaks", color: "text-destructive", bg: "bg-destructive/10" },
-        { id: "network", label: "Publish Advisory", icon: ShieldAlert, desc: "Grid Broadcast", color: "text-primary", bg: "bg-primary/10" },
-        { id: "settings", label: "Expert Profile", icon: Users, desc: "Identity Settings", color: "text-slate-500", bg: "bg-slate-500/10" },
+        { id: "expert-portal", label: "Verify Protocols", icon: FlaskConical, desc: "Scientific Validation", color: "text-blue-500", bg: "bg-blue-500/10" },
+        { id: "surveillance", label: "Outbreak Monitor", icon: Radio, desc: "Geospatial Intelligence", color: "text-cyan-500", bg: "bg-cyan-500/10" },
+        { id: "network", label: "Publish Advisory", icon: ShieldCheck, desc: "Grid Broadcast", color: "text-teal-500", bg: "bg-teal-500/10" },
+        { id: "settings", label: "Expert Profile", icon: Microscope, desc: "Professional Identity", color: "text-slate-500", bg: "bg-slate-500/10" },
       ];
     } else {
       return [
@@ -162,10 +181,13 @@ export function DashboardHome({ onNavigate }: DashboardHomeProps) {
       <motion.div 
         initial={{ opacity: 0, y: 20 }} 
         animate={{ opacity: 1, y: 0 }}
-        className="relative overflow-hidden rounded-[3rem] bg-primary p-12 md:p-16 text-white shadow-2xl"
+        className={cn(
+          "relative overflow-hidden rounded-[3rem] p-12 md:p-16 text-white shadow-2xl transition-all duration-700",
+          (role === 'Expert' || role === 'Authority') ? "bg-slate-900" : "bg-primary"
+        )}
       >
         <div className="absolute top-0 right-0 p-10 opacity-10">
-          <Leaf className="h-64 w-64 rotate-12" />
+          {(role === 'Expert' || role === 'Authority') ? <Microscope className="h-64 w-64 rotate-12" /> : <Leaf className="h-64 w-64 rotate-12" />}
         </div>
         <div className="relative z-10 space-y-6">
           <div className="flex flex-wrap gap-3">
@@ -176,10 +198,10 @@ export function DashboardHome({ onNavigate }: DashboardHomeProps) {
           </div>
           <div className="space-y-2">
             <h1 className="text-5xl md:text-7xl font-black tracking-tighter">
-              {t("welcome")}, {name} Ji!
+              {role === 'Expert' ? 'Scientist' : role === 'Authority' ? 'Authority' : t("welcome")}, {name} Ji!
             </h1>
-            <p className="text-xl md:text-2xl text-primary-foreground/90 font-medium">
-              Your professional agricultural grid in {city} is active.
+            <p className="text-xl md:text-2xl text-white/80 font-medium italic">
+              {role === 'Expert' ? 'Surveillance grid active. Monitoring regional pathogens.' : `Your professional agricultural grid in ${city} is active.`}
             </p>
           </div>
         </div>
@@ -200,7 +222,9 @@ export function DashboardHome({ onNavigate }: DashboardHomeProps) {
               <CardContent className="p-8 flex items-center justify-between">
                 <div>
                   <p className="text-[10px] font-black uppercase text-muted-foreground tracking-widest mb-1">{stat.label}</p>
-                  <p className="text-3xl font-black">{stat.value}</p>
+                  <p className="text-3xl font-black">
+                    {typeof stat.value === 'number' ? <Counter value={stat.value} /> : stat.value}
+                  </p>
                   {stat.sub && <p className="text-[10px] font-bold text-primary mt-1">{stat.sub}</p>}
                 </div>
                 <div className={cn("two-tone-icon", stat.bg, stat.color)}>
@@ -215,7 +239,8 @@ export function DashboardHome({ onNavigate }: DashboardHomeProps) {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
         <div className="lg:col-span-8 space-y-8">
           <h2 className="text-2xl font-black flex items-center gap-3">
-            <Zap className="h-7 w-7 text-primary" /> Professional Tools
+            <Zap className={cn("h-7 w-7", (role === 'Expert' || role === 'Authority') ? "text-blue-500" : "text-primary")} /> 
+            Professional Command Tools
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             {quickActions.map((action, i) => (
@@ -225,7 +250,10 @@ export function DashboardHome({ onNavigate }: DashboardHomeProps) {
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: i * 0.1 }}
                 onClick={() => handleDeepNavigate(action.id, (action as any).tab)} 
-                className="flex items-center gap-8 p-10 glass-card rounded-[3rem] hover:bg-primary group transition-all text-left"
+                className={cn(
+                  "flex items-center gap-8 p-10 glass-card rounded-[3rem] group transition-all text-left",
+                  (role === 'Expert' || role === 'Authority') ? "hover:bg-slate-900" : "hover:bg-primary"
+                )}
               >
                 <div className={cn("two-tone-icon shrink-0 group-hover:bg-white/20", action.bg)}>
                   <action.icon className={cn("h-8 w-8 group-hover:text-white group-hover:rotate-12 transition-all", action.color)} />
@@ -244,7 +272,7 @@ export function DashboardHome({ onNavigate }: DashboardHomeProps) {
           <h2 className="text-2xl font-black flex items-center gap-3">
             <ShieldAlert className="h-7 w-7 text-destructive" /> Intelligence Alerts
           </h2>
-          <div className="space-y-4">
+          <div className="space-y-4 backdrop-blur-lg rounded-[3rem]">
             {alerts.map((alert) => (
               <Card 
                 key={alert.id} 
