@@ -30,7 +30,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
-import { query, collection, doc } from "firebase/firestore";
+import { query, collection } from "firebase/firestore";
 import { addDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
@@ -58,9 +58,13 @@ export function CropDiagnostics() {
   const filteredCrops = useMemo(() => {
     if (!crops) return [];
     return crops.filter(c => {
-      const matchesSearch = c.name.toLowerCase().includes(search.toLowerCase()) || 
-                          (c.diseaseName || "").toLowerCase().includes(search.toLowerCase());
-      const matchesCategory = selectedCategory === "All" || c.category === selectedCategory;
+      const name = c.name || "";
+      const disease = c.diseaseName || "";
+      const category = c.category || "";
+      
+      const matchesSearch = name.toLowerCase().includes(search.toLowerCase()) || 
+                          disease.toLowerCase().includes(search.toLowerCase());
+      const matchesCategory = selectedCategory === "All" || category === selectedCategory;
       return matchesSearch && matchesCategory;
     });
   }, [crops, search, selectedCategory]);
@@ -82,18 +86,21 @@ export function CropDiagnostics() {
       category: "User Submitted",
       isCertified: false,
       severity: "Warning",
-      imageUrl: `https://picsum.photos/seed/${Date.now()}/800/400`, // Simulated upload
+      imageUrl: `https://picsum.photos/seed/${Date.now()}/800/400`,
       createdAt: new Date().toISOString()
     };
 
     addDocumentNonBlocking(collection(firestore, "crops"), reportData);
     setIsReportOpen(false);
     setIsSubmittingReport(false);
-    toast({ title: "Issue Reported", description: "Your manual report has been sent to the expert verification queue." });
+    toast({ 
+      title: "Issue Reported", 
+      description: "Your manual report has been sent to the expert verification queue." 
+    });
   };
 
   const speakDetail = (text: string) => {
-    if ("speechSynthesis" in window) {
+    if (typeof window !== "undefined" && "speechSynthesis" in window) {
       window.speechSynthesis.cancel();
       const utterance = new SpeechSynthesisUtterance(text);
       window.speechSynthesis.speak(utterance);
@@ -119,16 +126,15 @@ export function CropDiagnostics() {
             exit={{ opacity: 0 }}
             className="space-y-10"
           >
-            {/* Header Actions */}
             <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-              <div className="flex gap-2 p-1 bg-muted rounded-full w-fit">
+              <div className="flex gap-2 p-1 bg-muted rounded-full w-fit overflow-x-auto scrollbar-hide max-w-full">
                 {CATEGORIES.map((cat) => (
                   <Button
                     key={cat}
                     variant={selectedCategory === cat ? "default" : "ghost"}
                     onClick={() => setSelectedCategory(cat)}
                     className={cn(
-                      "rounded-full px-6 h-10 font-black text-[10px] uppercase tracking-widest",
+                      "rounded-full px-6 h-10 font-black text-[10px] uppercase tracking-widest whitespace-nowrap",
                       selectedCategory === cat ? "shadow-lg shadow-primary/20" : "text-muted-foreground"
                     )}
                   >
@@ -147,9 +153,7 @@ export function CropDiagnostics() {
               </div>
             </div>
 
-            {/* Gallery Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-              {/* Report New Issue Card */}
               <Dialog open={isReportOpen} onOpenChange={setIsReportOpen}>
                 <DialogTrigger asChild>
                   <motion.button
@@ -159,7 +163,7 @@ export function CropDiagnostics() {
                     <div className="h-16 w-16 bg-white rounded-2xl flex items-center justify-center text-primary shadow-xl shadow-primary/10 group-hover:scale-110 transition-transform">
                       <PlusCircle className="h-10 w-10" />
                     </div>
-                    <div className="text-center">
+                    <div className="text-center px-4">
                       <p className="font-black text-lg text-primary">Report New Issue</p>
                       <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mt-1">Manual Disease Entry</p>
                     </div>
@@ -236,7 +240,6 @@ export function CropDiagnostics() {
             exit={{ opacity: 0, y: 20 }}
             className="min-h-screen pb-20"
           >
-            {/* Full Screen Intelligence Page */}
             <div className="max-w-6xl mx-auto space-y-10">
               <Button 
                 variant="ghost" 
@@ -247,11 +250,10 @@ export function CropDiagnostics() {
               </Button>
 
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
-                {/* Left Column: Visual & Identification */}
                 <div className="lg:col-span-5 space-y-8">
                   <div className="relative aspect-[4/5] rounded-[3rem] overflow-hidden shadow-2xl">
                     <img 
-                      src={selectedCrop?.imageUrl} 
+                      src={selectedCrop?.imageUrl || `https://picsum.photos/seed/${selectedCrop?.id}/800/1000`} 
                       className="w-full h-full object-cover"
                       alt={selectedCrop?.name}
                     />
@@ -269,7 +271,12 @@ export function CropDiagnostics() {
                       <h3 className="text-[10px] font-black uppercase tracking-widest text-primary flex items-center gap-2">
                         <ShieldCheck className="h-4 w-4" /> Agronomy Summary
                       </h3>
-                      <Button variant="ghost" size="icon" className="h-10 w-10 rounded-full" onClick={() => speakDetail(`${selectedCrop?.name} identification. Common season is ${selectedCrop?.sowingSeason}. Thrives in ${selectedCrop?.soilType} soil.`)}>
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-10 w-10 rounded-full" 
+                        onClick={() => speakDetail(`${selectedCrop?.name} identification. Common season is ${selectedCrop?.sowingSeason || "Kharif"}. Thrives in ${selectedCrop?.soilType || "Alluvial"} soil.`)}
+                      >
                         <Volume2 className="h-5 w-5" />
                       </Button>
                     </div>
@@ -286,9 +293,7 @@ export function CropDiagnostics() {
                   </Card>
                 </div>
 
-                {/* Right Column: Intelligence Metrics */}
                 <div className="lg:col-span-7 space-y-8">
-                  {/* Pathogen Intel Section */}
                   <Card className="border-none shadow-xl rounded-[2.5rem] p-10 bg-white space-y-8 overflow-hidden relative">
                     <div className="absolute top-0 right-0 p-10 opacity-5 pointer-events-none">
                       <Bug className="h-40 w-40" />
@@ -299,7 +304,7 @@ export function CropDiagnostics() {
                         <p className="text-muted-foreground font-medium italic">Active diagnostic data for {selectedCrop?.name}</p>
                       </div>
                       <Badge variant={selectedCrop?.severity === 'Critical' ? 'destructive' : 'default'} className="rounded-full px-4 py-1 font-black uppercase text-[10px]">
-                        {selectedCrop?.severity} Risk Level
+                        {selectedCrop?.severity || "Standard"} Risk Level
                       </Badge>
                     </div>
 
@@ -309,7 +314,7 @@ export function CropDiagnostics() {
                     </div>
 
                     <Tabs defaultValue="diagnosis" className="w-full">
-                      <TabsList className="bg-muted rounded-full p-1 h-12 mb-6">
+                      <TabsList className="bg-muted rounded-full p-1 h-12 mb-6 w-full sm:w-fit">
                         <TabsTrigger value="diagnosis" className="rounded-full px-8 font-black text-[10px] uppercase h-10 data-[state=active]:bg-white">Diagnosis</TabsTrigger>
                         <TabsTrigger value="remedy" className="rounded-full px-8 font-black text-[10px] uppercase h-10 data-[state=active]:bg-white">Professional Cure</TabsTrigger>
                         <TabsTrigger value="desi" className="rounded-full px-8 font-black text-[10px] uppercase h-10 data-[state=active]:bg-white">Heritage Wisdom</TabsTrigger>
@@ -326,7 +331,9 @@ export function CropDiagnostics() {
                               <span className="text-[10px] font-black uppercase text-muted-foreground">Certified Protocol</span>
                               <span className="text-xs font-bold text-primary">Scientist Verified</span>
                             </div>
-                            <p className="text-xl font-black text-slate-800">{selectedCrop?.chemicalCure} @ {selectedCrop?.chemicalDosage}</p>
+                            <p className="text-xl font-black text-slate-800">
+                              {selectedCrop?.chemicalCure || "Awaiting Update"} @ {selectedCrop?.chemicalDosage || "N/A"}
+                            </p>
                           </div>
                         </TabsContent>
                         <TabsContent value="desi">
@@ -338,9 +345,7 @@ export function CropDiagnostics() {
                     </Tabs>
                   </Card>
 
-                  {/* Operational Metrics Grid */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    {/* Irrigation Gauge */}
                     <Card className="border-none shadow-xl rounded-[3rem] p-8 bg-blue-50/50 border-l-8 border-blue-500">
                       <div className="flex items-center gap-3 mb-6">
                         <Droplets className="h-6 w-6 text-blue-600" />
@@ -348,7 +353,7 @@ export function CropDiagnostics() {
                       </div>
                       <div className="space-y-4">
                         <div className="flex justify-between items-end">
-                          <p className="text-3xl font-black text-blue-900">{selectedCrop?.irrigationInterval} Days</p>
+                          <p className="text-3xl font-black text-blue-900">{selectedCrop?.irrigationInterval || "7"} Days</p>
                           <p className="text-[10px] font-bold text-blue-600 uppercase">Standard Interval</p>
                         </div>
                         <Progress value={75} className="h-2.5 bg-blue-200" />
@@ -356,7 +361,6 @@ export function CropDiagnostics() {
                       </div>
                     </Card>
 
-                    {/* Market Value Tracker */}
                     <Card className="border-none shadow-xl rounded-[3rem] p-8 bg-primary/5 border-l-8 border-primary">
                       <div className="flex items-center gap-3 mb-6">
                         <Tag className="h-6 w-6 text-primary" />
@@ -364,7 +368,7 @@ export function CropDiagnostics() {
                       </div>
                       <div className="space-y-4">
                         <div className="flex justify-between items-end">
-                          <p className="text-3xl font-black text-slate-900">₹{selectedCrop?.estimatedPrice}</p>
+                          <p className="text-3xl font-black text-slate-900">₹{selectedCrop?.estimatedPrice || "2,150"}</p>
                           <p className="text-[10px] font-bold text-muted-foreground uppercase">Per Quintal</p>
                         </div>
                         <div className="flex items-center gap-2 px-4 py-2 bg-white rounded-xl w-fit shadow-sm">

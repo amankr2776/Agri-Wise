@@ -57,7 +57,6 @@ export default function KisanMitraApp() {
   }, [isAuthenticated, router]);
 
   useEffect(() => {
-    // Set default section based on role
     if (role === "Logistics") setActiveSection("fleet");
     else if (role === "Authority") setActiveSection("gov-intel");
     else if (role === "Expert") setActiveSection("expert-portal");
