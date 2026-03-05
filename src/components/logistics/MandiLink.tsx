@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import { 
   Truck, 
   MapPin, 
@@ -19,7 +19,11 @@ import {
   Zap,
   MessageCircle,
   ArrowRight,
-  AlertTriangle
+  AlertTriangle,
+  Send,
+  Volume2,
+  Mic,
+  Bot
 } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -28,6 +32,22 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle, 
+  DialogDescription, 
+  DialogFooter 
+} from "@/components/ui/dialog";
+import { 
+  Sheet, 
+  SheetContent, 
+  SheetHeader, 
+  SheetTitle, 
+  SheetDescription 
+} from "@/components/ui/sheet";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { useTranslation } from "@/hooks/use-translation";
 import { useFirestore, useCollection, useUser, useMemoFirebase } from "@/firebase";
 import { collection, query, where, orderBy, doc } from "firebase/firestore";
@@ -36,6 +56,8 @@ import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { INDIA_STATES } from "@/lib/india-data";
+import { getLogisticsSupport } from "@/ai/flows/logistics-support-flow";
+import { useAppState } from "@/lib/app-state";
 
 const STEPS = ["Pending", "Confirmed", "Picked Up", "In Transit", "Reached Destination"];
 
@@ -44,12 +66,22 @@ export function MandiLink() {
   const firestore = useFirestore();
   const { user } = useUser();
   const { toast } = useToast();
+  const { language, langCode, name } = useAppState();
   
   const [filterState, setFilterState] = useState<string>("");
   const [filterCity, setFilterCity] = useState<string>("");
   const [selectedCrop, setSelectedCrop] = useState("Wheat");
   const [distance, setDistance] = useState("");
   const [activeTab, setActiveTab] = useState("browse");
+
+  // Support & Issue State
+  const [reportModalOpen, setReportModalOpen] = useState(false);
+  const [selectedBooking, setSelectedBooking] = useState<any>(null);
+  const [supportOpen, setSupportOpen] = useState(false);
+  const [messages, setMessages] = useState<any[]>([]);
+  const [chatLoading, setChatLoading] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const vehiclesQuery = useMemoFirebase(() => {
     if (!firestore) return null;
@@ -105,12 +137,83 @@ export function MandiLink() {
     setActiveTab("bookings");
   };
 
-  const handleReportIssue = (bookingId: string) => {
-    toast({ 
-      variant: "destructive",
-      title: "Issue Reported", 
-      description: "Admin node and regional authority have been alerted of the transit delay." 
-    });
+  const handleCreateTicket = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!firestore || !user || !selectedBooking) return;
+    
+    const formData = new FormData(e.currentTarget);
+    const ticketData = {
+      shipmentId: selectedBooking.id,
+      farmerId: user.uid,
+      farmerName: name,
+      issueType: formData.get("issueType"),
+      description: formData.get("description"),
+      status: "Open",
+      isEscalated: false,
+      createdAt: new Date().toISOString()
+    };
+
+    addDocumentNonBlocking(collection(firestore, "logisticsTickets"), ticketData);
+    setReportModalOpen(false);
+    toast({ title: "Incident Logged", description: "Your report has been sent to the National Grid monitor." });
+  };
+
+  const startSupportChat = (booking: any) => {
+    setSelectedBooking(booking);
+    setMessages([{ 
+      role: 'bot', 
+      text: `Namaste ${name}! I am your logistics guide. I see your ${booking.cropType} shipment status is "${booking.status}". How can I help you today?` 
+    }]);
+    setSupportOpen(true);
+  };
+
+  const handleSendMessage = async (queryText: string) => {
+    if (!queryText.trim() || !selectedBooking) return;
+    
+    setMessages(prev => [...prev, { role: 'user', text: queryText }]);
+    setChatLoading(true);
+
+    try {
+      const res = await getLogisticsSupport({
+        query: queryText,
+        shipmentStatus: selectedBooking.status,
+        shipmentDetails: `${selectedBooking.cropType} load to ${selectedBooking.destination}`,
+        language: language
+      });
+
+      setMessages(prev => [...prev, { role: 'bot', text: res.text }]);
+      
+      // Auto-speak using Bhashini
+      speakResponse(res.text);
+
+      if (res.actionRecommended === 'Escalate') {
+        toast({ title: "Expert Alerted", description: "Your concern has been escalated to a human manager." });
+      }
+    } catch (err) {
+      toast({ variant: "destructive", title: "Chat Error", description: "Support link unstable. Please retry." });
+    } finally {
+      setChatLoading(false);
+    }
+  };
+
+  const speakResponse = async (text: string) => {
+    setIsSpeaking(true);
+    try {
+      const response = await fetch('/api/bhashini', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text, langCode })
+      });
+      const data = await response.json();
+      if (data.audioContent) {
+        if (!audioRef.current) audioRef.current = new Audio();
+        audioRef.current.src = `data:audio/wav;base64,${data.audioContent}`;
+        audioRef.current.onended = () => setIsSpeaking(false);
+        audioRef.current.play();
+      }
+    } catch (e) {
+      setIsSpeaking(false);
+    }
   };
 
   const getProgress = (status: string) => {
@@ -286,10 +389,12 @@ export function MandiLink() {
                   </div>
                   <div className="pt-8 border-t flex justify-between items-center">
                     <div className="flex gap-4">
-                      <Button variant="outline" className="rounded-xl h-12 px-6 font-black gap-2 border-destructive/20 text-destructive hover:bg-destructive/5" onClick={() => handleReportIssue(booking.id)}>
+                      <Button variant="outline" className="rounded-xl h-12 px-6 font-black gap-2 border-destructive/20 text-destructive hover:bg-destructive/5" onClick={() => { setSelectedBooking(booking); setReportModalOpen(true); }}>
                         <AlertTriangle className="h-4 w-4" /> Report Issue
                       </Button>
-                      <Button variant="outline" className="rounded-xl h-12 px-6 font-black gap-2"><MessageCircle className="h-4 w-4" /> Chat Support</Button>
+                      <Button variant="outline" className="rounded-xl h-12 px-6 font-black gap-2" onClick={() => startSupportChat(booking)}>
+                        <MessageCircle className="h-4 w-4" /> Chat Support
+                      </Button>
                     </div>
                   </div>
                 </div>
@@ -298,6 +403,111 @@ export function MandiLink() {
           </div>
         )}
       </TabsContent>
+
+      {/* Report Issue Modal */}
+      <Dialog open={reportModalOpen} onOpenChange={setReportModalOpen}>
+        <DialogContent className="rounded-[2.5rem] p-10 max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="text-3xl font-black">Report Logistics Issue</DialogTitle>
+            <DialogDescription className="italic font-medium">Log a professional dispute for shipment tracking.</DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleCreateTicket} className="space-y-6 pt-6">
+            <div className="space-y-2">
+              <label className="text-[10px] font-black uppercase text-muted-foreground">Incident Type</label>
+              <Select name="issueType" defaultValue="Delay">
+                <SelectTrigger className="rounded-xl h-12 bg-muted/30 border-none font-bold">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Delay">Inordinate Delay</SelectItem>
+                  <SelectItem value="Damaged Goods">Damaged Payload</SelectItem>
+                  <SelectItem value="Pricing Dispute">Fare Discrepancy</SelectItem>
+                  <SelectItem value="Other">Other Issues</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <label className="text-[10px] font-black uppercase text-muted-foreground">Incident Description</label>
+              <Input name="description" placeholder="Describe the problem in detail..." required className="rounded-xl h-12 bg-muted/30 border-none font-medium" />
+            </div>
+            <DialogFooter>
+              <Button type="submit" className="w-full h-14 rounded-2xl font-black text-lg">Submit Incident Report</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Support Chat Sheet */}
+      <Sheet open={supportOpen} onOpenChange={setSupportOpen}>
+        <SheetContent side="right" className="w-full sm:max-w-md p-0 flex flex-col rounded-l-[2rem] border-none shadow-2xl">
+          <SheetHeader className="p-8 bg-slate-900 text-white">
+            <div className="flex items-center gap-3">
+              <Bot className="h-8 w-8 text-primary" />
+              <SheetTitle className="text-2xl font-black text-white">Logistics Support</SheetTitle>
+            </div>
+            <SheetDescription className="text-slate-400 font-medium italic">Gemini 2.5 Flash Grid Assistant</SheetDescription>
+          </SheetHeader>
+          
+          <ScrollArea className="flex-1 p-8 bg-muted/5">
+            <div className="space-y-6">
+              {messages.map((m, i) => (
+                <div key={i} className={cn("flex", m.role === 'user' ? "justify-end" : "justify-start")}>
+                  <div className={cn(
+                    "max-w-[85%] p-4 rounded-2xl shadow-sm space-y-2",
+                    m.role === 'user' ? "bg-primary text-white" : "bg-white border"
+                  )}>
+                    <p className="text-sm font-medium leading-relaxed">{m.text}</p>
+                  </div>
+                </div>
+              ))}
+              {chatLoading && (
+                <div className="flex justify-start">
+                  <div className="bg-white border p-4 rounded-2xl flex items-center gap-2">
+                    <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                    <span className="text-xs text-muted-foreground font-bold">Consulting National Grid...</span>
+                  </div>
+                </div>
+              )}
+            </div>
+          </ScrollArea>
+
+          <div className="p-8 bg-white border-t space-y-4">
+            <div className="flex gap-2">
+              <Input 
+                id="supportInput"
+                placeholder={`Ask in ${language}...`} 
+                className="rounded-xl h-12 bg-muted/30 border-none font-medium"
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter') {
+                    const input = e.currentTarget.value;
+                    handleSendMessage(input);
+                    e.currentTarget.value = "";
+                  }
+                }}
+              />
+              <Button size="icon" className="h-12 w-12 rounded-xl shrink-0" onClick={() => {
+                const el = document.getElementById('supportInput') as HTMLInputElement;
+                handleSendMessage(el.value);
+                el.value = "";
+              }}>
+                <Send className="h-5 w-5" />
+              </Button>
+            </div>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" className="rounded-full h-8 px-4 font-black text-[10px] gap-2">
+                  <Mic className="h-3 w-3" /> Voice Record
+                </Button>
+                {isSpeaking && <div className="flex gap-0.5 items-center">
+                  {[1,2,3].map(i => <motion.div key={i} animate={{height:[4,12,4]}} transition={{repeat:Infinity, duration:0.5, delay:i*0.1}} className="w-0.5 bg-primary rounded-full" />)}
+                </div>}
+              </div>
+              <Badge className="bg-primary/10 text-primary border-none text-[8px] uppercase">{language} Neural Engine</Badge>
+            </div>
+          </div>
+        </SheetContent>
+      </Sheet>
+      <audio ref={audioRef} className="hidden" />
     </Tabs>
   );
 }
