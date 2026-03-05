@@ -22,6 +22,14 @@ const LANG_MAP: Record<string, string> = {
   "Hindi": "hi-IN",
   "Punjabi": "pa-IN",
   "Bengali": "bn-IN",
+  "Marathi": "mr-IN",
+  "Telugu": "te-IN",
+  "Tamil": "ta-IN",
+  "Gujarati": "gu-IN",
+  "Kannada": "kn-IN",
+  "Malayalam": "ml-IN",
+  "Oriya": "or-IN",
+  "Bhojpuri": "hi-IN",
 };
 
 export function VoiceAssistant() {

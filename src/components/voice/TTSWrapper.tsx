@@ -1,3 +1,4 @@
+
 'use client';
 
 import React from "react";
@@ -15,6 +16,13 @@ const LANG_MAP: Record<string, string> = {
   "Hindi": "hi-IN",
   "Punjabi": "pa-IN",
   "Bengali": "bn-IN",
+  "Marathi": "mr-IN",
+  "Telugu": "te-IN",
+  "Tamil": "ta-IN",
+  "Gujarati": "gu-IN",
+  "Kannada": "kn-IN",
+  "Malayalam": "ml-IN",
+  "Oriya": "or-IN",
 };
 
 export function TTSWrapper({ text, children }: TTSWrapperProps) {
