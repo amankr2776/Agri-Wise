@@ -40,7 +40,6 @@ import { useTranslation } from "@/hooks/use-translation";
 import { useAppState } from "@/lib/app-state";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { DiagnosticTool } from "./DiagnosticTool";
 
 const CATEGORIES = ["Plant", "Seed", "Vegetable", "Fruit", "Grain"];
 
@@ -90,7 +89,6 @@ export function CropDiagnostics() {
   }, [allCrops, selectedCategory]);
 
   const speakCropDetails = async (crop: any) => {
-    // Neural synthesis text: priorities expert notes if certified, ensuring vocal edit-sync
     const text = `${crop.name}. ${crop.diseaseName}. ${crop.expertNotes ? crop.expertNotes : crop.chemicalCure + '. ' + crop.desiNuskha}`;
     
     setIsSpeaking(true);
@@ -110,7 +108,6 @@ export function CropDiagnostics() {
         audioRef.current.onended = () => setIsSpeaking(false);
         audioRef.current.play();
       } else {
-        // Fallback to browser TTS forcing regional locale
         const utterance = new SpeechSynthesisUtterance(text);
         const speechLang = langCode === 'hi' ? 'hi-IN' : langCode === 'pa' ? 'pa-IN' : langCode === 'bn' ? 'bn-IN' : 'en-IN';
         utterance.lang = speechLang;
@@ -268,14 +265,7 @@ export function CropDiagnostics() {
 
   return (
     <div className="space-y-12">
-      <div className="space-y-6">
-        <h2 className="text-4xl font-black tracking-tighter flex items-center gap-3">
-          <Zap className="h-10 w-10 text-primary" /> {t("ai_scan")}
-        </h2>
-        <DiagnosticTool />
-      </div>
-
-      <div className="space-y-8 pt-10 border-t">
+      <div className="space-y-8">
         <div className="flex flex-col md:flex-row justify-between items-center gap-6">
           <div className="flex flex-wrap gap-2 p-1.5 bg-muted/50 rounded-2xl">
             {CATEGORIES.map(cat => (
