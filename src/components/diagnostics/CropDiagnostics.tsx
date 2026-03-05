@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useMemo } from "react";
@@ -8,7 +9,8 @@ import {
   FlaskConical,
   Library,
   ShieldCheck,
-  Search
+  Search,
+  Bot
 } from "lucide-react";
 import Image from "next/image";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -93,7 +95,7 @@ export function CropDiagnostics() {
       <Tabs defaultValue="diagnose" className="w-full">
         <TabsList className="bg-muted/50 rounded-full p-1.5 h-14 mb-10 w-fit inline-flex">
           <TabsTrigger value="diagnose" className="rounded-full px-10 h-11 data-[state=active]:bg-primary data-[state=active]:text-white font-black text-xs uppercase tracking-widest gap-2">
-            <Search className="h-4 w-4" /> AI Diagnostic Lab
+            <Bot className="h-4 w-4" /> AI Diagnostic Lab
           </TabsTrigger>
           <TabsTrigger value="library" className="rounded-full px-10 h-11 data-[state=active]:bg-primary data-[state=active]:text-white font-black text-xs uppercase tracking-widest gap-2">
             <Library className="h-4 w-4" /> Solution Library
