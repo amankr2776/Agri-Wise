@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { 
   ShieldCheck, 
   FlaskConical, 
@@ -14,7 +14,9 @@ import {
   User,
   AlertTriangle,
   BrainCircuit,
-  Info
+  Info,
+  Save,
+  Edit3
 } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -29,6 +31,8 @@ import {
   DialogFooter,
   DialogDescription
 } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import { useFirestore, useCollection, useUser, useMemoFirebase } from "@/firebase";
 import { collection, query, where, doc } from "firebase/firestore";
 import { updateDocumentNonBlocking } from "@/firebase/non-blocking-updates";
@@ -44,6 +48,18 @@ export function ExpertVerificationPortal() {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("protocols");
   const [selectedReviewCrop, setSelectedReviewCrop] = useState<any>(null);
+  
+  // Editable fields for expert modification
+  const [editChemicalCure, setEditChemicalCure] = useState("");
+  const [editDesiNuskha, setEditDesiNuskha] = useState("");
+
+  // Initialize editable fields when a crop is selected
+  useEffect(() => {
+    if (selectedReviewCrop) {
+      setEditChemicalCure(selectedReviewCrop.chemicalCure || "");
+      setEditDesiNuskha(selectedReviewCrop.desiNuskha || "");
+    }
+  }, [selectedReviewCrop]);
 
   const pendingCertsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
@@ -60,22 +76,26 @@ export function ExpertVerificationPortal() {
   const handleVerify = async (cert: any) => {
     if (!firestore || !cert.id) return;
     const docRef = doc(firestore, "crops", cert.id);
+    
+    // Use modified values if they exist, otherwise original
     updateDocumentNonBlocking(docRef, {
       isCertified: true,
       verifiedAt: new Date().toISOString(),
       verifiedBy: user?.uid,
-      expertNotes: `Certified by Scientist ${expertName} based on regional botanical norms.`
+      chemicalCure: editChemicalCure || cert.chemicalCure,
+      desiNuskha: editDesiNuskha || cert.desiNuskha,
+      expertNotes: `Certified and modified by Scientist ${expertName} based on regional botanical norms.`
     });
 
     if (cert.reportedBy) {
       dispatchGridNotification(firestore, cert.reportedBy, {
         title: "Precision Protocol Verified",
-        message: `Expert ${expertName} has certified the treatment for your ${cert.name}.`,
+        message: `Expert ${expertName} has certified and refined the treatment for your ${cert.name}.`,
         type: 'update'
       });
     }
 
-    toast({ title: "Protocol Certified", description: "Verified and added to the National Registry." });
+    toast({ title: "Protocol Certified", description: "Verified and synchronized with the National Registry." });
     setSelectedReviewCrop(null);
   };
 
@@ -142,7 +162,9 @@ export function ExpertVerificationPortal() {
                     <p className="text-sm text-muted-foreground mt-2 line-clamp-2 italic font-medium">"{cert.symptoms}"</p>
                   </CardHeader>
                   <CardFooter className="p-8 pt-0 mt-auto flex gap-3">
-                    <Button variant="outline" className="flex-1 h-12 rounded-xl font-black" onClick={() => setSelectedReviewCrop(cert)}>Review Steps</Button>
+                    <Button variant="outline" className="flex-1 h-12 rounded-xl font-black gap-2" onClick={() => setSelectedReviewCrop(cert)}>
+                      <Edit3 className="h-4 w-4" /> Review & Edit
+                    </Button>
                     <Button className="flex-1 h-12 rounded-xl font-black" onClick={() => handleVerify(cert)}>Certify Now</Button>
                   </CardFooter>
                 </Card>
@@ -152,7 +174,6 @@ export function ExpertVerificationPortal() {
         </TabsContent>
 
         <TabsContent value="logistics">
-          {/* Logistics content logic remains the same but UI refined for consistency */}
           <div className="space-y-6">
             {tickets?.map((ticket) => (
               <Card key={ticket.id} className="border-none shadow-xl rounded-[2.5rem] bg-white p-8 border-l-8 border-destructive">
@@ -174,44 +195,59 @@ export function ExpertVerificationPortal() {
         </TabsContent>
       </Tabs>
 
-      {/* Logic Verification Dialog */}
+      {/* Logic Verification & Editing Dialog */}
       <Dialog open={!!selectedReviewCrop} onOpenChange={() => setSelectedReviewCrop(null)}>
-        <DialogContent className="rounded-[3rem] sm:max-w-xl p-10 overflow-hidden">
+        <DialogContent className="rounded-[3rem] sm:max-w-2xl p-10 overflow-hidden">
           <DialogHeader>
             <div className="flex items-center gap-3 mb-2">
               <div className="h-10 w-10 bg-primary/10 rounded-xl flex items-center justify-center text-primary">
                 <BrainCircuit className="h-6 w-6" />
               </div>
-              <DialogTitle className="text-2xl font-black tracking-tight">AI Reasoning Audit</DialogTitle>
+              <DialogTitle className="text-2xl font-black tracking-tight">Protocol Refinement Audit</DialogTitle>
             </div>
-            <DialogDescription className="italic font-medium">Reviewing multi-step diagnostic logic for {selectedReviewCrop?.name}.</DialogDescription>
+            <DialogDescription className="italic font-medium">Verify AI reasoning and modify suggested protocols for {selectedReviewCrop?.name}.</DialogDescription>
           </DialogHeader>
           
-          <div className="space-y-8 pt-6">
-            <div className="p-6 rounded-3xl bg-muted/30 border space-y-4">
-              <h4 className="text-[10px] font-black uppercase text-primary tracking-widest flex items-center gap-2">
-                <Info className="h-4 w-4" /> Scientific Logic Trace
-              </h4>
-              <p className="text-sm font-medium text-slate-700 leading-relaxed italic border-l-4 border-primary/20 pl-4">
-                "{selectedReviewCrop?.aiReasoning || "No multi-step trace available for this record."}"
-              </p>
-            </div>
+          <ScrollArea className="max-h-[60vh] pr-4">
+            <div className="space-y-8 pt-6">
+              <div className="p-6 rounded-3xl bg-muted/30 border space-y-4">
+                <h4 className="text-[10px] font-black uppercase text-primary tracking-widest flex items-center gap-2">
+                  <Info className="h-4 w-4" /> AI Scientific Logic Trace
+                </h4>
+                <p className="text-sm font-medium text-slate-700 leading-relaxed italic border-l-4 border-primary/20 pl-4">
+                  "{selectedReviewCrop?.aiReasoning || "No multi-step trace available for this record."}"
+                </p>
+              </div>
 
-            <div className="grid grid-cols-2 gap-6">
-              <div className="space-y-1">
-                <p className="text-[9px] font-black text-muted-foreground uppercase">Neutralizer</p>
-                <p className="text-sm font-bold text-slate-900">{selectedReviewCrop?.chemicalCure}</p>
-              </div>
-              <div className="space-y-1">
-                <p className="text-[9px] font-black text-muted-foreground uppercase">Desi Nuskha</p>
-                <p className="text-sm font-bold text-slate-900">{selectedReviewCrop?.desiNuskha}</p>
+              <div className="space-y-6">
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-muted-foreground ml-2">Professional Neutralizer (Editable)</Label>
+                  <Textarea 
+                    value={editChemicalCure}
+                    onChange={(e) => setEditChemicalCure(e.target.value)}
+                    placeholder="Refine the chemical or biological protocol..."
+                    className="rounded-xl bg-muted/30 border-none font-bold min-h-[80px]"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-muted-foreground ml-2">Heritage Wisdom / Desi Nuskha (Editable)</Label>
+                  <Textarea 
+                    value={editDesiNuskha}
+                    onChange={(e) => setEditDesiNuskha(e.target.value)}
+                    placeholder="Modify the traditional remedy based on expert experience..."
+                    className="rounded-xl bg-muted/30 border-none font-bold min-h-[80px]"
+                  />
+                </div>
               </div>
             </div>
-          </div>
+          </ScrollArea>
 
           <DialogFooter className="mt-10 flex gap-4">
-            <Button variant="outline" className="flex-1 rounded-xl font-black" onClick={() => setSelectedReviewCrop(null)}>Close Audit</Button>
-            <Button className="flex-1 rounded-xl font-black" onClick={() => handleVerify(selectedReviewCrop)}>Certify & Synchronize</Button>
+            <Button variant="outline" className="flex-1 rounded-xl font-black" onClick={() => setSelectedReviewCrop(null)}>Discard Changes</Button>
+            <Button className="flex-1 rounded-xl font-black gap-2" onClick={() => handleVerify(selectedReviewCrop)}>
+              <Save className="h-4 w-4" /> Certify & Synchronize
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
