@@ -2,8 +2,6 @@
 'use server';
 /**
  * @fileOverview A flow for analyzing crop market prices, predicting trends, and advising Sell vs Hold.
- *
- * - marketPriceTrendAnalysis - A function that handles the market price trend analysis process.
  */
 
 import { ai } from '@/ai/genkit';
@@ -14,7 +12,7 @@ const MarketPriceTrendAnalysisInputSchema = z.object({
   state: z.string().describe('The state where the market price data was collected.'),
   marketPriceData: z.array(
     z.object({
-      date: z.string().describe('The date of the price data (e.g., "2023-01-01").'),
+      date: z.string().describe('The date of the price data (e.g., "Mon", "Tue").'),
       price: z.number().describe('The market price for the crop on the given date.'),
     })
   ).describe('Historical market price data for the specified crop and state, ordered chronologically.'),
@@ -40,23 +38,25 @@ const prompt = ai.definePrompt({
   name: 'marketPriceTrendAnalysisPrompt',
   input: { schema: MarketPriceTrendAnalysisInputSchema },
   output: { schema: MarketPriceTrendAnalysisOutputSchema },
-  prompt: `You are an expert agricultural market analyst. Your task is to analyze historical crop price data and predict the future trend.
+  prompt: `You are an expert agricultural market analyst for the KisanMitra grid. 
+Your task is to analyze price data and provide a strategic recommendation.
 
-Analyze the following market price data for {{{cropType}}} in the state of {{{state}}}:
+Context:
+Crop: {{{cropType}}}
+State: {{{state}}}
 
-Market Price Data:
+Market Data (Last 7 Days):
 {{#each marketPriceData}}
-  - Date: {{{this.date}}}, Price: {{{this.price}}}
+  - {{{this.date}}}: ₹{{{this.price}}}
 {{/each}}
 
-Based on this data, determine:
-1. The predicted trend: "Rising", "Stable", or "Falling".
-2. The recommended strategic action: 
-   - "Sell": If prices are at a peak or falling significantly.
-   - "Hold": If prices are rising or expected to spike.
-   - "Wait": If the market is too volatile or stable.
+Strategic Objective:
+Determine the trend and recommend "Sell", "Hold", or "Wait".
+- Sell: If prices are peak or crashing.
+- Hold: If prices are steadily rising.
+- Wait: If market is stable or too volatile.
 
-Provide detailed reasoning for your prediction and action.`,
+Provide a concise reasoning that explains the math behind your decision.`,
 });
 
 const marketPriceTrendAnalysisFlow = ai.defineFlow(
@@ -66,8 +66,13 @@ const marketPriceTrendAnalysisFlow = ai.defineFlow(
     outputSchema: MarketPriceTrendAnalysisOutputSchema,
   },
   async (input) => {
-    const { output } = await prompt(input);
-    if (!output) throw new Error('No output received from the prompt.');
-    return output;
+    try {
+      const { output } = await prompt(input);
+      if (!output) throw new Error('Model returned no output.');
+      return output;
+    } catch (e) {
+      console.error("Genkit Flow Error:", e);
+      throw e;
+    }
   }
 );
