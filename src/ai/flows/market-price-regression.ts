@@ -2,6 +2,7 @@
 'use server';
 /**
  * @fileOverview A regression flow for predicting current crop prices when government data is missing.
+ * Includes a heuristic fallback engine to handle AI rate-limiting.
  */
 
 import { ai } from '@/ai/genkit';
@@ -50,8 +51,36 @@ const marketPriceRegressionFlow = ai.defineFlow(
     outputSchema: MarketPriceRegressionOutputSchema,
   },
   async (input) => {
-    const { output } = await prompt(input);
-    if (!output) throw new Error('Failed to generate regression output.');
-    return output;
+    try {
+      const { output } = await prompt(input);
+      if (!output) throw new Error('Failed to generate regression output.');
+      return output;
+    } catch (e: any) {
+      console.warn("AI Regression rate-limited. Triggering Grid Heuristics Failover.", e.message);
+
+      // --- Heuristic Regression Fallback ---
+      const prices = input.historicalPrices;
+      if (!prices || prices.length === 0) {
+        return {
+          predictedValue: 0,
+          confidence: 0,
+          reasoning: "Insufficient historical data for heuristic prediction."
+        };
+      }
+
+      const avg = prices.reduce((a, b) => a + b, 0) / prices.length;
+      const last = prices[prices.length - 1];
+      
+      // Momentum check: if last price is higher than average, project a slight increase
+      // for the current month estimate based on typical Indian market cycles.
+      const momentum = last > avg ? 1.03 : 0.97;
+      const predicted = Math.round(last * momentum);
+
+      return {
+        predictedValue: predicted,
+        confidence: 0.65,
+        reasoning: `Grid Heuristics Active: Predicted benchmark of ₹${predicted} for ${input.cropName} synthesized via historical momentum analysis (Avg: ₹${Math.round(avg)}) for ${input.currentMonth}.`
+      };
+    }
   }
 );
