@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useRef } from "react";
 import { 
   ArrowLeft, 
   PlusCircle, 
@@ -18,7 +18,8 @@ import {
   Edit2,
   Save,
   Info,
-  TrendingUp
+  TrendingUp,
+  Volume2
 } from "lucide-react";
 import Image from "next/image";
 import { Card, CardContent } from "@/components/ui/card";
@@ -42,9 +43,28 @@ import { DiagnosticTool } from "./DiagnosticTool";
 
 const CATEGORIES = ["Plant", "Seed", "Vegetable", "Fruit", "Grain"];
 
+const SoundWave = () => (
+  <div className="flex items-center gap-0.5 h-4">
+    {[1, 2, 3, 4].map((i) => (
+      <motion.div
+        key={i}
+        animate={{
+          height: [4, 16, 4],
+        }}
+        transition={{
+          duration: 0.5,
+          repeat: Infinity,
+          delay: i * 0.1,
+        }}
+        className="w-1 bg-primary rounded-full"
+      />
+    ))}
+  </div>
+);
+
 export function CropDiagnostics() {
   const { t, language } = useTranslation();
-  const { role } = useAppState();
+  const { role, langCode } = useAppState();
   const firestore = useFirestore();
   const { toast } = useToast();
   
@@ -54,6 +74,9 @@ export function CropDiagnostics() {
   const [isReportOpen, setIsReportOpen] = useState(false);
   const [editingPrice, setEditingPrice] = useState(false);
   const [newPrice, setNewPrice] = useState("");
+  
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const cropsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
@@ -67,13 +90,35 @@ export function CropDiagnostics() {
     return allCrops.filter(crop => crop.category === selectedCategory);
   }, [allCrops, selectedCategory]);
 
-  const speakCropDetails = (crop: any) => {
-    const text = `${crop.name}. ${t('irrigation')}: Every ${crop.irrigationInterval || 7} days. ${t('mandi_price')}: ${crop.estimatedMarketPrice} rupees. Diagnosis: ${crop.diseaseName}. ${crop.symptoms || ""}`;
-    if ("speechSynthesis" in window) {
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = language === 'Hindi' ? 'hi-IN' : 'en-IN';
-      window.speechSynthesis.speak(utterance);
+  const speakCropDetails = async (crop: any) => {
+    const text = `${crop.name}. ${t('irrigation')}: ${crop.irrigationInterval || 7} din. ${t('mandi_price')}: ${crop.estimatedMarketPrice} rupaye. Diagnosis: ${crop.diseaseName}. ${crop.symptoms || ""}`;
+    
+    setIsSpeaking(true);
+    
+    try {
+      const response = await fetch('/api/bhashini', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text, langCode })
+      });
+
+      const data = await response.json();
+
+      if (data.audioContent) {
+        if (!audioRef.current) audioRef.current = new Audio();
+        audioRef.current.src = `data:audio/wav;base64,${data.audioContent}`;
+        audioRef.current.onended = () => setIsSpeaking(false);
+        audioRef.current.play();
+      } else if (data.simulated) {
+        // Fallback to browser TTS if Bhashini endpoint is in demo mode
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = langCode === 'hi' ? 'hi-IN' : 'en-IN';
+        utterance.onend = () => setIsSpeaking(false);
+        window.speechSynthesis.speak(utterance);
+      }
+    } catch (err) {
+      console.error(err);
+      setIsSpeaking(false);
     }
   };
 
@@ -108,7 +153,7 @@ export function CropDiagnostics() {
   if (activeView === 'detail' && selectedCrop) {
     return (
       <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4">
-        <Button variant="ghost" onClick={() => setActiveView('gallery')} className="rounded-full gap-2 font-black text-xs uppercase tracking-widest">
+        <Button variant="ghost" onClick={() => setActiveView('gallery')} className="rounded-full gap-2 font-black text-xs uppercase tracking-widest text-slate-500 hover:text-primary">
           <ArrowLeft className="h-4 w-4" /> Back to Gallery
         </Button>
 
@@ -117,7 +162,7 @@ export function CropDiagnostics() {
             <Card className="rounded-[3rem] overflow-hidden border-none shadow-2xl sticky top-24">
               <div className="relative aspect-square">
                 <Image 
-                  src={selectedCrop.imageUrl} 
+                  src={selectedCrop.imageUrl || `https://picsum.photos/seed/${selectedCrop.id}/800/800`} 
                   fill
                   className="object-cover" 
                   alt={selectedCrop.name}
@@ -138,13 +183,23 @@ export function CropDiagnostics() {
           </div>
 
           <div className="lg:col-span-7 space-y-10">
-            <div className="flex justify-between items-start">
+            <div className="flex justify-between items-center bg-white p-8 rounded-[3rem] shadow-xl">
               <div className="space-y-2">
                 <h2 className="text-6xl font-black tracking-tighter text-slate-900">{selectedCrop.name}</h2>
-                <p className="text-destructive font-black uppercase text-sm tracking-widest">{selectedCrop.diseaseName}</p>
+                <div className="flex items-center gap-2">
+                  <Badge variant="destructive" className="font-black uppercase text-[10px] px-3">{selectedCrop.diseaseName}</Badge>
+                  {isSpeaking && <SoundWave />}
+                </div>
               </div>
-              <Button onClick={() => speakCropDetails(selectedCrop)} className="h-14 w-14 rounded-full bg-primary/10 text-primary hover:bg-primary hover:text-white transition-all">
-                <Mic2 className="h-6 w-6" />
+              <Button 
+                onClick={() => speakCropDetails(selectedCrop)} 
+                disabled={isSpeaking}
+                className={cn(
+                  "h-20 w-20 rounded-[2rem] shadow-xl transition-all active:scale-95",
+                  isSpeaking ? "bg-primary/20 text-primary" : "bg-primary text-white hover:bg-primary/90"
+                )}
+              >
+                {isSpeaking ? <Loader2 className="h-8 w-8 animate-spin" /> : <Volume2 className="h-10 w-10" />}
               </Button>
             </div>
 
@@ -189,18 +244,18 @@ export function CropDiagnostics() {
                 <TabsTrigger value="cure" className="rounded-full px-8 font-black text-[10px] uppercase tracking-widest">Professional Cure</TabsTrigger>
                 <TabsTrigger value="natural" className="rounded-full px-8 font-black text-[10px] uppercase tracking-widest">Heritage Wisdom</TabsTrigger>
               </TabsList>
-              <TabsContent value="diagnosis" className="glass-card p-10 rounded-[3rem] border-none">
-                <h4 className="text-xl font-black mb-4 flex items-center gap-2"><Info className="h-5 w-5 text-primary" /> Diagnosis Summary</h4>
+              <TabsContent value="diagnosis" className="glass-card p-10 rounded-[3rem] border-none shadow-2xl">
+                <h4 className="text-xl font-black mb-4 flex items-center gap-2 text-slate-900"><Info className="h-5 w-5 text-primary" /> Diagnosis Summary</h4>
                 <p className="text-lg text-slate-600 leading-relaxed font-medium italic">
                   {selectedCrop.symptoms || "Intelligence analysis suggests regional onset based on historical vector paths."}
                 </p>
               </TabsContent>
-              <TabsContent value="cure" className="glass-card p-10 rounded-[3rem] border-none">
+              <TabsContent value="cure" className="glass-card p-10 rounded-[3rem] border-none shadow-2xl">
                 <h4 className="text-xl font-black mb-4 flex items-center gap-2 text-destructive"><FlaskConical className="h-5 w-5" /> Chemical Neutralization</h4>
                 <p className="text-2xl font-black text-destructive">{selectedCrop.chemicalCure}</p>
                 <p className="text-sm font-bold text-muted-foreground mt-2 uppercase tracking-widest">Dosage: {selectedCrop.chemicalDosage}</p>
               </TabsContent>
-              <TabsContent value="natural" className="glass-card p-10 rounded-[3rem] border-none">
+              <TabsContent value="natural" className="glass-card p-10 rounded-[3rem] border-none shadow-2xl">
                 <h4 className="text-xl font-black mb-4 flex items-center gap-2 text-primary"><Zap className="h-5 w-5" /> Desi Nuskha (Natural)</h4>
                 <p className="text-xl font-medium text-primary italic leading-relaxed">
                   "{selectedCrop.desiNuskha || "Use heritage neem-based soil application for systemic immunity."}"
@@ -231,8 +286,8 @@ export function CropDiagnostics() {
                 onClick={() => setSelectedCategory(cat)}
                 variant={selectedCategory === cat ? "default" : "ghost"}
                 className={cn(
-                  "rounded-xl font-black text-xs uppercase tracking-widest px-6 h-11",
-                  selectedCategory === cat ? "bg-primary text-white shadow-lg" : "text-muted-foreground"
+                  "rounded-xl font-black text-xs uppercase tracking-widest px-6 h-11 transition-all",
+                  selectedCategory === cat ? "bg-primary text-white shadow-lg" : "text-muted-foreground hover:bg-primary/5 hover:text-primary"
                 )}
               >
                 {cat}s
@@ -241,7 +296,7 @@ export function CropDiagnostics() {
           </div>
           <Button 
             onClick={() => setIsReportOpen(true)}
-            className="rounded-2xl h-14 px-8 font-black gap-2 bg-slate-900 text-white shadow-xl hover:bg-slate-800"
+            className="rounded-2xl h-14 px-8 font-black gap-2 bg-slate-900 text-white shadow-xl hover:bg-slate-800 transition-all hover:scale-105 active:scale-95"
           >
             <PlusCircle className="h-5 w-5" /> {t("report_issue")}
           </Button>
@@ -264,7 +319,7 @@ export function CropDiagnostics() {
                 >
                   <Card className="glass-card rounded-[2.5rem] overflow-hidden border-none shadow-xl h-[400px] relative">
                     <Image 
-                      src={crop.imageUrl} 
+                      src={crop.imageUrl || `https://picsum.photos/seed/${crop.id}/800/600`} 
                       fill
                       className="object-cover transition-transform duration-700 group-hover:scale-110" 
                       alt={crop.name} 
@@ -279,7 +334,7 @@ export function CropDiagnostics() {
                         <h3 className="text-3xl font-black text-white tracking-tighter">{crop.name}</h3>
                         <p className="text-white/60 text-xs font-bold uppercase tracking-widest">{crop.diseaseName}</p>
                       </div>
-                      <div className="h-10 w-10 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center text-white">
+                      <div className="h-10 w-10 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center text-white group-hover:bg-primary group-hover:text-white transition-all">
                         <ChevronRight className="h-5 w-5" />
                       </div>
                     </div>

@@ -13,6 +13,25 @@ export type AppLanguage =
 
 export type AppTheme = "farmer" | "dark" | "contrast";
 
+export const LANG_CODES: Record<AppLanguage, string> = {
+  English: "en",
+  Hindi: "hi",
+  Bhojpuri: "hi",
+  Punjabi: "pa",
+  Haryanvi: "hi",
+  Bengali: "bn",
+  Marathi: "mr",
+  Rajasthani: "hi",
+  Gujarati: "gu",
+  Pahadi: "hi",
+  Kannada: "kn",
+  Tamil: "ta",
+  Telugu: "te",
+  Malayalam: "ml",
+  Oriya: "or",
+  Magahi: "hi",
+};
+
 interface Notification {
   id: string;
   type: 'alert' | 'update' | 'system';
@@ -29,6 +48,7 @@ interface AppState {
   city: string;
   profileImage: string | null;
   language: AppLanguage;
+  langCode: string;
   theme: AppTheme;
   notifications: Notification[];
   fleetActiveTab: string;
@@ -54,6 +74,7 @@ export const useAppState = create<AppState>()(
       city: "Bengaluru",
       profileImage: null,
       language: "English",
+      langCode: "en",
       theme: "farmer",
       fleetActiveTab: "bookings",
       notifications: [
@@ -67,7 +88,8 @@ export const useAppState = create<AppState>()(
       setCity: (city) => set({ city }),
       setProfileImage: (profileImage) => set({ profileImage }),
       setLanguage: (language) => {
-        set({ language });
+        const langCode = LANG_CODES[language] || "en";
+        set({ language, langCode });
         if (typeof document !== 'undefined') {
           document.documentElement.setAttribute('data-lang', language);
         }
