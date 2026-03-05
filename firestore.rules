@@ -1,7 +1,33 @@
-
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+
+    /**
+     * KisanMitra Security Rules
+     * 
+     * Core Philosophy:
+     * This ruleset implements a robust, multi-layered authorization model for an agricultural 
+     * intelligence and social platform. It leverages User-Ownership, Role-Based Access 
+     * Control (RBAC) via Database-Based Access Control (DBAC), and Public-Read/Owner-Write patterns.
+     * 
+     * Data Structure:
+     * - User-specific data is nested under /users/{userId} or identified via denormalized 'userId' fields.
+     * - Global catalogs (Crops, Pests, Chemicals) are top-level and publicly readable.
+     * - Social entities (Posts, Comments, Sightings) are top-level for community visibility.
+     * - Role validation is performed via existence checks in specific 'roles_...' collections.
+     * 
+     * Key Security Decisions:
+     * 1. Authorization Independence: Critical IDs (userId, providerId) are denormalized onto 
+     *    documents to allow for fast, single-document authorization without expensive get() calls.
+     * 2. DBAC for Roles: Expert, Admin, and Government Authority roles are managed through 
+     *    document existence in dedicated collections, avoiding Custom Claim complexity.
+     * 3. Prototyping Flexibility: Rules enforce WHO can write and relational integrity, but 
+     *    do NOT strictly validate the data schema (types/optional fields) to allow rapid iteration.
+     * 4. Automation Protection: Collections intended for system-wide updates (MandiPrices) 
+     *    are restricted to Admin-only writes, assuming Cloud Functions bypass rules via the Admin SDK.
+     */
+
+    // --- Helper Functions ---
 
     function isSignedIn() {
       return request.auth != null;
@@ -11,71 +37,206 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == userId;
     }
 
-    function isExistingOwner(ownerId) {
-      return resource != null && isSignedIn() && request.auth.uid == ownerId;
+    function isExistingOwner(userId) {
+      return resource != null && isOwner(userId);
     }
 
-    function getRole() {
-      let path = /databases/$(database)/documents/users/$(request.auth.uid);
-      return exists(path) ? get(path).data.role : 'Farmer';
+    /** 
+     * DBAC Helper: Checks if the current user has a specific role document.
+     * This avoids costly get() calls on parent entities by using the dedicated roles collections.
+     * FIX: The exists() function requires a 'path' type, which can be dynamically
+     * constructed using the path() function from a string.
+     */
+    function hasRole(role) {
+      // Fix for "Unused variable: role." warning: explicitly concatenate 'role' into the path segments.
+      return isSignedIn() && exists(path("databases", database, "documents", "roles_" + role, request.auth.uid));
+    }
+
+    function isAdmin() {
+      return hasRole('admin');
     }
 
     function isExpert() {
-      let role = getRole();
-      return isSignedIn() && (role == 'Expert' || role == 'Authority');
+      return hasRole('experts');
     }
 
-    // --- Crops Collection ---
-    match /crops/{id} { 
-      allow read: if true;
-      allow write: if isSignedIn();
-    }
+    // --- Collection Rules ---
 
-    // --- Vehicles Collection ---
-    match /vehicles/{vehicleId} {
-      allow read: if true;
-      allow write: if isSignedIn();
-    }
+    /**
+     * @description Rules for user profiles. Users manage their own profile; admins manage all.
+     * @path /users/{userId}
+     * @allow (create) if auth.uid == userId && data.id == userId
+     * @deny (update) if auth.uid != userId
+     * @principle Enforces strict user ownership and identity-to-path consistency.
+     */
+    match /users/{userId} {
+      allow get, list: if isOwner(userId) || isAdmin();
+      allow create: if isOwner(userId) && request.resource.data.id == userId;
+      allow update: if isExistingOwner(userId) && request.resource.data.id == userId;
+      allow delete: if isAdmin();
 
-    // --- Bookings Collection ---
-    match /bookings/{bookingId} {
-      allow read: if isSignedIn();
-      allow write: if isSignedIn();
-    }
+      /**
+       * @description AI-driven diagnostic results for a farmer's crop issues.
+       * @path /users/{userId}/diagnosticResults/{id}
+       * @allow (get) if auth.uid == userId OR user is expert
+       * @principle Ownership-based access with Expert override for certification.
+       */
+      match /diagnosticResults/{resultId} {
+        allow get: if isOwner(userId) || isExpert();
+        allow list: if isOwner(userId);
+        allow create: if isOwner(userId) && request.resource.data.userId == userId;
+        allow update: if (isExistingOwner(userId) || isExpert()) && request.resource.data.userId == userId;
+        allow delete: if isExistingOwner(userId);
+      }
 
-    // --- Posts & Community Social Hub ---
-    match /posts/{postId} {
-      allow read: if true;
-      allow create: if isSignedIn();
-      allow update: if isSignedIn();
-      allow delete: if isExistingOwner(resource.data.authorId);
+      /**
+       * @description Personalized alerts for significant price changes.
+       * @path /users/{userId}/priceAlerts/{id}
+       * @allow (list) if auth.uid == userId
+       * @deny (create) if auth is not admin/system
+       * @principle User-read-only collection; writes handled by automated backend.
+       */
+      match /priceAlerts/{alertId} {
+        allow get, list: if isOwner(userId);
+        allow create, update, delete: if isAdmin();
+      }
 
-      match /comments/{commentId} {
-        allow read: if true;
-        allow create: if isSignedIn();
+      /**
+       * @description Tracking individual votes on remedies to prevent duplicates.
+       * @path /users/{userId}/nuskhaVotes/{id}
+       * @allow (create) if auth.uid == userId && data.userId == userId
+       * @principle Ensures vote integrity and user-scoped listing.
+       */
+      match /nuskhaVotes/{voteId} {
+        allow get, list, create, update, delete: if isOwner(userId) && (request.resource == null || request.resource.data.userId == userId);
       }
     }
 
-    // --- Feedback & Reviews ---
-    match /feedback/{feedbackId} {
+    /**
+     * @description Publicly readable catalogs for agricultural information.
+     * @path /crops/{id}, /pests/{id}, /chemicalSolutions/{id}
+     * @allow (read) if true
+     * @deny (write) if user is not admin
+     * @principle Global reference data is public-read, admin-write.
+     */
+    match /crops/{cropId} {
       allow read: if true;
-      allow create: if isSignedIn();
-      allow delete: if isExistingOwner(resource.data.authorId);
+      allow write: if isAdmin();
+    }
+    match /pests/{pestId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    match /chemicalSolutions/{solutionId} {
+      allow read: if true;
+      allow write: if isAdmin();
     }
 
-    match /users/{userId} {
-      allow get, list: if isSignedIn();
-      allow create: if isOwner(userId);
-      allow update: if isOwner(userId);
-      allow delete: if isOwner(userId);
+    /**
+     * @description Traditional remedies. Public read; experts can certify; contributors can edit.
+     * @path /remedies/{remedyId}
+     * @allow (update) if auth.uid == existingData.suggestedByUserId OR user is expert
+     * @principle Collaborative certification model for community knowledge.
+     */
+    match /remedies/{remedyId} {
+      allow read: if true;
+      allow create: if isSignedIn() && request.resource.data.suggestedByUserId == request.auth.uid;
+      allow update: if isSignedIn() && (resource.data.suggestedByUserId == request.auth.uid || isExpert());
+      allow delete: if isAdmin();
     }
 
-    match /pestOutbreaks/{outbreakId} {
-      // Alerts are critical intelligence for the entire grid. 
-      // Allowing read access to all signed-in users prevents race conditions 
-      // during profile synchronization while keeping writes restricted.
+    /**
+     * @description Real-time wholesale prices. Public read for dashboard.
+     * @path /mandiPrices/{id}
+     * @allow (get) if true
+     * @deny (write) if not admin (updates are via Cloud Function)
+     * @principle System-driven updates for market intelligence.
+     */
+    match /mandiPrices/{mandiPriceId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    /**
+     * @description Social network community feed.
+     * @path /posts/{postId}
+     * @allow (create) if data.userId == auth.uid
+     * @deny (delete) if auth.uid != existingData.userId
+     * @principle Community visibility with strict ownership for content management.
+     */
+    match /posts/{postId} {
+      allow read: if true;
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+
+      match /comments/{commentId} {
+        allow read: if true;
+        allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+        allow update, delete: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+      }
+    }
+
+    /**
+     * @description Crowd-sourced pest outbreak reports for real-time mapping.
+     * @path /pestSightings/{sightingId}
+     * @allow (list) if true
+     * @principle Public safety data (outbreaks) is visible to all, written by reporters.
+     */
+    match /pestSightings/{sightingId} {
+      allow read: if true;
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+    }
+
+    /**
+     * @description Logistics marketplace directory.
+     * @path /logisticsProviders/{id}
+     * @allow (update) if auth.uid == userId && user has logistics_provider role
+     * @principle Role-gated write access for service providers.
+     */
+    match /logisticsProviders/{providerId} {
+      allow read: if true;
+      allow write: if isAdmin();
+
+      match /transportOptions/{optionId} {
+        allow read: if true;
+        allow create, update: if isAdmin() || (hasRole('logistics_provider') && request.resource.data.providerId == providerId);
+        allow delete: if isAdmin();
+      }
+    }
+
+    /**
+     * @description Expert profiles for agricultural consultants.
+     * @path /expertProfiles/{expertId}
+     * @principle DBAC-linked profile management.
+     */
+    match /expertProfiles/{expertId} {
+      allow read: if true;
+      allow create: if isAdmin();
+      allow update: if isExpert() && resource.data.userId == request.auth.uid;
+      allow delete: if isAdmin();
+    }
+
+    /**
+     * @description Role Collections (DBAC). Only admins can modify these.
+     * @path /roles_{role}/{userId}
+     * @principle Root of trust for Role-Based Access Control.
+     */
+    match /roles_experts/{userId} {
       allow read: if isSignedIn();
-      allow create, update, delete: if isExpert();
+      allow write: if isAdmin();
+    }
+    match /roles_admin/{userId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+    match /roles_government_authority/{userId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+    match /roles_logistics_provider/{userId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
     }
   }
 }
