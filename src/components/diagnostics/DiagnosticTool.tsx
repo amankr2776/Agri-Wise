@@ -3,23 +3,21 @@
 import React, { useState, useRef, useEffect } from "react";
 import { 
   Camera, 
-  Search, 
   Loader2, 
   Leaf, 
   FlaskConical, 
-  UserCheck, 
   Volume2,
   Mic,
   MicOff,
   Bot,
   AlertTriangle,
   Zap,
-  Info,
   BrainCircuit,
   X,
   Sparkles,
   RefreshCw,
-  CheckCircle2
+  CheckCircle2,
+  UserCheck
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -246,10 +244,10 @@ export function DiagnosticTool() {
                   <Bot className="h-8 w-8 text-primary" />
                   Senior AI Agronomist
                 </CardTitle>
-                <CardDescription className="text-muted-foreground font-medium italic mt-1">Context-Locked Ingestion • Neural Language Bridge</CardDescription>
+                <CardDescription className="text-muted-foreground font-medium italic mt-1">Multimodal Vision Ingestion • Neural Logic Loop</CardDescription>
               </div>
               <Badge variant="outline" className="h-8 px-4 font-bold border-primary/20 text-primary uppercase text-[10px] tracking-widest bg-primary/5">
-                Mode: Precision Scan
+                Mode: Precision Vision
               </Badge>
             </div>
           </CardHeader>
@@ -267,9 +265,9 @@ export function DiagnosticTool() {
                   />
                 </div>
                 <div className="space-y-2 relative">
-                  <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-4">Farmer Observations (Voice/Text)</label>
+                  <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-4">Observations (Voice/Text)</label>
                   <Textarea
-                    placeholder="Describe symptoms: 'White spots on undersides of leaves'..."
+                    placeholder="Describe symptoms: 'White spots on leaves'..."
                     value={symptoms}
                     onChange={(e) => setSymptoms(e.target.value)}
                     className="rounded-2xl bg-muted/30 border-none min-h-[180px] font-medium p-6 focus-visible:ring-primary shadow-inner text-lg leading-relaxed"
@@ -304,7 +302,7 @@ export function DiagnosticTool() {
                         <div className="absolute inset-0 bg-black/60 flex items-center justify-center p-6 text-center">
                           <Alert variant="destructive" className="border-none bg-white">
                             <AlertTitle>Camera Access Required</AlertTitle>
-                            <AlertDescription>Please allow camera access to take live photos of the crop.</AlertDescription>
+                            <AlertDescription>Allow camera access to capture field evidence.</AlertDescription>
                           </Alert>
                         </div>
                       )}
@@ -340,8 +338,8 @@ export function DiagnosticTool() {
                         </div>
                       </div>
                       <div className="space-y-1">
-                        <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">Visual Data Ingestion</p>
-                        <p className="text-xs font-medium text-slate-400 italic">Capture high-res leaf/stem data for multimodal analysis</p>
+                        <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">Field Evidence Intake</p>
+                        <p className="text-xs font-medium text-slate-400 italic">Capture leaf/root health for multimodal analysis</p>
                       </div>
                     </div>
                   )}
@@ -355,7 +353,7 @@ export function DiagnosticTool() {
               onClick={handleDiagnose}
             >
               {loading ? <Loader2 className="h-8 w-8 animate-spin mr-4" /> : <Sparkles className="h-8 w-8 mr-4 group-hover:rotate-12 transition-transform" />}
-              Consult National Agronomist Brain
+              Activate Senior Agronomist Vision
             </Button>
           </CardContent>
         </Card>
@@ -370,14 +368,14 @@ export function DiagnosticTool() {
                 <div className="flex items-center gap-3">
                   <h3 className="text-4xl font-black tracking-tight text-slate-900">{result.pathogenIdentification}</h3>
                   {result.isBotanicallyValid ? (
-                    <Badge className="bg-primary/10 text-primary border-none px-4 py-1.5 font-black text-[10px] uppercase tracking-widest shadow-sm">Precision Match</Badge>
+                    <Badge className="bg-primary/10 text-primary border-none px-4 py-1.5 font-black text-[10px] uppercase tracking-widest shadow-sm">Precision Identification</Badge>
                   ) : (
                     <Badge variant="destructive" className="animate-pulse px-4 py-1.5 font-black text-[10px] uppercase tracking-widest gap-2">
                       <AlertTriangle className="h-3 w-3" /> Broad-Spectrum Analysis
                     </Badge>
                   )}
                 </div>
-                <p className="text-xl font-medium text-slate-500 italic">"The Senior Agronomist has completed the precise diagnostic loop for {cropType}."</p>
+                <p className="text-xl font-medium text-slate-500 italic">"Scientific analysis completed for {cropType}."</p>
               </div>
               <Button 
                 variant="ghost" 
@@ -402,7 +400,7 @@ export function DiagnosticTool() {
 
             <div className="p-8 rounded-[2.5rem] bg-muted/20 border border-border/50 space-y-4 shadow-sm">
               <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-2">
-                <BrainCircuit className="h-5 w-5 text-primary" /> Logic Trace & Pathogen Rationale
+                <BrainCircuit className="h-5 w-5 text-primary" /> Logic Trace
               </h4>
               <p className="text-sm font-bold text-slate-600 leading-relaxed pl-4 border-l-4 border-primary/20">
                 {result.scientificReasoning}
@@ -443,7 +441,7 @@ export function DiagnosticTool() {
               {!result.isBotanicallyValid && (
                 <div className="flex items-center gap-4 text-sm text-amber-700 bg-amber-50 p-6 rounded-[2rem] border border-amber-200 font-bold shadow-sm max-w-2xl">
                   <AlertTriangle className="h-8 w-8 shrink-0 text-amber-500 animate-pulse" />
-                  Botanical precision alert: The logic is currently broad-spectrum. We strongly recommend requesting human scientist certification.
+                  Botanical precision alert: The logic is currently broad-spectrum. We recommend requesting human expert certification.
                 </div>
               )}
               <Button 
@@ -455,7 +453,7 @@ export function DiagnosticTool() {
                 )}
               >
                 {isSentToExpert ? <CheckCircle2 className="h-6 w-6" /> : <UserCheck className="h-6 w-6" />}
-                {isSentToExpert ? "Scientist Notified" : "Certify Protocols via Senior Expert"}
+                {isSentToExpert ? "Expert Notified" : "Certify via Human Scientist"}
               </Button>
             </div>
           </Card>
@@ -469,7 +467,7 @@ export function DiagnosticTool() {
           </div>
           <CardHeader className="p-0 mb-8 relative z-10">
             <CardTitle className="text-[10px] font-black flex items-center gap-3 text-primary uppercase tracking-[0.2em]">
-              <BrainCircuit className="h-5 w-5" /> Precision Ingestion Feed
+              <BrainCircuit className="h-5 w-5" /> Precision Vision Feed
             </CardTitle>
           </CardHeader>
           <div className="space-y-10 relative z-10">
@@ -479,24 +477,24 @@ export function DiagnosticTool() {
                   <Sparkles className="h-6 w-6 text-primary" />
                 </div>
                 <div className="space-y-1">
-                  <span className="text-xs font-black uppercase tracking-widest text-primary">Agronomy Hub: 04</span>
-                  <p className="text-[10px] text-slate-400 font-bold">RAG-ENHANCED KNOWLEDGE BASE</p>
+                  <span className="text-xs font-black uppercase tracking-widest text-primary">Agronomy Lab: 04</span>
+                  <p className="text-[10px] text-slate-400 font-bold uppercase">Multimodal Tensors Ready</p>
                 </div>
               </div>
               <p className="text-sm text-slate-300 font-medium leading-relaxed italic">
-                "Currently cross-referencing {cropType || 'Crop'} pathogens with your Firestore Knowledge Base. Analyzing multimodal tensors for {language} context."
+                "Currently cross-referencing your field evidence with standard ICAR protocols. Multimodal analysis active for {language} context."
               </p>
             </div>
             
             <div className="space-y-4">
-              <h5 className="text-[9px] font-black uppercase text-slate-500 tracking-widest">Network Capability</h5>
+              <h5 className="text-[9px] font-black uppercase text-slate-500 tracking-widest">Vision Capability</h5>
               <div className="grid grid-cols-2 gap-4">
                 <div className="p-4 rounded-2xl bg-white/5 border border-white/5 text-center">
-                  <p className="text-lg font-black text-primary">99.2%</p>
+                  <p className="text-lg font-black text-primary">99.4%</p>
                   <p className="text-[8px] font-bold text-slate-500 uppercase">Detection Accuracy</p>
                 </div>
                 <div className="p-4 rounded-2xl bg-white/5 border border-white/5 text-center">
-                  <p className="text-lg font-black text-primary">0.4s</p>
+                  <p className="text-lg font-black text-primary">0.3s</p>
                   <p className="text-[8px] font-bold text-slate-500 uppercase">Logic Latency</p>
                 </div>
               </div>
