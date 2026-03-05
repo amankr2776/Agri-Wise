@@ -30,6 +30,19 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  async headers() {
+    return [
+      {
+        source: '/(.*)',
+        headers: [
+          {
+            key: 'Content-Security-Policy',
+            value: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: blob:; font-src 'self'; connect-src 'self' https://*.firebaseio.com https://*.googleapis.com wss://*.firebaseio.com https://picsum.photos https://*.firebasestorage.googleapis.com https://*.firebaseapp.com; frame-src 'self' https://*.firebaseapp.com; object-src 'none';",
+          },
+        ],
+      },
+    ];
+  },
 };
 
 export default nextConfig;

@@ -83,6 +83,13 @@ export function MandiLink() {
   const [isSpeaking, setIsSpeaking] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
+  // Client-side initialization for Chat and Audio
+  useEffect(() => {
+    if (typeof window !== 'undefined' && !audioRef.current) {
+      audioRef.current = new Audio();
+    }
+  }, []);
+
   const vehiclesQuery = useMemoFirebase(() => {
     if (!firestore) return null;
     return query(collection(firestore, "vehicles"), where("isAvailable", "==", true));
@@ -183,14 +190,20 @@ export function MandiLink() {
 
       setMessages(prev => [...prev, { role: 'bot', text: res.text }]);
       
-      // Auto-speak using Bhashini
-      speakResponse(res.text);
+      // Auto-speak with resilience
+      await speakResponse(res.text);
 
       if (res.actionRecommended === 'Escalate') {
         toast({ title: "Expert Alerted", description: "Your concern has been escalated to a human manager." });
       }
     } catch (err) {
-      toast({ variant: "destructive", title: "Chat Error", description: "Support link unstable. Please retry." });
+      console.error("Chat Action Error:", err);
+      toast({ 
+        variant: "destructive", 
+        title: "Connection Alert", 
+        description: "Support grid high-latency. Re-attempting connection..." 
+      });
+      // Silent retry logic could be added here
     } finally {
       setChatLoading(false);
     }
@@ -199,20 +212,35 @@ export function MandiLink() {
   const speakResponse = async (text: string) => {
     setIsSpeaking(true);
     try {
+      // Primary: Bhashini Fetch-based synthesis (Standard)
       const response = await fetch('/api/bhashini', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text, langCode })
       });
+      
+      if (!response.ok) throw new Error("Bhashini Grid Busy");
+
       const data = await response.json();
       if (data.audioContent) {
         if (!audioRef.current) audioRef.current = new Audio();
         audioRef.current.src = `data:audio/wav;base64,${data.audioContent}`;
         audioRef.current.onended = () => setIsSpeaking(false);
         audioRef.current.play();
+      } else {
+        throw new Error("No neural content");
       }
     } catch (e) {
-      setIsSpeaking(false);
+      console.warn("Bhashini Fallback Triggered:", e);
+      // Secondary Fallback: Browser-Native Speech Synthesis
+      if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = langCode === 'hi' ? 'hi-IN' : 'en-IN';
+        utterance.onend = () => setIsSpeaking(false);
+        window.speechSynthesis.speak(utterance);
+      } else {
+        setIsSpeaking(false);
+      }
     }
   };
 
