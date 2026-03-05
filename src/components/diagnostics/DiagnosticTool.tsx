@@ -1,8 +1,7 @@
-
 "use client";
 
-import React, { useState } from "react";
-import { Camera, Search, Loader2, CheckCircle2, Leaf, Bug, FlaskConical, Droplets, ShieldCheck, ShieldAlert, UserCheck } from "lucide-react";
+import React, { useState, useRef } from "react";
+import { Camera, Search, Loader2, CheckCircle2, Leaf, Bug, FlaskConical, Droplets, ShieldCheck, ShieldAlert, UserCheck, Volume2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -14,16 +13,23 @@ import { collection } from "firebase/firestore";
 import { addDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { useAppState } from "@/lib/app-state";
+import { motion } from "framer-motion";
 
 export function DiagnosticTool() {
   const firestore = useFirestore();
   const { toast } = useToast();
+  const { language, langCode } = useAppState();
+  
   const [cropType, setCropType] = useState("");
   const [symptoms, setSymptoms] = useState("");
   const [photo, setPhoto] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<FarmerCropPestDiagnosisOutput | null>(null);
   const [isSentToExpert, setIsSentToExpert] = useState(false);
+  
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const handleDiagnose = async () => {
     if (!cropType) {
@@ -36,14 +42,20 @@ export function DiagnosticTool() {
     }
     setLoading(true);
     setIsSentToExpert(false);
+    setResult(null);
+    
     try {
       const res = await diagnoseCropPest({
         cropType,
         symptomsDescription: symptoms,
         photoDataUri: photo || undefined,
-        language: "English"
+        language: language
       });
       setResult(res);
+      
+      // Automatically trigger Bhashini TTS for the result
+      speakResult(res);
+      
     } catch (err) {
       console.error(err);
       toast({
@@ -53,6 +65,36 @@ export function DiagnosticTool() {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const speakResult = async (resData: FarmerCropPestDiagnosisOutput) => {
+    const text = `${resData.diagnosis}. Suggested Cure: ${resData.suggestedChemicalRemedies[0]}. Traditional Remedy: ${resData.suggestedTraditionalRemedies[0]}`;
+    
+    setIsSpeaking(true);
+    try {
+      const response = await fetch('/api/bhashini', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text, langCode })
+      });
+
+      const data = await response.json();
+
+      if (data.audioContent) {
+        if (!audioRef.current) audioRef.current = new Audio();
+        audioRef.current.src = `data:audio/wav;base64,${data.audioContent}`;
+        audioRef.current.onended = () => setIsSpeaking(false);
+        audioRef.current.play();
+      } else if (data.simulated) {
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = langCode === 'hi' ? 'hi-IN' : 'en-IN';
+        utterance.onend = () => setIsSpeaking(false);
+        window.speechSynthesis.speak(utterance);
+      }
+    } catch (err) {
+      console.error("Bhashini TTS Error:", err);
+      setIsSpeaking(false);
     }
   };
 
@@ -174,7 +216,17 @@ export function DiagnosticTool() {
                   <CheckCircle2 className="h-7 w-7" />
                   AI Analysis: {result.diagnosis}
                 </CardTitle>
-                <Badge className="bg-primary/10 text-primary border-none font-bold uppercase tracking-wider text-[10px] px-3">Field Preliminary</Badge>
+                <div className="flex gap-2">
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className={cn("h-10 w-10 rounded-full", isSpeaking && "bg-primary text-white animate-pulse")}
+                    onClick={() => speakResult(result)}
+                  >
+                    <Volume2 className="h-5 w-5" />
+                  </Button>
+                  <Badge className="bg-primary/10 text-primary border-none font-bold uppercase tracking-wider text-[10px] px-3">Field Preliminary</Badge>
+                </div>
               </div>
             </CardHeader>
             <CardContent className="p-0 space-y-8">
@@ -238,16 +290,37 @@ export function DiagnosticTool() {
           <div className="space-y-6">
             <div className="space-y-2">
               <div className="flex items-center justify-between text-xs font-bold">
-                <span className="text-muted-foreground uppercase">AI Confidence</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-muted-foreground uppercase">AI Confidence</span>
+                  {isSpeaking && (
+                    <div className="flex gap-0.5 items-center">
+                      {[1, 2, 3].map(i => (
+                        <motion.div 
+                          key={i} 
+                          animate={{ height: [4, 10, 4] }} 
+                          transition={{ duration: 0.5, repeat: Infinity, delay: i * 0.1 }}
+                          className="w-0.5 bg-primary rounded-full"
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
                 <span className="text-primary">{result ? "92%" : "Ready"}</span>
               </div>
               <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
                 <div className={cn("h-full bg-primary transition-all duration-1000", result ? "w-[92%]" : "w-0")} />
               </div>
             </div>
+            {isSpeaking && (
+              <div className="p-4 rounded-2xl bg-primary/5 border border-primary/10 flex items-center gap-3 animate-in fade-in">
+                <Volume2 className="h-4 w-4 text-primary animate-pulse" />
+                <span className="text-[9px] font-black uppercase text-primary tracking-widest">Neural Audio Stream: Active</span>
+              </div>
+            )}
           </div>
         </Card>
       </div>
+      <audio ref={audioRef} className="hidden" />
     </div>
   );
 }

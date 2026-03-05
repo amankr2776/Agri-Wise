@@ -92,7 +92,8 @@ export function CropDiagnostics() {
   }, [allCrops, selectedCategory]);
 
   const speakCropDetails = async (crop: any) => {
-    const text = `${crop.name}. ${t('irrigation')}: ${crop.irrigationInterval || 7} din. ${t('mandi_price')}: ${crop.estimatedMarketPrice} rupaye. Diagnosis: ${crop.diseaseName}. ${crop.expertNotes || ""}`;
+    // If expert notes exist, prioritize them as they are the certified "final answer"
+    const text = `${crop.name}. ${t('mandi_price')}: ${crop.estimatedMarketPrice} rupees. Diagnosis: ${crop.diseaseName}. ${crop.expertNotes ? 'Expert instruction: ' + crop.expertNotes : 'Remedy: ' + crop.chemicalCure + '. Heritage advice: ' + crop.desiNuskha}`;
     
     setIsSpeaking(true);
     
@@ -151,7 +152,6 @@ export function CropDiagnostics() {
   };
 
   if (activeView === 'detail' && selectedCrop) {
-    // Re-fetch or sync via real-time data from allCrops to reflect live expert edits
     const liveCrop = allCrops?.find(c => c.id === selectedCrop.id) || selectedCrop;
 
     return (
@@ -271,6 +271,7 @@ export function CropDiagnostics() {
             </Tabs>
           </div>
         </div>
+        <audio ref={audioRef} className="hidden" />
       </div>
     );
   }

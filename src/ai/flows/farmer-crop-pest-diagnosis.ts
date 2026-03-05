@@ -1,4 +1,3 @@
-
 'use server';
 /**
  * @fileOverview This file implements the Genkit flow for diagnosing crop problems with deep language awareness.
@@ -31,11 +30,13 @@ const diagnoseCropPestPrompt = ai.definePrompt({
   name: 'diagnoseCropPestPrompt',
   input: { schema: FarmerCropPestDiagnosisInputSchema },
   output: { schema: FarmerCropPestDiagnosisOutputSchema },
-  prompt: `You are an expert agricultural diagnostician.
-THE USER HAS SELECTED THE LANGUAGE: {{{language}}}.
-CRITICAL: YOU MUST PROVIDE THE ENTIRE RESPONSE (DIAGNOSIS, REMEDIES, FERTILIZERS) STRICTLY IN {{{language}}} SCRIPT AND TERMINOLOGY.
+  prompt: `You are an expert agricultural diagnostician for the KisanMitra platform.
+CRITICAL INSTRUCTION: THE USER HAS SELECTED THE LANGUAGE: {{{language}}}.
+YOU MUST PROVIDE THE ENTIRE RESPONSE (DIAGNOSIS, REMEDIES, FERTILIZERS) STRICTLY IN {{{language}}} SCRIPT.
 
-For chemical names, use the common names used in regional markets of India. 
+SYSTEM INSTRUCTION: Provide the final answer directly in {{{language}}}. Use regional agricultural terminology that a local farmer would understand. 
+
+For chemical names, use the common brand names or generic names used in regional markets of India. 
 For traditional remedies (Desi Nuskhas), provide heritage wisdom appropriate for the culture of the {{{language}}} speaking region.
 
 Input Data:
@@ -43,7 +44,7 @@ Crop: {{{cropType}}}
 {{#if symptomsDescription}}Symptoms: {{{symptomsDescription}}}{{/if}}
 {{#if photoDataUri}}Image Provided: {{media url=photoDataUri}}{{/if}}
 
-Provide detailed analysis in {{{language}}} script.`,
+Provide the diagnosis and all recommendations in {{{language}}} script now.`,
 });
 
 const farmerCropPestDiagnosisFlow = ai.defineFlow(
