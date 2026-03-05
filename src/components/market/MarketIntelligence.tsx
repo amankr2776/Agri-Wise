@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useMemo, useEffect, useRef } from "react";
@@ -24,7 +23,8 @@ import {
   AlertTriangle,
   History,
   ShieldCheck,
-  Cpu
+  Cpu,
+  CheckCircle2
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
