@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useMemo, useRef } from "react";
@@ -19,7 +18,9 @@ import {
   Save,
   Info,
   TrendingUp,
-  Volume2
+  Volume2,
+  UserCheck,
+  Microscope
 } from "lucide-react";
 import Image from "next/image";
 import { Card, CardContent } from "@/components/ui/card";
@@ -91,7 +92,7 @@ export function CropDiagnostics() {
   }, [allCrops, selectedCategory]);
 
   const speakCropDetails = async (crop: any) => {
-    const text = `${crop.name}. ${t('irrigation')}: ${crop.irrigationInterval || 7} din. ${t('mandi_price')}: ${crop.estimatedMarketPrice} rupaye. Diagnosis: ${crop.diseaseName}. ${crop.symptoms || ""}`;
+    const text = `${crop.name}. ${t('irrigation')}: ${crop.irrigationInterval || 7} din. ${t('mandi_price')}: ${crop.estimatedMarketPrice} rupaye. Diagnosis: ${crop.diseaseName}. ${crop.expertNotes || ""}`;
     
     setIsSpeaking(true);
     
@@ -110,7 +111,6 @@ export function CropDiagnostics() {
         audioRef.current.onended = () => setIsSpeaking(false);
         audioRef.current.play();
       } else if (data.simulated) {
-        // Fallback to browser TTS if Bhashini endpoint is in demo mode
         const utterance = new SpeechSynthesisUtterance(text);
         utterance.lang = langCode === 'hi' ? 'hi-IN' : 'en-IN';
         utterance.onend = () => setIsSpeaking(false);
@@ -144,13 +144,16 @@ export function CropDiagnostics() {
       isCertified: false,
       severity: "Warning",
       createdAt: new Date().toISOString(),
-      imageUrl: "https://picsum.photos/seed/report/800/600"
+      imageUrl: `https://picsum.photos/seed/report-${Date.now()}/800/600`
     });
     setIsReportOpen(false);
     toast({ title: "Issue Reported", description: "Sent to the professional expert queue for verification." });
   };
 
   if (activeView === 'detail' && selectedCrop) {
+    // Re-fetch or sync via real-time data from allCrops to reflect live expert edits
+    const liveCrop = allCrops?.find(c => c.id === selectedCrop.id) || selectedCrop;
+
     return (
       <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4">
         <Button variant="ghost" onClick={() => setActiveView('gallery')} className="rounded-full gap-2 font-black text-xs uppercase tracking-widest text-slate-500 hover:text-primary">
@@ -162,20 +165,20 @@ export function CropDiagnostics() {
             <Card className="rounded-[3rem] overflow-hidden border-none shadow-2xl sticky top-24">
               <div className="relative aspect-square">
                 <Image 
-                  src={selectedCrop.imageUrl || `https://picsum.photos/seed/${selectedCrop.id}/800/800`} 
+                  src={liveCrop.imageUrl || `https://picsum.photos/seed/${liveCrop.id}/800/800`} 
                   fill
                   className="object-cover" 
-                  alt={selectedCrop.name}
+                  alt={liveCrop.name}
                   data-ai-hint="crop diagnosis"
                 />
               </div>
               <div className="absolute top-6 left-6 flex gap-2">
                 <Badge className="bg-primary/90 text-white border-none px-4 py-1.5 font-black uppercase tracking-widest text-[10px]">
-                  {selectedCrop.category}
+                  {liveCrop.category}
                 </Badge>
-                {selectedCrop.isCertified && (
+                {liveCrop.isCertified && (
                   <Badge className="bg-amber-500/90 text-white border-none px-4 py-1.5 font-black uppercase tracking-widest text-[10px]">
-                    <ShieldCheck className="h-3 w-3 mr-1" /> Verified
+                    <ShieldCheck className="h-3 w-3 mr-1" /> Expert-Verified
                   </Badge>
                 )}
               </div>
@@ -185,14 +188,17 @@ export function CropDiagnostics() {
           <div className="lg:col-span-7 space-y-10">
             <div className="flex justify-between items-center bg-white p-8 rounded-[3rem] shadow-xl">
               <div className="space-y-2">
-                <h2 className="text-6xl font-black tracking-tighter text-slate-900">{selectedCrop.name}</h2>
+                <div className="flex items-center gap-3">
+                  <h2 className="text-6xl font-black tracking-tighter text-slate-900">{liveCrop.name}</h2>
+                  {liveCrop.isCertified && <UserCheck className="h-8 w-8 text-amber-500 animate-in zoom-in" />}
+                </div>
                 <div className="flex items-center gap-2">
-                  <Badge variant="destructive" className="font-black uppercase text-[10px] px-3">{selectedCrop.diseaseName}</Badge>
+                  <Badge variant="destructive" className="font-black uppercase text-[10px] px-3">{liveCrop.diseaseName}</Badge>
                   {isSpeaking && <SoundWave />}
                 </div>
               </div>
               <Button 
-                onClick={() => speakCropDetails(selectedCrop)} 
+                onClick={() => speakCropDetails(liveCrop)} 
                 disabled={isSpeaking}
                 className={cn(
                   "h-20 w-20 rounded-[2rem] shadow-xl transition-all active:scale-95",
@@ -203,13 +209,24 @@ export function CropDiagnostics() {
               </Button>
             </div>
 
+            {liveCrop.expertNotes && (
+              <Card className="rounded-[2.5rem] border-none shadow-xl bg-blue-50/50 p-8 border-l-8 border-blue-500 animate-in slide-in-from-right-4">
+                <h4 className="text-[10px] font-black text-blue-600 uppercase tracking-widest mb-3 flex items-center gap-2">
+                  <Microscope className="h-4 w-4" /> Official Scientist Viewpoint
+                </h4>
+                <p className="text-lg font-bold text-blue-900 leading-relaxed italic">
+                  "{liveCrop.expertNotes}"
+                </p>
+              </Card>
+            )}
+
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="p-6 bg-blue-50/50 rounded-3xl border border-blue-100 space-y-2">
                 <div className="flex items-center gap-2 text-blue-600">
                   <Droplets className="h-4 w-4" />
                   <span className="text-[10px] font-black uppercase tracking-widest">{t('irrigation')}</span>
                 </div>
-                <p className="text-xl font-black">Every {selectedCrop.irrigationInterval || 7} Days</p>
+                <p className="text-xl font-black">Every {liveCrop.irrigationInterval || 7} Days</p>
                 <Progress value={70} className="h-1.5 bg-blue-100" />
               </div>
               <div className="p-6 bg-amber-50/50 rounded-3xl border border-amber-100 space-y-2">
@@ -217,24 +234,14 @@ export function CropDiagnostics() {
                   <Calendar className="h-4 w-4" />
                   <span className="text-[10px] font-black uppercase tracking-widest">Season</span>
                 </div>
-                <p className="text-xl font-black">{selectedCrop.sowingSeason || "Kharif"}</p>
+                <p className="text-xl font-black">{liveCrop.sowingSeason || "Kharif"}</p>
               </div>
               <div className="p-6 bg-primary/5 rounded-3xl border border-primary/10 space-y-2 relative">
                 <div className="flex items-center gap-2 text-primary">
                   <Tag className="h-4 w-4" />
                   <span className="text-[10px] font-black uppercase tracking-widest">{t('mandi_price')}</span>
                 </div>
-                {editingPrice ? (
-                  <div className="flex gap-1">
-                    <Input value={newPrice} onChange={(e) => setNewPrice(e.target.value)} className="h-8 w-24 bg-white font-bold" />
-                    <Button size="icon" className="h-8 w-8" onClick={handleUpdatePrice}><Save className="h-4 w-4"/></Button>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-2">
-                    <p className="text-2xl font-black text-primary">₹{selectedCrop.estimatedMarketPrice?.toLocaleString()}</p>
-                    {role === 'Authority' && <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => { setEditingPrice(true); setNewPrice(selectedCrop.estimatedMarketPrice.toString()); }}><Edit2 className="h-3 w-3"/></Button>}
-                  </div>
-                )}
+                <p className="text-2xl font-black text-primary">₹{liveCrop.estimatedMarketPrice?.toLocaleString()}</p>
               </div>
             </div>
 
@@ -247,18 +254,18 @@ export function CropDiagnostics() {
               <TabsContent value="diagnosis" className="glass-card p-10 rounded-[3rem] border-none shadow-2xl">
                 <h4 className="text-xl font-black mb-4 flex items-center gap-2 text-slate-900"><Info className="h-5 w-5 text-primary" /> Diagnosis Summary</h4>
                 <p className="text-lg text-slate-600 leading-relaxed font-medium italic">
-                  {selectedCrop.symptoms || "Intelligence analysis suggests regional onset based on historical vector paths."}
+                  {liveCrop.symptoms || "Intelligence analysis suggests regional onset based on historical vector paths."}
                 </p>
               </TabsContent>
               <TabsContent value="cure" className="glass-card p-10 rounded-[3rem] border-none shadow-2xl">
                 <h4 className="text-xl font-black mb-4 flex items-center gap-2 text-destructive"><FlaskConical className="h-5 w-5" /> Chemical Neutralization</h4>
-                <p className="text-2xl font-black text-destructive">{selectedCrop.chemicalCure}</p>
-                <p className="text-sm font-bold text-muted-foreground mt-2 uppercase tracking-widest">Dosage: {selectedCrop.chemicalDosage}</p>
+                <p className="text-2xl font-black text-destructive">{liveCrop.chemicalCure}</p>
+                <p className="text-sm font-bold text-muted-foreground mt-2 uppercase tracking-widest">Certified Protocols Active</p>
               </TabsContent>
               <TabsContent value="natural" className="glass-card p-10 rounded-[3rem] border-none shadow-2xl">
                 <h4 className="text-xl font-black mb-4 flex items-center gap-2 text-primary"><Zap className="h-5 w-5" /> Desi Nuskha (Natural)</h4>
                 <p className="text-xl font-medium text-primary italic leading-relaxed">
-                  "{selectedCrop.desiNuskha || "Use heritage neem-based soil application for systemic immunity."}"
+                  "{liveCrop.desiNuskha || "Use heritage neem-based soil application for systemic immunity."}"
                 </p>
               </TabsContent>
             </Tabs>
@@ -326,6 +333,13 @@ export function CropDiagnostics() {
                       data-ai-hint="crop plant"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                    <div className="absolute top-6 right-6">
+                      {crop.isCertified ? (
+                        <Badge className="bg-amber-500 text-white border-none font-black text-[8px] uppercase tracking-widest px-2 shadow-lg">Verified</Badge>
+                      ) : (
+                        <Badge className="bg-white/20 backdrop-blur-md text-white border-white/20 font-black text-[8px] uppercase tracking-widest px-2">AI Draft</Badge>
+                      )}
+                    </div>
                     <div className="absolute bottom-10 left-10 right-10 flex justify-between items-end">
                       <div className="space-y-1">
                         <Badge className="bg-primary/20 text-primary border-none font-black text-[9px] uppercase tracking-widest mb-2">
