@@ -21,7 +21,8 @@ import {
   Package,
   Truck,
   User,
-  History
+  History,
+  AlertTriangle
 } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -40,18 +41,18 @@ import {
   DialogDescription
 } from "@/components/ui/dialog";
 import { useFirestore, useCollection, useUser, useMemoFirebase } from "@/firebase";
-import { collection, query, where, doc, addDoc, getDocs, writeBatch, updateDoc } from "firebase/firestore";
+import { collection, query, where, doc, getDoc } from "firebase/firestore";
 import { updateDocumentNonBlocking } from "@/firebase/non-blocking-updates";
+import { dispatchGridNotification } from "@/firebase/messaging";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAppState } from "@/lib/app-state";
 import { useToast } from "@/hooks/use-toast";
 
 export function ExpertVerificationPortal() {
   const firestore = useFirestore();
-  const { role } = useAppState();
+  const { role, name: expertName } = useAppState();
   const { user } = useUser();
   const { toast } = useToast();
-  const [seeding, setSeeding] = useState(false);
   const [activeTab, setActiveTab] = useState("protocols");
 
   // Fetch Pending Certifications
@@ -68,25 +69,43 @@ export function ExpertVerificationPortal() {
   }, [firestore]);
   const { data: tickets, isLoading: loadingTickets } = useCollection(ticketsQuery);
 
-  const handleVerify = (certId: string) => {
-    if (!firestore || !certId) return;
-    const docRef = doc(firestore, "crops", certId);
+  const handleVerify = async (cert: any) => {
+    if (!firestore || !cert.id) return;
+    const docRef = doc(firestore, "crops", cert.id);
     updateDocumentNonBlocking(docRef, {
       isCertified: true,
       verifiedAt: new Date().toISOString(),
       verifiedBy: user?.uid
     });
+
+    // Notify the farmer (if reportedBy is present)
+    if (cert.reportedBy) {
+      dispatchGridNotification(firestore, cert.reportedBy, {
+        title: "Protocol Verified",
+        message: `Expert ${expertName} has verified the treatment for your ${cert.name} crop.`,
+        type: 'update'
+      });
+    }
+
     toast({ title: "Protocol Certified", description: "Verified and added to the registry." });
   };
 
-  const handleResolveTicket = (ticketId: string) => {
+  const handleResolveTicket = async (ticket: any) => {
     if (!firestore) return;
-    const docRef = doc(firestore, "logisticsTickets", ticketId);
+    const docRef = doc(firestore, "logisticsTickets", ticket.id);
     updateDocumentNonBlocking(docRef, {
       status: "Resolved",
       resolvedAt: new Date().toISOString(),
-      resolvedBy: user?.uid
+      resolvedBy: expertName
     });
+
+    // Notify the farmer
+    dispatchGridNotification(firestore, ticket.farmerId, {
+      title: "Incident Resolved",
+      message: `Your logistics dispute for Shipment #${ticket.shipmentId.substring(0,6)} has been resolved.`,
+      type: 'system'
+    });
+
     toast({ title: "Incident Resolved", description: "Farmer has been notified of the resolution." });
   };
 
@@ -153,7 +172,7 @@ export function ExpertVerificationPortal() {
                   </CardHeader>
                   <CardFooter className="p-8 pt-0 mt-auto flex gap-3">
                     <Button variant="outline" className="flex-1 h-12 rounded-xl font-black">Review</Button>
-                    <Button className="flex-1 h-12 rounded-xl font-black" onClick={() => handleVerify(cert.id)}>Certify</Button>
+                    <Button className="flex-1 h-12 rounded-xl font-black" onClick={() => handleVerify(cert)}>Certify</Button>
                   </CardFooter>
                 </Card>
               ))}
@@ -200,7 +219,7 @@ export function ExpertVerificationPortal() {
 
                     <div className="flex gap-3 w-full lg:w-auto">
                       <Button variant="outline" className="flex-1 lg:w-32 h-12 rounded-xl font-black text-xs uppercase tracking-widest">Details</Button>
-                      <Button className="flex-1 lg:w-48 h-12 rounded-xl font-black text-xs uppercase tracking-widest gap-2" onClick={() => handleResolveTicket(ticket.id)}>
+                      <Button className="flex-1 lg:w-48 h-12 rounded-xl font-black text-xs uppercase tracking-widest gap-2" onClick={() => handleResolveTicket(ticket)}>
                         <ShieldCheck className="h-4 w-4" /> Resolve & Close
                       </Button>
                     </div>

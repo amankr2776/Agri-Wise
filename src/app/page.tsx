@@ -44,9 +44,11 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useAppState } from "@/lib/app-state";
 import { useTranslation } from "@/hooks/use-translation";
 import { cn } from "@/lib/utils";
-import { useFirestore, useUser } from "@/firebase";
-import { doc } from "firebase/firestore";
+import { useFirestore, useUser, useCollection, useMemoFirebase } from "@/firebase";
+import { doc, collection, query, orderBy, limit } from "firebase/firestore";
 import { setDocumentNonBlocking } from "@/firebase/non-blocking-updates";
+import { initializeMessaging } from "@/firebase/messaging";
+import { getMessaging } from "firebase/messaging";
 
 // Section Components
 import { DashboardHome } from "@/components/dashboard/DashboardHome";
@@ -69,6 +71,7 @@ export default function KisanMitraApp() {
     isAuthenticated, 
     logout, 
     notifications, 
+    setNotifications,
     markNotificationsAsRead,
     name,
     city,
@@ -80,7 +83,7 @@ export default function KisanMitraApp() {
     if (!isAuthenticated) router.push("/login");
   }, [isAuthenticated, router]);
 
-  // Sync user profile to Firestore for role-based security rules
+  // Sync user profile and initialize FCM
   useEffect(() => {
     if (user && firestore && role) {
       const userRef = doc(firestore, "users", user.uid);
@@ -91,12 +94,33 @@ export default function KisanMitraApp() {
         city: city,
         lastActive: new Date().toISOString()
       }, { merge: true });
+
+      // Initialize Messaging
+      const messaging = typeof window !== 'undefined' ? getMessaging() : null;
+      initializeMessaging(messaging, firestore, user.uid);
     }
   }, [user, firestore, role, name, city]);
 
+  // Real-time Notification Listener
+  const notificationsQuery = useMemoFirebase(() => {
+    if (!firestore || !user) return null;
+    return query(
+      collection(firestore, "users", user.uid, "notifications"), 
+      orderBy("createdAt", "desc"),
+      limit(20)
+    );
+  }, [firestore, user]);
+  
+  const { data: remoteNotifications } = useCollection(notificationsQuery);
+
+  useEffect(() => {
+    if (remoteNotifications) {
+      setNotifications(remoteNotifications);
+    }
+  }, [remoteNotifications, setNotifications]);
+
   if (!isAuthenticated || !role) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="animate-spin text-primary" /></div>;
 
-  // Role-Based Section Rendering with Guard
   const renderSection = () => {
     switch (activeSection) {
       case "dashboard": return <DashboardHome onNavigate={setActiveSection} />;

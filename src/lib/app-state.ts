@@ -1,3 +1,4 @@
+
 "use client";
 
 import { create } from "zustand";
@@ -31,7 +32,7 @@ export const LANG_CODES: Record<AppLanguage, string> = {
   Magahi: "hi",
 };
 
-interface Notification {
+export interface Notification {
   id: string;
   type: 'alert' | 'update' | 'system';
   title: string;
@@ -63,13 +64,13 @@ interface AppState {
   setLanguage: (lang: AppLanguage) => void;
   setTheme: (theme: AppTheme) => void;
   setFleetActiveTab: (tab: string) => void;
+  setNotifications: (notifications: Notification[]) => void;
   markNotificationsAsRead: () => void;
 }
 
 export const useAppState = create<AppState>()(
   persist(
     (set) => ({
-      // Defaulting to authenticated Farmer to "remove authentication" barrier
       role: "Farmer",
       isAuthenticated: true,
       name: "Aman Kumar",
@@ -80,10 +81,7 @@ export const useAppState = create<AppState>()(
       langCode: "en",
       theme: "farmer",
       fleetActiveTab: "bookings",
-      notifications: [
-        { id: "1", type: 'alert', title: "Pest Alert", message: "Locust swarm spotted in nearby sector.", createdAt: new Date().toISOString(), isRead: false },
-        { id: "2", type: 'system', title: "Market Update", message: "Wheat prices rising in local Mandi.", createdAt: new Date().toISOString(), isRead: false }
-      ],
+      notifications: [],
       
       login: (role) => set({ role, isAuthenticated: true }),
       logout: () => set({ role: null, isAuthenticated: false }),
@@ -105,12 +103,13 @@ export const useAppState = create<AppState>()(
         }
       },
       setFleetActiveTab: (fleetActiveTab) => set({ fleetActiveTab }),
+      setNotifications: (notifications) => set({ notifications }),
       markNotificationsAsRead: () => set((state) => ({
         notifications: state.notifications.map(n => ({ ...n, isRead: true }))
       })),
     }),
     {
-      name: "kisan-mitra-storage-v4",
+      name: "kisan-mitra-storage-v5",
     }
   )
 );

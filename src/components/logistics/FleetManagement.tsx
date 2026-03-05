@@ -55,6 +55,7 @@ import {
 import { useFirestore, useCollection, useUser, useMemoFirebase, useDoc } from "@/firebase";
 import { collection, query, where, doc, updateDoc, addDoc, getDocs, writeBatch } from "firebase/firestore";
 import { updateDocumentNonBlocking, addDocumentNonBlocking, setDocumentNonBlocking } from "@/firebase/non-blocking-updates";
+import { dispatchGridNotification } from "@/firebase/messaging";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { INDIA_STATES } from "@/lib/india-data";
@@ -107,12 +108,19 @@ export function FleetManagement() {
   }, [firestore, user]);
   const { data: incomingBookings, isLoading: loadingBookings } = useCollection(bookingsQuery);
 
-  const handleUpdateStatus = (bookingId: string, nextStatus: string) => {
+  const handleUpdateStatus = (booking: any, nextStatus: string) => {
     if (!firestore) return;
-    const docRef = doc(firestore, "bookings", bookingId);
+    const docRef = doc(firestore, "bookings", booking.id);
     updateDocumentNonBlocking(docRef, { 
       status: nextStatus,
       updatedAt: new Date().toISOString() 
+    });
+
+    // Notify the farmer
+    dispatchGridNotification(firestore, booking.farmerId, {
+      title: "Shipment Update",
+      message: `Your ${booking.cropType} shipment is now ${nextStatus.toLowerCase()}. Agency: ${booking.agencyName}`,
+      type: 'update'
     });
     
     toast({
@@ -351,7 +359,7 @@ export function FleetManagement() {
                       <div className="flex gap-4 w-full lg:w-auto">
                         {next ? (
                           <Button 
-                            onClick={() => handleUpdateStatus(booking.id, next)}
+                            onClick={() => handleUpdateStatus(booking, next)}
                             className="flex-1 lg:w-48 h-14 rounded-2xl font-black gap-2 shadow-lg shadow-primary/20"
                           >
                             <RefreshCw className="h-5 w-5" />
