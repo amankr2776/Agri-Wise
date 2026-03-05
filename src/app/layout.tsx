@@ -1,27 +1,22 @@
+'use client';
 
-import type {Metadata} from 'next';
-import './globals.css';
-import { Toaster } from "@/components/ui/toaster";
+import React from "react";
+import "./globals.css";
 import { FirebaseClientProvider } from "@/firebase/client-provider";
-
-export const metadata: Metadata = {
-  title: 'KisanMitra - National Agricultural Grid',
-  description: 'AI-driven agricultural monitoring and verified professional intelligence.',
-};
+import { Toaster } from "@/components/ui/toaster";
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   return (
     <html lang="en">
       <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Mukta:wght@300;400;500;600;700&family=Noto+Sans+Kannada:wght@300;400;500;600;700&family=Noto+Sans+Tamil:wght@300;400;500;600;700&family=Noto+Sans+Telugu:wght@300;400;500;600;700&family=Noto+Sans+Malayalam:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+        <title>KisanMitra - National Agricultural Grid</title>
+        <meta name="description" content="AI-Powered Agricultural Intelligence and Logistics Hub" />
       </head>
-      <body className="font-sans antialiased bg-background text-foreground">
+      <body className="antialiased">
         <FirebaseClientProvider>
           {children}
           <Toaster />
