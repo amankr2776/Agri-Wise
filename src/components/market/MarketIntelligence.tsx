@@ -56,7 +56,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAppState } from "@/lib/app-state";
 import { motion, AnimatePresence } from "framer-motion";
 import useSWR from 'swr';
-import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
+import { useFirestore } from "@/firebase";
 import { collection, query, where, getDocs, limit, orderBy } from "firebase/firestore";
 
 // Visual Source Definitions
@@ -84,35 +84,39 @@ export function MarketIntelligence() {
     async () => {
       if (!firestore) return null;
       
-      // Tier 1: Local Mandi
-      const localQ = query(
-        collection(firestore, "mandiPrices"),
-        where("cropId", "==", selectedCrop),
-        where("district", "==", selectedDistrict),
-        orderBy("priceDate", "desc"),
-        limit(1)
-      );
-      const localSnap = await getDocs(localQ);
-      if (!localSnap.empty) return { ...localSnap.docs[0].data(), source: 'Live' as DataSource };
+      try {
+        // Tier 1: Local Mandi
+        const localQ = query(
+          collection(firestore, "mandiPrices"),
+          where("cropId", "==", selectedCrop),
+          where("district", "==", selectedDistrict),
+          orderBy("priceDate", "desc"),
+          limit(1)
+        );
+        const localSnap = await getDocs(localQ);
+        if (!localSnap.empty) return { ...localSnap.docs[0].data(), source: 'Live' as DataSource };
 
-      // Tier 2: State Average
-      const stateQ = query(
-        collection(firestore, "mandiPrices"),
-        where("cropId", "==", selectedCrop),
-        where("state", "==", selectedState),
-        orderBy("priceDate", "desc"),
-        limit(5)
-      );
-      const stateSnap = await getDocs(stateQ);
-      if (!stateSnap.empty) {
-        const prices = stateSnap.docs.map(d => d.data().pricePerUnit);
-        const avg = prices.reduce((a, b) => a + b, 0) / prices.length;
-        return { 
-          pricePerUnit: avg, 
-          marketCenterName: `${selectedState} Regional Average`, 
-          source: 'Average' as DataSource,
-          unit: stateSnap.docs[0].data().unit 
-        };
+        // Tier 2: State Average
+        const stateQ = query(
+          collection(firestore, "mandiPrices"),
+          where("cropId", "==", selectedCrop),
+          where("state", "==", selectedState),
+          orderBy("priceDate", "desc"),
+          limit(5)
+        );
+        const stateSnap = await getDocs(stateQ);
+        if (!stateSnap.empty) {
+          const prices = stateSnap.docs.map(d => d.data().pricePerUnit);
+          const avg = prices.reduce((a, b) => a + b, 0) / prices.length;
+          return { 
+            pricePerUnit: avg, 
+            marketCenterName: `${selectedState} Regional Average`, 
+            source: 'Average' as DataSource,
+            unit: stateSnap.docs[0].data().unit 
+          };
+        }
+      } catch (e) {
+        console.warn("Market Fetch error, using synthetic fallbacks:", e);
       }
 
       // Tier 3: AI Regression (Synthesized fallback)
@@ -129,12 +133,16 @@ export function MarketIntelligence() {
       if (mandiData === null && !loadingMandi) {
         const historicalPrices = [2200, 2300, 2150, 2400, 2350]; // Simulated historical memory
         const currentMonth = new Date().toLocaleString('en-US', { month: 'long' });
-        const res = await predictMarketPrice({
-          cropName: selectedCrop,
-          historicalPrices,
-          currentMonth
-        });
-        setRegressionResult(res);
+        try {
+          const res = await predictMarketPrice({
+            cropName: selectedCrop,
+            historicalPrices,
+            currentMonth
+          });
+          setRegressionResult(res);
+        } catch (e) {
+          console.error("Regression Error:", e);
+        }
       } else {
         setRegressionResult(null);
       }
@@ -166,8 +174,6 @@ export function MarketIntelligence() {
     }));
   }, [displayPrice]);
 
-  const priceChange = 4.2; // Simulated
-
   const announcePrice = async () => {
     const text = `${selectedCrop} price is ₹${Math.round(displayPrice)}. This is a ${dataSource} estimate.`;
     setIsSpeaking(true);
@@ -198,16 +204,21 @@ export function MarketIntelligence() {
     const fetchAnalysis = async () => {
       setIsAnalyzing(true);
       const dataForAi = chartData.map(d => ({ date: d.day, price: d.price }));
-      const result = await marketPriceTrendAnalysis({
-        cropType: selectedCrop,
-        state: selectedState,
-        marketPriceData: dataForAi
-      });
-      setAiResult(result);
-      setIsAnalyzing(false);
+      try {
+        const result = await marketPriceTrendAnalysis({
+          cropType: selectedCrop,
+          state: selectedState,
+          marketPriceData: dataForAi
+        });
+        setAiResult(result);
+      } catch (e) {
+        console.error("Trend Analysis Error:", e);
+      } finally {
+        setIsAnalyzing(false);
+      }
     };
     fetchAnalysis();
-  }, [selectedCrop, selectedState, displayPrice]);
+  }, [selectedCrop, selectedState, displayPrice, chartData]);
 
   const getSourceBadge = () => {
     switch (dataSource) {

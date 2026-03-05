@@ -1,4 +1,3 @@
-
 "use client";
 
 import { create } from "zustand";
@@ -46,6 +45,7 @@ interface AppState {
   isAuthenticated: boolean;
   name: string;
   city: string;
+  state: string;
   profileImage: string | null;
   language: AppLanguage;
   langCode: string;
@@ -58,6 +58,7 @@ interface AppState {
   logout: () => void;
   setName: (name: string) => void;
   setCity: (city: string) => void;
+  setState: (state: string) => void;
   setProfileImage: (img: string | null) => void;
   setLanguage: (lang: AppLanguage) => void;
   setTheme: (theme: AppTheme) => void;
@@ -68,10 +69,12 @@ interface AppState {
 export const useAppState = create<AppState>()(
   persist(
     (set) => ({
-      role: null,
-      isAuthenticated: false,
+      // Defaulting to authenticated Farmer to "remove authentication" barrier
+      role: "Farmer",
+      isAuthenticated: true,
       name: "Aman Kumar",
       city: "Bengaluru",
+      state: "Karnataka",
       profileImage: null,
       language: "English",
       langCode: "en",
@@ -86,6 +89,7 @@ export const useAppState = create<AppState>()(
       logout: () => set({ role: null, isAuthenticated: false }),
       setName: (name) => set({ name }),
       setCity: (city) => set({ city }),
+      setState: (state) => set({ state }),
       setProfileImage: (profileImage) => set({ profileImage }),
       setLanguage: (language) => {
         const langCode = LANG_CODES[language] || "en";
@@ -106,7 +110,7 @@ export const useAppState = create<AppState>()(
       })),
     }),
     {
-      name: "kisan-mitra-storage-v3",
+      name: "kisan-mitra-storage-v4",
     }
   )
 );
