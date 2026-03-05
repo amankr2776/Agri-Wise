@@ -30,6 +30,36 @@
       "description": "Farmers discussing techniques",
       "imageUrl": "https://picsum.photos/seed/community1/400/300",
       "imageHint": "people talking"
+    },
+    {
+      "id": "crop-grain",
+      "description": "Golden grain field",
+      "imageUrl": "https://picsum.photos/seed/grain-hero/800/600",
+      "imageHint": "wheat grain"
+    },
+    {
+      "id": "crop-vegetable",
+      "description": "Fresh green vegetables",
+      "imageUrl": "https://picsum.photos/seed/veg-hero/800/600",
+      "imageHint": "vegetables garden"
+    },
+    {
+      "id": "crop-fruit",
+      "description": "Fruit orchard",
+      "imageUrl": "https://picsum.photos/seed/fruit-hero/800/600",
+      "imageHint": "fruit tree"
+    },
+    {
+      "id": "crop-plant",
+      "description": "Lush plantation",
+      "imageUrl": "https://picsum.photos/seed/plant-hero/800/600",
+      "imageHint": "green plant"
+    },
+    {
+      "id": "crop-seed",
+      "description": "Close up of agricultural seeds",
+      "imageUrl": "https://picsum.photos/seed/seed-hero/800/600",
+      "imageHint": "seeds grain"
     }
   ]
 }

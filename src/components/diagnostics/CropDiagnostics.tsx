@@ -20,6 +20,7 @@ import {
   Info,
   TrendingUp
 } from "lucide-react";
+import Image from "next/image";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -114,7 +115,15 @@ export function CropDiagnostics() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
           <div className="lg:col-span-5">
             <Card className="rounded-[3rem] overflow-hidden border-none shadow-2xl sticky top-24">
-              <img src={selectedCrop.imageUrl} className="w-full aspect-square object-cover" alt={selectedCrop.name} />
+              <div className="relative aspect-square">
+                <Image 
+                  src={selectedCrop.imageUrl} 
+                  fill
+                  className="object-cover" 
+                  alt={selectedCrop.name}
+                  data-ai-hint="crop diagnosis"
+                />
+              </div>
               <div className="absolute top-6 left-6 flex gap-2">
                 <Badge className="bg-primary/90 text-white border-none px-4 py-1.5 font-black uppercase tracking-widest text-[10px]">
                   {selectedCrop.category}
@@ -254,7 +263,13 @@ export function CropDiagnostics() {
                   className="group cursor-pointer"
                 >
                   <Card className="glass-card rounded-[2.5rem] overflow-hidden border-none shadow-xl h-[400px] relative">
-                    <img src={crop.imageUrl} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" alt={crop.name} />
+                    <Image 
+                      src={crop.imageUrl} 
+                      fill
+                      className="object-cover transition-transform duration-700 group-hover:scale-110" 
+                      alt={crop.name} 
+                      data-ai-hint="crop plant"
+                    />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
                     <div className="absolute bottom-10 left-10 right-10 flex justify-between items-end">
                       <div className="space-y-1">
