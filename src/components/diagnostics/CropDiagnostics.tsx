@@ -64,8 +64,8 @@ const SoundWave = () => (
 );
 
 export function CropDiagnostics() {
-  const { t, language } = useTranslation();
-  const { role, langCode } = useAppState();
+  const { t } = useTranslation();
+  const { role, langCode, language } = useAppState();
   const firestore = useFirestore();
   const { toast } = useToast();
   
@@ -73,8 +73,6 @@ export function CropDiagnostics() {
   const [activeView, setActiveView] = useState<'gallery' | 'detail'>('gallery');
   const [selectedCrop, setSelectedCrop] = useState<any>(null);
   const [isReportOpen, setIsReportOpen] = useState(false);
-  const [editingPrice, setEditingPrice] = useState(false);
-  const [newPrice, setNewPrice] = useState("");
   
   const [isSpeaking, setIsSpeaking] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -92,8 +90,8 @@ export function CropDiagnostics() {
   }, [allCrops, selectedCategory]);
 
   const speakCropDetails = async (crop: any) => {
-    // If expert notes exist, prioritize them as they are the certified "final answer"
-    const text = `${crop.name}. ${t('mandi_price')}: ${crop.estimatedMarketPrice} rupees. Diagnosis: ${crop.diseaseName}. ${crop.expertNotes ? 'Expert instruction: ' + crop.expertNotes : 'Remedy: ' + crop.chemicalCure + '. Heritage advice: ' + crop.desiNuskha}`;
+    // Neural synthesis text: priorities expert notes if certified, ensuring vocal edit-sync
+    const text = `${crop.name}. ${crop.diseaseName}. ${crop.expertNotes ? crop.expertNotes : crop.chemicalCure + '. ' + crop.desiNuskha}`;
     
     setIsSpeaking(true);
     
@@ -111,26 +109,18 @@ export function CropDiagnostics() {
         audioRef.current.src = `data:audio/wav;base64,${data.audioContent}`;
         audioRef.current.onended = () => setIsSpeaking(false);
         audioRef.current.play();
-      } else if (data.simulated) {
+      } else {
+        // Fallback to browser TTS forcing regional locale
         const utterance = new SpeechSynthesisUtterance(text);
-        utterance.lang = langCode === 'hi' ? 'hi-IN' : 'en-IN';
+        const speechLang = langCode === 'hi' ? 'hi-IN' : langCode === 'pa' ? 'pa-IN' : langCode === 'bn' ? 'bn-IN' : 'en-IN';
+        utterance.lang = speechLang;
         utterance.onend = () => setIsSpeaking(false);
         window.speechSynthesis.speak(utterance);
       }
     } catch (err) {
-      console.error(err);
+      console.error("Vocal Sync Error:", err);
       setIsSpeaking(false);
     }
-  };
-
-  const handleUpdatePrice = () => {
-    if (!firestore || !selectedCrop || !newPrice) return;
-    updateDocumentNonBlocking(doc(firestore, "crops", selectedCrop.id), {
-      estimatedMarketPrice: Number(newPrice)
-    });
-    setSelectedCrop({ ...selectedCrop, estimatedMarketPrice: Number(newPrice) });
-    setEditingPrice(false);
-    toast({ title: "Price Updated", description: "The global market registry has been updated." });
   };
 
   const handleManualReport = async (e: React.FormEvent<HTMLFormElement>) => {

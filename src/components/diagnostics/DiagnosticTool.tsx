@@ -53,7 +53,7 @@ export function DiagnosticTool() {
       });
       setResult(res);
       
-      // Automatically trigger Bhashini TTS for the result
+      // Automatically trigger Bhashini TTS for the result in the target language script
       speakResult(res);
       
     } catch (err) {
@@ -69,7 +69,8 @@ export function DiagnosticTool() {
   };
 
   const speakResult = async (resData: FarmerCropPestDiagnosisOutput) => {
-    const text = `${resData.diagnosis}. Suggested Cure: ${resData.suggestedChemicalRemedies[0]}. Traditional Remedy: ${resData.suggestedTraditionalRemedies[0]}`;
+    // Combine the translated fields for voice synthesis
+    const text = `${resData.diagnosis}. ${resData.suggestedChemicalRemedies[0]}. ${resData.suggestedTraditionalRemedies[0]}`;
     
     setIsSpeaking(true);
     try {
@@ -86,14 +87,16 @@ export function DiagnosticTool() {
         audioRef.current.src = `data:audio/wav;base64,${data.audioContent}`;
         audioRef.current.onended = () => setIsSpeaking(false);
         audioRef.current.play();
-      } else if (data.simulated) {
+      } else {
+        // Fallback to browser TTS if neural bridge is offline, but try to force the correct lang
         const utterance = new SpeechSynthesisUtterance(text);
-        utterance.lang = langCode === 'hi' ? 'hi-IN' : 'en-IN';
+        const speechLang = langCode === 'hi' ? 'hi-IN' : langCode === 'pa' ? 'pa-IN' : langCode === 'bn' ? 'bn-IN' : 'en-IN';
+        utterance.lang = speechLang;
         utterance.onend = () => setIsSpeaking(false);
         window.speechSynthesis.speak(utterance);
       }
     } catch (err) {
-      console.error("Bhashini TTS Error:", err);
+      console.error("Vocal Sync Error:", err);
       setIsSpeaking(false);
     }
   };
@@ -291,7 +294,7 @@ export function DiagnosticTool() {
             <div className="space-y-2">
               <div className="flex items-center justify-between text-xs font-bold">
                 <div className="flex items-center gap-2">
-                  <span className="text-muted-foreground uppercase">AI Confidence</span>
+                  <span className="text-muted-foreground uppercase">Vocal Confidence</span>
                   {isSpeaking && (
                     <div className="flex gap-0.5 items-center">
                       {[1, 2, 3].map(i => (
@@ -305,7 +308,7 @@ export function DiagnosticTool() {
                     </div>
                   )}
                 </div>
-                <span className="text-primary">{result ? "92%" : "Ready"}</span>
+                <span className="text-primary">{result ? "Neural Active" : "Ready"}</span>
               </div>
               <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
                 <div className={cn("h-full bg-primary transition-all duration-1000", result ? "w-[92%]" : "w-0")} />
@@ -314,7 +317,7 @@ export function DiagnosticTool() {
             {isSpeaking && (
               <div className="p-4 rounded-2xl bg-primary/5 border border-primary/10 flex items-center gap-3 animate-in fade-in">
                 <Volume2 className="h-4 w-4 text-primary animate-pulse" />
-                <span className="text-[9px] font-black uppercase text-primary tracking-widest">Neural Audio Stream: Active</span>
+                <span className="text-[9px] font-black uppercase text-primary tracking-widest">Bhashini Neural Stream: {language}</span>
               </div>
             )}
           </div>
