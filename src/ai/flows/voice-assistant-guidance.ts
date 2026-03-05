@@ -1,7 +1,7 @@
-
 'use server';
 /**
- * @fileOverview A conversational AI voice assistant for farmers with deep regional language support.
+ * @fileOverview A universal multimodal AI assistant for farmers with regional language support.
+ * Handles text and image inputs, providing text and audio responses.
  */
 
 import {ai} from '@/ai/genkit';
@@ -9,8 +9,9 @@ import {z} from 'genkit';
 import wav from 'wav';
 
 const VoiceAssistantGuidanceInputSchema = z.object({
-  query: z.string().describe("The farmer's spoken question in their preferred language."),
-  language: z.string().describe("The preferred language of the farmer."),
+  query: z.string().describe("The user's question or prompt."),
+  language: z.string().describe("The preferred language of the user."),
+  photoDataUri: z.string().optional().describe("Optional image data URI for multimodal analysis."),
 });
 export type VoiceAssistantGuidanceInput = z.infer<typeof VoiceAssistantGuidanceInputSchema>;
 
@@ -37,23 +38,27 @@ const voiceAssistantGuidanceFlow = ai.defineFlow(
     outputSchema: VoiceAssistantGuidanceOutputSchema,
   },
   async input => {
-    // Generate a response in the target language
+    // Generate a response in the target language using multimodal Gemini 2.5 Flash
     const {text: textResponse} = await ai.generate({
-      prompt: `You are an expert agricultural AI assistant for the KisanMitra platform. 
-The farmer is asking a question in ${input.language}. 
-YOU MUST RESPOND ENTIRELY IN ${input.language} SCRIPT. 
-
-Farmer's Question: ${input.query}
-
-Provide a concise, helpful, and friendly answer suitable for verbal delivery in the local agricultural context.`,
       model: 'googleai/gemini-2.5-flash',
+      prompt: [
+        { text: `You are KisanMitra, a friendly and helpful AI assistant for the Indian National Agricultural Grid. 
+        You can answer questions about farming, logistics, crop health, or any general topics the user asks about.
+        If an image is provided, analyze it thoroughly and provide context in your response.
+        
+        USER REQUEST: ${input.query}
+        LANGUAGE: ${input.language}
+        
+        CRITICAL: YOU MUST RESPOND ENTIRELY IN THE ${input.language} SCRIPT. Provide a helpful, empathetic, and clear answer.` },
+        ...(input.photoDataUri ? [{ media: { url: input.photoDataUri, contentType: 'image/jpeg' } }] : []),
+      ],
     });
 
     if (!textResponse) {
       throw new Error('No text response generated.');
     }
 
-    // Convert to speech
+    // Convert to speech using the TTS model
     const {media} = await ai.generate({
       model: 'googleai/gemini-2.5-flash-preview-tts',
       config: {

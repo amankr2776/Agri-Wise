@@ -20,10 +20,18 @@ import {
   TrendingUp,
   Volume2,
   UserCheck,
-  Microscope
+  Microscope,
+  Bot,
+  Sparkles,
+  Camera,
+  Send,
+  X,
+  ImageIcon,
+  Mic,
+  MicOff
 } from "lucide-react";
 import Image from "next/image";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -32,6 +40,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
 import { query, collection, doc } from "firebase/firestore";
 import { addDocumentNonBlocking, updateDocumentNonBlocking } from "@/firebase/non-blocking-updates";
@@ -40,6 +49,7 @@ import { useTranslation } from "@/hooks/use-translation";
 import { useAppState } from "@/lib/app-state";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { voiceAssistantGuidance } from "@/ai/flows/voice-assistant-guidance";
 
 const CATEGORIES = ["Plant", "Seed", "Vegetable", "Fruit", "Grain"];
 
@@ -64,7 +74,7 @@ const SoundWave = () => (
 
 export function CropDiagnostics() {
   const { t } = useTranslation();
-  const { role, langCode, language } = useAppState();
+  const { role, langCode, language, name: userName } = useAppState();
   const firestore = useFirestore();
   const { toast } = useToast();
   
@@ -73,8 +83,17 @@ export function CropDiagnostics() {
   const [selectedCrop, setSelectedCrop] = useState<any>(null);
   const [isReportOpen, setIsReportOpen] = useState(false);
   
+  // AI Assistant State
+  const [chatInput, setInput] = useState("");
+  const [chatMessages, setMessages] = useState<any[]>([
+    { role: 'bot', text: `Namaste ${userName}! I am KisanMitra, your National Grid Assistant. Ask me anything about your crops, logistics, or even general topics. You can even upload a photo!` }
+  ]);
+  const [isAiLoading, setIsAiLoading] = useState(false);
+  const [photo, setPhoto] = useState<string | null>(null);
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [isListening, setIsListening] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const chatScrollRef = useRef<HTMLDivElement>(null);
 
   const cropsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
@@ -88,35 +107,68 @@ export function CropDiagnostics() {
     return allCrops.filter(crop => crop.category === selectedCategory);
   }, [allCrops, selectedCategory]);
 
-  const speakCropDetails = async (crop: any) => {
-    const text = `${crop.name}. ${crop.diseaseName}. ${crop.expertNotes ? crop.expertNotes : crop.chemicalCure + '. ' + crop.desiNuskha}`;
-    
-    setIsSpeaking(true);
-    
+  const handleAiSend = async (queryText?: string) => {
+    const finalQuery = queryText || chatInput;
+    if (!finalQuery.trim() && !photo) return;
+
+    const userMsg = { role: 'user', text: finalQuery, image: photo };
+    setMessages(prev => [...prev, userMsg]);
+    setInput("");
+    const currentPhoto = photo;
+    setPhoto(null);
+    setIsAiLoading(true);
+
     try {
-      const response = await fetch('/api/bhashini', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text, langCode })
+      const response = await voiceAssistantGuidance({
+        query: finalQuery || "Analyze this image.",
+        language: language,
+        photoDataUri: currentPhoto || undefined
       });
 
-      const data = await response.json();
+      setMessages(prev => [...prev, { 
+        role: 'bot', 
+        text: response.text, 
+        audioUri: response.audioDataUri 
+      }]);
 
-      if (data.audioContent) {
-        if (!audioRef.current) audioRef.current = new Audio();
-        audioRef.current.src = `data:audio/wav;base64,${data.audioContent}`;
-        audioRef.current.onended = () => setIsSpeaking(false);
+      if (response.audioDataUri && audioRef.current) {
+        audioRef.current.src = response.audioDataUri;
         audioRef.current.play();
-      } else {
-        const utterance = new SpeechSynthesisUtterance(text);
-        const speechLang = langCode === 'hi' ? 'hi-IN' : langCode === 'pa' ? 'pa-IN' : langCode === 'bn' ? 'bn-IN' : 'en-IN';
-        utterance.lang = speechLang;
-        utterance.onend = () => setIsSpeaking(false);
-        window.speechSynthesis.speak(utterance);
+        setIsSpeaking(true);
+        audioRef.current.onended = () => setIsSpeaking(false);
       }
-    } catch (err) {
-      console.error("Vocal Sync Error:", err);
-      setIsSpeaking(false);
+    } catch (error) {
+      console.error(error);
+      setMessages(prev => [...prev, { role: 'bot', text: "I encountered an error connecting to the National Grid. Please try again." }]);
+    } finally {
+      setIsAiLoading(false);
+    }
+  };
+
+  const toggleListening = () => {
+    const recognitionClass = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
+    if (!recognitionClass) {
+      toast({ variant: "destructive", title: "Voice Not Supported", description: "Please use a modern browser like Chrome." });
+      return;
+    }
+    const recognition = new recognitionClass();
+    recognition.lang = langCode === 'hi' ? 'hi-IN' : 'en-IN';
+    recognition.onstart = () => setIsListening(true);
+    recognition.onend = () => setIsListening(false);
+    recognition.onresult = (event: any) => {
+      const transcript = event.results[0][0].transcript;
+      handleAiSend(transcript);
+    };
+    if (isListening) recognition.stop();
+    else recognition.start();
+  };
+
+  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => setPhoto(reader.result as string);
+      reader.readAsDataURL(file);
     }
   };
 
@@ -184,16 +236,6 @@ export function CropDiagnostics() {
                   {isSpeaking && <SoundWave />}
                 </div>
               </div>
-              <Button 
-                onClick={() => speakCropDetails(liveCrop)} 
-                disabled={isSpeaking}
-                className={cn(
-                  "h-20 w-20 rounded-[2rem] shadow-xl transition-all active:scale-95",
-                  isSpeaking ? "bg-primary/20 text-primary" : "bg-primary text-white hover:bg-primary/90"
-                )}
-              >
-                {isSpeaking ? <Loader2 className="h-8 w-8 animate-spin" /> : <Volume2 className="h-10 w-10" />}
-              </Button>
             </div>
 
             {liveCrop.expertNotes && (
@@ -264,81 +306,200 @@ export function CropDiagnostics() {
   }
 
   return (
-    <div className="space-y-12">
-      <div className="space-y-8">
-        <div className="flex flex-col md:flex-row justify-between items-center gap-6">
-          <div className="flex flex-wrap gap-2 p-1.5 bg-muted/50 rounded-2xl">
-            {CATEGORIES.map(cat => (
-              <Button
-                key={cat}
-                onClick={() => setSelectedCategory(cat)}
-                variant={selectedCategory === cat ? "default" : "ghost"}
-                className={cn(
-                  "rounded-xl font-black text-xs uppercase tracking-widest px-6 h-11 transition-all",
-                  selectedCategory === cat ? "bg-primary text-white shadow-lg" : "text-muted-foreground hover:bg-primary/5 hover:text-primary"
-                )}
-              >
-                {cat}s
-              </Button>
-            ))}
-          </div>
-          <Button 
-            onClick={() => setIsReportOpen(true)}
-            className="rounded-2xl h-14 px-8 font-black gap-2 bg-slate-900 text-white shadow-xl hover:bg-slate-800 transition-all hover:scale-105 active:scale-95"
-          >
-            <PlusCircle className="h-5 w-5" /> {t("report_issue")}
-          </Button>
-        </div>
-
-        {isLoading ? (
-          <div className="p-20 text-center"><Loader2 className="animate-spin mx-auto text-primary" /></div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-            <AnimatePresence mode="popLayout">
-              {filteredCrops.map((crop) => (
-                <motion.div
-                  key={crop.id}
-                  layout
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  whileHover={{ scale: 1.05 }}
-                  onClick={() => { setSelectedCrop(crop); setActiveView('detail'); }}
-                  className="group cursor-pointer"
+    <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+      <div className="lg:col-span-8 space-y-12">
+        <div className="space-y-8">
+          <div className="flex flex-col md:flex-row justify-between items-center gap-6">
+            <div className="flex flex-wrap gap-2 p-1.5 bg-muted/50 rounded-2xl">
+              {CATEGORIES.map(cat => (
+                <Button
+                  key={cat}
+                  onClick={() => setSelectedCategory(cat)}
+                  variant={selectedCategory === cat ? "default" : "ghost"}
+                  className={cn(
+                    "rounded-xl font-black text-xs uppercase tracking-widest px-6 h-11 transition-all",
+                    selectedCategory === cat ? "bg-primary text-white shadow-lg" : "text-muted-foreground hover:bg-primary/5 hover:text-primary"
+                  )}
                 >
-                  <Card className="glass-card rounded-[2.5rem] overflow-hidden border-none shadow-xl h-[400px] relative">
-                    <Image 
-                      src={crop.imageUrl || `https://picsum.photos/seed/${crop.id}/800/600`} 
-                      fill
-                      className="object-cover transition-transform duration-700 group-hover:scale-110" 
-                      alt={crop.name} 
-                      data-ai-hint="crop plant"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-                    <div className="absolute top-6 right-6">
-                      {crop.isCertified ? (
-                        <Badge className="bg-amber-500 text-white border-none font-black text-[8px] uppercase tracking-widest px-2 shadow-lg">Verified</Badge>
-                      ) : (
-                        <Badge className="bg-white/20 backdrop-blur-md text-white border-white/20 font-black text-[8px] uppercase tracking-widest px-2">AI Draft</Badge>
-                      )}
-                    </div>
-                    <div className="absolute bottom-10 left-10 right-10 flex justify-between items-end">
-                      <div className="space-y-1">
-                        <Badge className="bg-primary/20 text-primary border-none font-black text-[9px] uppercase tracking-widest mb-2">
-                          {crop.category}
-                        </Badge>
-                        <h3 className="text-3xl font-black text-white tracking-tighter">{crop.name}</h3>
-                        <p className="text-white/60 text-xs font-bold uppercase tracking-widest">{crop.diseaseName}</p>
-                      </div>
-                      <div className="h-10 w-10 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center text-white group-hover:bg-primary group-hover:text-white transition-all">
-                        <ChevronRight className="h-5 w-5" />
-                      </div>
-                    </div>
-                  </Card>
-                </motion.div>
+                  {cat}s
+                </Button>
               ))}
-            </AnimatePresence>
+            </div>
+            <Button 
+              onClick={() => setIsReportOpen(true)}
+              className="rounded-2xl h-14 px-8 font-black gap-2 bg-slate-900 text-white shadow-xl hover:bg-slate-800 transition-all hover:scale-105 active:scale-95"
+            >
+              <PlusCircle className="h-5 w-5" /> {t("report_issue")}
+            </Button>
           </div>
-        )}
+
+          {isLoading ? (
+            <div className="p-20 text-center"><Loader2 className="animate-spin mx-auto text-primary" /></div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+              <AnimatePresence mode="popLayout">
+                {filteredCrops.map((crop) => (
+                  <motion.div
+                    key={crop.id}
+                    layout
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    whileHover={{ scale: 1.05 }}
+                    onClick={() => { setSelectedCrop(crop); setActiveView('detail'); }}
+                    className="group cursor-pointer"
+                  >
+                    <Card className="glass-card rounded-[2.5rem] overflow-hidden border-none shadow-xl h-[350px] relative">
+                      <Image 
+                        src={crop.imageUrl || `https://picsum.photos/seed/${crop.id}/800/600`} 
+                        fill
+                        className="object-cover transition-transform duration-700 group-hover:scale-110" 
+                        alt={crop.name} 
+                        data-ai-hint="crop plant"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                      <div className="absolute top-6 right-6">
+                        {crop.isCertified ? (
+                          <Badge className="bg-amber-500 text-white border-none font-black text-[8px] uppercase tracking-widest px-2 shadow-lg">Verified</Badge>
+                        ) : (
+                          <Badge className="bg-white/20 backdrop-blur-md text-white border-white/20 font-black text-[8px] uppercase tracking-widest px-2">AI Draft</Badge>
+                        )}
+                      </div>
+                      <div className="absolute bottom-10 left-10 right-10 flex justify-between items-end">
+                        <div className="space-y-1">
+                          <Badge className="bg-primary/20 text-primary border-none font-black text-[9px] uppercase tracking-widest mb-2">
+                            {crop.category}
+                          </Badge>
+                          <h3 className="text-3xl font-black text-white tracking-tighter">{crop.name}</h3>
+                          <p className="text-white/60 text-xs font-bold uppercase tracking-widest">{crop.diseaseName}</p>
+                        </div>
+                        <div className="h-10 w-10 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center text-white group-hover:bg-primary group-hover:text-white transition-all">
+                          <ChevronRight className="h-5 w-5" />
+                        </div>
+                      </div>
+                    </Card>
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* AI Assistant Sidebar Panel */}
+      <div className="lg:col-span-4 space-y-8">
+        <Card className="border-none shadow-2xl rounded-[3rem] bg-white flex flex-col h-[700px] overflow-hidden sticky top-24">
+          <CardHeader className="bg-slate-900 text-white p-8">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 bg-primary/20 rounded-xl flex items-center justify-center">
+                  <Bot className="h-6 w-6 text-primary" />
+                </div>
+                <div>
+                  <CardTitle className="text-xl font-black">Kisan Assistant</CardTitle>
+                  <CardDescription className="text-slate-400 font-medium italic text-xs">National Grid Intelligence</CardDescription>
+                </div>
+              </div>
+              {isSpeaking && <SoundWave />}
+            </div>
+          </CardHeader>
+
+          <CardContent className="flex-1 p-6 overflow-hidden bg-muted/5">
+            <ScrollArea className="h-full pr-4">
+              <div className="space-y-6 pb-4">
+                {chatMessages.map((m, i) => (
+                  <div key={i} className={cn("flex w-full", m.role === "user" ? "justify-end" : "justify-start")}>
+                    <div className={cn(
+                      "max-w-[85%] p-4 rounded-[1.5rem] shadow-sm relative group",
+                      m.role === "user" 
+                        ? "bg-primary text-white rounded-tr-none" 
+                        : "bg-white border border-border rounded-tl-none"
+                    )}>
+                      <div className="space-y-3">
+                        {m.image && (
+                          <div className="relative aspect-video rounded-xl overflow-hidden shadow-md">
+                            <img src={m.image} alt="Uploaded context" className="w-full h-full object-cover" />
+                          </div>
+                        )}
+                        <p className="text-sm font-medium leading-relaxed">{m.text}</p>
+                        {m.audioUri && (
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="h-8 text-[10px] gap-2 px-3 bg-muted/50 hover:bg-muted font-bold rounded-full"
+                            onClick={() => {
+                              if (audioRef.current) {
+                                audioRef.current.src = m.audioUri;
+                                audioRef.current.play();
+                              }
+                            }}
+                          >
+                            <Volume2 className="h-3 w-3" /> REPLAY
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                {isAiLoading && (
+                  <div className="flex justify-start">
+                    <div className="bg-white border border-border p-4 rounded-[1.5rem] rounded-tl-none flex items-center gap-3 shadow-sm">
+                      <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                      <span className="text-xs text-muted-foreground font-bold italic">Consulting National Grid...</span>
+                    </div>
+                  </div>
+                )}
+                <div ref={chatScrollRef} />
+              </div>
+            </ScrollArea>
+          </CardContent>
+
+          <div className="p-6 bg-white border-t space-y-4">
+            {photo && (
+              <div className="relative w-20 h-20 rounded-xl overflow-hidden border shadow-lg animate-in zoom-in">
+                <img src={photo} className="w-full h-full object-cover" alt="Context preview" />
+                <button onClick={() => setPhoto(null)} className="absolute top-1 right-1 bg-destructive text-white rounded-full p-0.5">
+                  <X className="h-3 w-3" />
+                </button>
+              </div>
+            )}
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <Input
+                  placeholder={`Ask anything in ${language}...`}
+                  value={chatInput}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyPress={(e) => e.key === "Enter" && handleAiSend()}
+                  className="rounded-2xl h-12 bg-muted/30 border-none font-medium pr-10 focus-visible:ring-primary shadow-inner"
+                />
+                <label className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer text-muted-foreground hover:text-primary transition-colors">
+                  <ImageIcon className="h-5 w-5" />
+                  <input type="file" className="hidden" accept="image/*" onChange={handlePhotoUpload} />
+                </label>
+              </div>
+              <Button 
+                onClick={toggleListening}
+                variant={isListening ? "destructive" : "secondary"}
+                size="icon"
+                className={cn("rounded-2xl h-12 w-12 shrink-0 transition-all", isListening && "animate-pulse")}
+              >
+                {isListening ? <MicOff className="h-5 w-5" /> : <Mic className="h-5 w-5" />}
+              </Button>
+              <Button 
+                onClick={() => handleAiSend()} 
+                disabled={isAiLoading || (!chatInput.trim() && !photo)}
+                className="rounded-2xl h-12 w-12 shrink-0 shadow-lg shadow-primary/20"
+              >
+                <Send className="h-5 w-5" />
+              </Button>
+            </div>
+            <div className="flex items-center justify-between px-2">
+              <Badge variant="outline" className="text-[8px] border-primary/20 text-primary font-black uppercase tracking-widest">
+                Multimodal Input Active
+              </Badge>
+              <span className="text-[8px] font-bold text-muted-foreground uppercase">{language} Neural Bridge</span>
+            </div>
+          </div>
+        </Card>
       </div>
 
       <Dialog open={isReportOpen} onOpenChange={setIsReportOpen}>
@@ -366,6 +527,7 @@ export function CropDiagnostics() {
           </form>
         </DialogContent>
       </Dialog>
+      <audio ref={audioRef} className="hidden" />
     </div>
   );
 }
