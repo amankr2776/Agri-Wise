@@ -85,6 +85,22 @@
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["shipmentId", "farmerId", "issueType", "status"]
+    },
+    "Conversation": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Conversation",
+      "type": "object",
+      "description": "A structured exchange between a user and the AI Assistant.",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "prompt": { "type": "string" },
+        "answer": { "type": "string" },
+        "suggestedAction": { "type": "string" },
+        "imageUrl": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "prompt", "answer", "createdAt"]
     }
   },
   "auth": {
@@ -103,6 +119,16 @@
             "$ref": "#/backend/entities/UserProfile"
           },
           "description": "Stores user profile information."
+        }
+      },
+      {
+        "path": "/users/{userId}/conversations/{conversationId}",
+        "definition": {
+          "entityName": "Conversation",
+          "schema": {
+            "$ref": "#/backend/entities/Conversation"
+          },
+          "description": "History of AI assistant interactions."
         }
       },
       {
