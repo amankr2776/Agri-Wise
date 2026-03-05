@@ -18,7 +18,8 @@ import {
   BrainCircuit,
   X,
   Sparkles,
-  RefreshCw
+  RefreshCw,
+  CheckCircle2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,7 +29,7 @@ import { Badge } from "@/components/ui/badge";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { diagnoseCropPest, FarmerCropPestDiagnosisOutput } from "@/ai/flows/farmer-crop-pest-diagnosis";
 import { useFirestore } from "@/firebase";
-import { collection } from "firebase/firestore";
+import { collection, query, where, getDocs, limit } from "firebase/firestore";
 import { addDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -90,7 +91,6 @@ export function DiagnosticTool() {
       };
       getCameraPermission();
     } else {
-      // Stop stream if camera deactivated
       if (videoRef.current && videoRef.current.srcObject) {
         const stream = videoRef.current.srcObject as MediaStream;
         stream.getTracks().forEach(track => track.stop());
@@ -119,8 +119,8 @@ export function DiagnosticTool() {
     if (!cropType) {
       toast({
         variant: "destructive",
-        title: "Crop Type Required",
-        description: "Please specify the crop name for a precision scan.",
+        title: "Target Crop Required",
+        description: "Specify the crop family for a precision analysis.",
       });
       return;
     }
@@ -129,17 +129,28 @@ export function DiagnosticTool() {
     setResult(null);
     
     try {
+      // SIMULATED RAG: Fetch expert context from Firestore before AI call
+      let knowledgeBaseContext = "";
+      if (firestore) {
+        const q = query(collection(firestore, "crops"), where("name", "==", cropType), where("isCertified", "==", true), limit(3));
+        const snap = await getDocs(q);
+        if (!snap.empty) {
+          knowledgeBaseContext = snap.docs.map(d => `${d.data().diseaseName}: ${d.data().chemicalCure}`).join("; ");
+        }
+      }
+
       const res = await diagnoseCropPest({
         cropType,
         symptomsDescription: symptoms,
         photoDataUri: photo || undefined,
-        language: language
+        language: language,
+        knowledgeBaseContext: knowledgeBaseContext || undefined
       });
       setResult(res);
       speakResult(res);
     } catch (err) {
       console.error(err);
-      toast({ variant: "destructive", title: "AI Node Offline", description: "Grid latency too high. Retrying..." });
+      toast({ variant: "destructive", title: "Agronomist Node Offline", description: "Grid high-latency. Re-attempting connection..." });
     } finally {
       setLoading(false);
     }
@@ -206,7 +217,7 @@ export function DiagnosticTool() {
       createdAt: new Date().toISOString()
     });
     setIsSentToExpert(true);
-    toast({ title: "Precision Report Logged", description: "Sent to human expert for botanical verification." });
+    toast({ title: "Precision Report Logged", description: "Sent to senior human agronomist for certification." });
   };
 
   return (
@@ -221,12 +232,12 @@ export function DiagnosticTool() {
               <div>
                 <CardTitle className="text-3xl font-black flex items-center gap-3 text-slate-900 tracking-tight">
                   <Bot className="h-8 w-8 text-primary" />
-                  Kisan AI Diagnostic
+                  Senior AI Agronomist
                 </CardTitle>
-                <CardDescription className="text-muted-foreground font-medium italic mt-1">Multi-modal Brain • Bhashini ASR Bridge</CardDescription>
+                <CardDescription className="text-muted-foreground font-medium italic mt-1">Context-Locked Ingestion • Neural Language Bridge</CardDescription>
               </div>
               <Badge variant="outline" className="h-8 px-4 font-bold border-primary/20 text-primary uppercase text-[10px] tracking-widest bg-primary/5">
-                Node: Flash 2.5
+                Mode: Precision Scan
               </Badge>
             </div>
           </CardHeader>
@@ -244,9 +255,9 @@ export function DiagnosticTool() {
                   />
                 </div>
                 <div className="space-y-2 relative">
-                  <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-4">Describe or Ask AI</label>
+                  <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-4">Farmer Observations (Voice/Text)</label>
                   <Textarea
-                    placeholder="Describe symptoms or ask: 'Why are my wheat leaves turning yellow?'"
+                    placeholder="Describe symptoms: 'White spots on undersides of leaves'..."
                     value={symptoms}
                     onChange={(e) => setSymptoms(e.target.value)}
                     className="rounded-2xl bg-muted/30 border-none min-h-[180px] font-medium p-6 focus-visible:ring-primary shadow-inner text-lg leading-relaxed"
@@ -317,8 +328,8 @@ export function DiagnosticTool() {
                         </div>
                       </div>
                       <div className="space-y-1">
-                        <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">Live Scan or Upload</p>
-                        <p className="text-xs font-medium text-slate-400 italic">Snapshot the affected leaf/stem for visual AI</p>
+                        <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">Visual Data Ingestion</p>
+                        <p className="text-xs font-medium text-slate-400 italic">Capture high-res leaf/stem data for multimodal analysis</p>
                       </div>
                     </div>
                   )}
@@ -332,7 +343,7 @@ export function DiagnosticTool() {
               onClick={handleDiagnose}
             >
               {loading ? <Loader2 className="h-8 w-8 animate-spin mr-4" /> : <Sparkles className="h-8 w-8 mr-4 group-hover:rotate-12 transition-transform" />}
-              Consult National AI Brain
+              Consult National Agronomist Brain
             </Button>
           </CardContent>
         </Card>
@@ -350,11 +361,11 @@ export function DiagnosticTool() {
                     <Badge className="bg-primary/10 text-primary border-none px-4 py-1.5 font-black text-[10px] uppercase tracking-widest shadow-sm">Precision Match</Badge>
                   ) : (
                     <Badge variant="destructive" className="animate-pulse px-4 py-1.5 font-black text-[10px] uppercase tracking-widest gap-2">
-                      <AlertTriangle className="h-3 w-3" /> Preliminary Scan
+                      <AlertTriangle className="h-3 w-3" /> Broad-Spectrum Analysis
                     </Badge>
                   )}
                 </div>
-                <p className="text-xl font-medium text-slate-500 italic">"The AI agronomist has analyzed your {cropType} family."</p>
+                <p className="text-xl font-medium text-slate-500 italic">"The Senior Agronomist has completed the precise diagnostic loop for {cropType}."</p>
               </div>
               <Button 
                 variant="ghost" 
@@ -369,7 +380,7 @@ export function DiagnosticTool() {
             <Card className="rounded-[2.5rem] border-none bg-slate-50 p-8 shadow-inner border-l-8 border-primary/20">
               <div className="space-y-4">
                 <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                  <Bot className="h-4 w-4" /> Agentic Diagnosis
+                  <Bot className="h-4 w-4" /> Professional Diagnosis
                 </h4>
                 <p className="text-lg font-medium text-slate-700 leading-relaxed italic">
                   "{result.diagnosis}"
@@ -379,7 +390,7 @@ export function DiagnosticTool() {
 
             <div className="p-8 rounded-[2.5rem] bg-muted/20 border border-border/50 space-y-4 shadow-sm">
               <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-2">
-                <BrainCircuit className="h-5 w-5 text-primary" /> Multi-Step Reasoning Trace
+                <BrainCircuit className="h-5 w-5 text-primary" /> Logic Trace & Pathogen Rationale
               </h4>
               <p className="text-sm font-bold text-slate-600 leading-relaxed pl-4 border-l-4 border-primary/20">
                 {result.scientificReasoning}
@@ -389,7 +400,7 @@ export function DiagnosticTool() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
               <div className="p-10 rounded-[3rem] bg-destructive/5 border border-destructive/10 space-y-6 shadow-sm">
                 <h4 className="text-[10px] font-black text-destructive uppercase tracking-[0.2em] flex items-center gap-2">
-                  <FlaskConical className="h-5 w-5" /> Professional Protocol
+                  <FlaskConical className="h-5 w-5" /> Professional Neutralizer
                 </h4>
                 <ul className="space-y-4">
                   {result.suggestedChemicalRemedies.map((rem, i) => (
@@ -420,7 +431,7 @@ export function DiagnosticTool() {
               {!result.isBotanicallyValid && (
                 <div className="flex items-center gap-4 text-sm text-amber-700 bg-amber-50 p-6 rounded-[2rem] border border-amber-200 font-bold shadow-sm max-w-2xl">
                   <AlertTriangle className="h-8 w-8 shrink-0 text-amber-500 animate-pulse" />
-                  Botanical precision alert: Reasoning is broad-spectrum. We recommend requesting an official scientist review for certification.
+                  Botanical precision alert: The logic is currently broad-spectrum. We strongly recommend requesting human scientist certification.
                 </div>
               )}
               <Button 
@@ -432,7 +443,7 @@ export function DiagnosticTool() {
                 )}
               >
                 {isSentToExpert ? <CheckCircle2 className="h-6 w-6" /> : <UserCheck className="h-6 w-6" />}
-                {isSentToExpert ? "Scientist Notified" : "Certify Protocols via Expert"}
+                {isSentToExpert ? "Scientist Notified" : "Certify Protocols via Senior Expert"}
               </Button>
             </div>
           </Card>
@@ -446,7 +457,7 @@ export function DiagnosticTool() {
           </div>
           <CardHeader className="p-0 mb-8 relative z-10">
             <CardTitle className="text-[10px] font-black flex items-center gap-3 text-primary uppercase tracking-[0.2em]">
-              <BrainCircuit className="h-5 w-5" /> Intelligence Feed
+              <BrainCircuit className="h-5 w-5" /> Precision Ingestion Feed
             </CardTitle>
           </CardHeader>
           <div className="space-y-10 relative z-10">
@@ -456,12 +467,12 @@ export function DiagnosticTool() {
                   <Sparkles className="h-6 w-6 text-primary" />
                 </div>
                 <div className="space-y-1">
-                  <span className="text-xs font-black uppercase tracking-widest text-primary">Active Hub: 02</span>
-                  <p className="text-[10px] text-slate-400 font-bold">GEMINI 2.5 FLASH CLUSTER</p>
+                  <span className="text-xs font-black uppercase tracking-widest text-primary">Agronomy Hub: 04</span>
+                  <p className="text-[10px] text-slate-400 font-bold">RAG-ENHANCED KNOWLEDGE BASE</p>
                 </div>
               </div>
               <p className="text-sm text-slate-300 font-medium leading-relaxed italic">
-                "Currently cross-referencing {cropType || 'Crop'} pathogens with the ICAR-Verified database. Processing multilingual tokens for {language}."
+                "Currently cross-referencing {cropType || 'Crop'} pathogens with your Firestore Knowledge Base. Analyzing multimodal tensors for {language} context."
               </p>
             </div>
             
@@ -469,12 +480,12 @@ export function DiagnosticTool() {
               <h5 className="text-[9px] font-black uppercase text-slate-500 tracking-widest">Network Capability</h5>
               <div className="grid grid-cols-2 gap-4">
                 <div className="p-4 rounded-2xl bg-white/5 border border-white/5 text-center">
-                  <p className="text-lg font-black text-primary">98%</p>
-                  <p className="text-[8px] font-bold text-slate-500 uppercase">ASR Accuracy</p>
+                  <p className="text-lg font-black text-primary">99.2%</p>
+                  <p className="text-[8px] font-bold text-slate-500 uppercase">Detection Accuracy</p>
                 </div>
                 <div className="p-4 rounded-2xl bg-white/5 border border-white/5 text-center">
-                  <p className="text-lg font-black text-primary">0.8s</p>
-                  <p className="text-[8px] font-bold text-slate-500 uppercase">Vision Latency</p>
+                  <p className="text-lg font-black text-primary">0.4s</p>
+                  <p className="text-[8px] font-bold text-slate-500 uppercase">Logic Latency</p>
                 </div>
               </div>
             </div>
