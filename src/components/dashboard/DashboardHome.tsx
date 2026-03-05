@@ -23,7 +23,6 @@ import {
   FlaskConical,
   ClipboardCheck,
   RefreshCw,
-  Tool,
   ShieldCheck,
   Microscope,
   Radio
@@ -42,7 +41,7 @@ import {
 import { useAppState } from "@/lib/app-state";
 import { useTranslation } from "@/hooks/use-translation";
 import { cn } from "@/lib/utils";
-import { motion, useSpring, useTransform, animate } from "framer-motion";
+import { motion, animate } from "framer-motion";
 import { useFirestore, useCollection, useMemoFirebase, useUser } from "@/firebase";
 import { collection, query, where } from "firebase/firestore";
 
@@ -107,19 +106,36 @@ export function DashboardHome({ onNavigate }: DashboardHomeProps) {
     return () => clearInterval(interval);
   }, []);
 
+  // --- Real-Time Data Fetching for Farmer ---
+  const farmerShipmentsQuery = useMemoFirebase(() => {
+    if (!firestore || !user || role !== "Farmer") return null;
+    return query(collection(firestore, "bookings"), where("farmerId", "==", user.uid));
+  }, [firestore, user, role]);
+  const { data: farmerShipments, isLoading: loadingFarmerShipments } = useCollection(farmerShipmentsQuery);
+
+  const globalAlertsQuery = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return query(collection(firestore, "pestOutbreaks"));
+  }, [firestore]);
+  const { data: globalAlerts, isLoading: loadingAlerts } = useCollection(globalAlertsQuery);
+
+  const globalPostsQuery = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return query(collection(firestore, "posts"));
+  }, [firestore]);
+  const { data: globalPosts, isLoading: loadingPosts } = useCollection(globalPostsQuery);
+
   // --- Real-Time Data Fetching for Expert ---
   const pendingPostsQuery = useMemoFirebase(() => {
     if (!firestore || (role !== "Expert" && role !== "Authority")) return null;
     return query(collection(firestore, "posts"), where("isVerified", "==", false));
   }, [firestore, role]);
-
   const { data: pendingPosts, isLoading: loadingPending } = useCollection(pendingPostsQuery);
 
   const outbreaksQuery = useMemoFirebase(() => {
     if (!firestore || (role !== "Expert" && role !== "Authority")) return null;
     return query(collection(firestore, "pestOutbreaks"), where("state", "==", "Karnataka"));
   }, [firestore, role]);
-
   const { data: outbreaks, isLoading: loadingOutbreaks } = useCollection(outbreaksQuery);
 
   // --- Real-Time Data Fetching for Logistics ---
@@ -127,14 +143,12 @@ export function DashboardHome({ onNavigate }: DashboardHomeProps) {
     if (!firestore || !user || role !== "Logistics") return null;
     return query(collection(firestore, "vehicles"), where("ownerId", "==", user.uid));
   }, [firestore, user, role]);
-
   const { data: myVehicles, isLoading: loadingVehicles } = useCollection(myVehiclesQuery);
 
   const activeBookingsQuery = useMemoFirebase(() => {
     if (!firestore || role !== "Logistics") return null;
     return query(collection(firestore, "bookings"), where("status", "in", ["Confirmed", "Picked Up", "In Transit"]));
   }, [firestore, role]);
-
   const { data: activeBookings, isLoading: loadingActiveBookings } = useCollection(activeBookingsQuery);
 
   const handleDeepNavigate = (section: string, tab?: string) => {
@@ -145,10 +159,10 @@ export function DashboardHome({ onNavigate }: DashboardHomeProps) {
   const stats = useMemo(() => {
     if (role === "Farmer") {
       return [
-        { id: "diagnostics", label: t("active_alerts"), value: 3, icon: AlertTriangle, color: "text-destructive", bg: "bg-destructive/10" },
-        { id: "market", label: t("best_price"), value: "₹2,150", sub: "Wheat (Nashik)", icon: TrendingUp, color: "text-primary", bg: "bg-primary/10" },
-        { id: "logistics", label: "My Shipments", value: 2, icon: Truck, color: "text-blue-500", bg: "bg-blue-500/10" },
-        { id: "network", label: "Network Posts", value: 12, icon: Users, color: "text-amber-500", bg: "bg-amber-500/10" },
+        { id: "diagnostics", label: t("active_alerts"), value: globalAlerts?.length ?? 0, isLoading: loadingAlerts, icon: AlertTriangle, color: "text-destructive", bg: "bg-destructive/10" },
+        { id: "market", label: t("best_price"), value: "₹2,450", sub: "Wheat (Nashik)", icon: TrendingUp, color: "text-primary", bg: "bg-primary/10" },
+        { id: "logistics", label: "My Shipments", value: farmerShipments?.length ?? 0, isLoading: loadingFarmerShipments, icon: Truck, color: "text-blue-500", bg: "bg-blue-500/10" },
+        { id: "network", label: "Network Posts", value: globalPosts?.length ?? 0, isLoading: loadingPosts, icon: Users, color: "text-amber-500", bg: "bg-amber-500/10" },
       ];
     } else if (role === "Expert" || role === "Authority") {
       return [
@@ -171,7 +185,7 @@ export function DashboardHome({ onNavigate }: DashboardHomeProps) {
       ];
     }
     return [];
-  }, [role, t, pendingPosts, loadingPending, outbreaks, loadingOutbreaks, myVehicles, loadingVehicles, activeBookings, loadingActiveBookings]);
+  }, [role, t, globalAlerts, loadingAlerts, farmerShipments, loadingFarmerShipments, globalPosts, loadingPosts, pendingPosts, loadingPending, outbreaks, loadingOutbreaks, myVehicles, loadingVehicles, activeBookings, loadingActiveBookings]);
 
   const quickActions = useMemo(() => {
     if (role === "Farmer") {
@@ -257,7 +271,7 @@ export function DashboardHome({ onNavigate }: DashboardHomeProps) {
             transition={{ delay: i * 0.1 }}
           >
             <Card 
-              className="glass-card cursor-pointer group hover:scale-[1.02] transition-all rounded-[2.5rem]" 
+              className="glass-card cursor-pointer group hover:scale-105 transition-transform active:scale-95 rounded-[2.5rem]" 
               onClick={() => handleDeepNavigate(stat.id, (stat as any).tab)}
             >
               <CardContent className="p-8 flex items-center justify-between">
@@ -296,7 +310,7 @@ export function DashboardHome({ onNavigate }: DashboardHomeProps) {
                 transition={{ delay: i * 0.1 }}
                 onClick={() => handleDeepNavigate(action.id, (action as any).tab)} 
                 className={cn(
-                  "flex items-center gap-8 p-10 glass-card rounded-[3rem] group transition-all text-left",
+                  "flex items-center gap-8 p-10 glass-card rounded-[3rem] group transition-all text-left hover:scale-105 active:scale-95",
                   (role === 'Expert' || role === 'Authority') ? "hover:bg-slate-900" : "hover:bg-primary"
                 )}
               >
@@ -323,7 +337,7 @@ export function DashboardHome({ onNavigate }: DashboardHomeProps) {
                 key={alert.id} 
                 onClick={() => setSelectedAlert(alert)}
                 className={cn(
-                  "glass-card border-none cursor-pointer group hover:bg-muted/50 transition-all rounded-[2.5rem]",
+                  "glass-card border-none cursor-pointer group hover:bg-muted/50 transition-all rounded-[2.5rem] hover:scale-105 active:scale-95",
                   alert.type === 'Critical' && "border-l-8 border-destructive"
                 )}
               >
