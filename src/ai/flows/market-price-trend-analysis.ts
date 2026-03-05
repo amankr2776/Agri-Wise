@@ -2,6 +2,7 @@
 'use server';
 /**
  * @fileOverview A flow for analyzing crop market prices, predicting trends, and advising Sell vs Hold.
+ * Includes a heuristic fallback engine to handle AI rate-limiting.
  */
 
 import { ai } from '@/ai/genkit';
@@ -70,9 +71,50 @@ const marketPriceTrendAnalysisFlow = ai.defineFlow(
       const { output } = await prompt(input);
       if (!output) throw new Error('Model returned no output.');
       return output;
-    } catch (e) {
-      console.error("Genkit Flow Error:", e);
-      throw e;
+    } catch (e: any) {
+      console.warn("AI Analysis rate-limited or unavailable. Triggering Heuristic Fallback Engine.", e.message);
+      
+      // --- Heuristic Fallback Engine ---
+      const prices = input.marketPriceData.map(d => d.price);
+      if (prices.length < 2) {
+        return {
+          cropType: input.cropType,
+          state: input.state,
+          predictedTrend: 'Stable',
+          recommendedAction: 'Wait',
+          reasoning: "Insufficient data points for trend analysis."
+        };
+      }
+
+      const first = prices[0];
+      const last = prices[prices.length - 1];
+      const diffPercent = ((last - first) / first) * 100;
+
+      let predictedTrend: 'Rising' | 'Stable' | 'Falling' = 'Stable';
+      let recommendedAction: 'Sell' | 'Hold' | 'Wait' = 'Wait';
+      let reasoning = "Grid Heuristics Active: ";
+
+      if (diffPercent > 2) {
+        predictedTrend = 'Rising';
+        recommendedAction = 'Hold';
+        reasoning += `Prices have increased by ${diffPercent.toFixed(1)}% over 7 days. Upward momentum detected. Recommendation: HOLD for peak profit.`;
+      } else if (diffPercent < -2) {
+        predictedTrend = 'Falling';
+        recommendedAction = 'Sell';
+        reasoning += `Prices have dropped by ${Math.abs(diffPercent).toFixed(1)}% this week. Downward trend detected. Recommendation: SELL immediately to minimize loss.`;
+      } else {
+        predictedTrend = 'Stable';
+        recommendedAction = 'Wait';
+        reasoning += "Price volatility is within +/- 2%. The market is currently stable. Recommendation: WAIT for a clearer price signal.";
+      }
+
+      return {
+        cropType: input.cropType,
+        state: input.state,
+        predictedTrend,
+        recommendedAction,
+        reasoning
+      };
     }
   }
 );
