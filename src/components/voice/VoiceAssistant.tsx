@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useRef, useEffect } from "react";
@@ -70,8 +69,12 @@ export function VoiceAssistant() {
       }]);
       
       if (response.audioDataUri && audioRef.current) {
-        audioRef.current.src = response.audioDataUri;
-        audioRef.current.play();
+        try {
+          audioRef.current.src = response.audioDataUri;
+          await audioRef.current.play();
+        } catch (e) {
+          console.warn("Auto audio play failed", e);
+        }
       }
     } catch (error) {
       setMessages((prev) => [...prev, { 
@@ -111,10 +114,14 @@ export function VoiceAssistant() {
     }
   };
 
-  const playAudio = (uri: string) => {
-    if (audioRef.current) {
-      audioRef.current.src = uri;
-      audioRef.current.play();
+  const playAudio = async (uri: string) => {
+    if (audioRef.current && uri) {
+      try {
+        audioRef.current.src = uri;
+        await audioRef.current.play();
+      } catch (e) {
+        console.warn("Manual audio play failed", e);
+      }
     }
   };
 
@@ -195,7 +202,7 @@ export function VoiceAssistant() {
         >
           <Send className="h-4 w-4" />
         </Button>
-        <audio ref={audioRef} className="hidden" />
+        <audio ref={audioRef} className="hidden" aria-hidden="true" />
       </CardFooter>
     </Card>
   );

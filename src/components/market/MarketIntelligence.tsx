@@ -65,14 +65,18 @@ export function MarketIntelligence() {
   const [isSpeaking, setIsSpeaking] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  // Fetching Logic with Regional Variance
+  useEffect(() => {
+    if (typeof window !== 'undefined' && !audioRef.current) {
+      audioRef.current = new Audio();
+    }
+  }, []);
+
   const { data: mandiData, isLoading: loadingMandi, mutate } = useSWR(
     ['mandiPrice', selectedCrop, selectedState, selectedDistrict, selectedMandi],
     async () => {
       if (!firestore) return null;
       
       try {
-        // Tier 1: Local Mandi from Firestore
         const localQ = query(
           collection(firestore, "mandiPrices"),
           where("cropId", "==", selectedCrop),
@@ -83,7 +87,6 @@ export function MarketIntelligence() {
         const localSnap = await getDocs(localQ);
         if (!localSnap.empty) return { ...localSnap.docs[0].data(), source: 'Live' as DataSource };
 
-        // Tier 2: District/State Level from Firestore
         const stateQ = query(
           collection(firestore, "mandiPrices"),
           where("cropId", "==", selectedCrop),
@@ -111,11 +114,9 @@ export function MarketIntelligence() {
     { revalidateOnFocus: true }
   );
 
-  // Trigger AI Regression if Mandi data is null or demo fallback is needed
   useEffect(() => {
     const runRegression = async () => {
       if (mandiData === null && !loadingMandi) {
-        // Calculate regional price offset for simulation based on state/district index
         const stateIdx = INDIA_STATES.findIndex(s => s.name === selectedState);
         const regionalBase = (MARKET_DATASET.find(d => d.commodity === selectedCrop)?.basePrice || 25) * 100;
         const offset = (stateIdx * 15) + (selectedDistrict.length * 2);
@@ -162,7 +163,6 @@ export function MarketIntelligence() {
     ];
   }, [selectedDistrict]);
 
-  // Handle auto-update of Mandi title when location changes
   useEffect(() => {
     if (selectedDistrict) {
       setSelectedMandi(`${selectedDistrict} Central Mandi`);
@@ -188,11 +188,15 @@ export function MarketIntelligence() {
         body: JSON.stringify({ text, langCode })
       });
       const data = await response.json();
-      if (data.audioContent) {
-        if (!audioRef.current) audioRef.current = new Audio();
-        audioRef.current.src = `data:audio/wav;base64,${data.audioContent}`;
-        audioRef.current.onended = () => setIsSpeaking(false);
-        audioRef.current.play();
+      if (data.audioContent && audioRef.current) {
+        try {
+          audioRef.current.src = `data:audio/wav;base64,${data.audioContent}`;
+          audioRef.current.onended = () => setIsSpeaking(false);
+          await audioRef.current.play();
+        } catch (e) {
+          console.warn("Announcement audio failed", e);
+          setIsSpeaking(false);
+        }
       } else {
         const ut = new SpeechSynthesisUtterance(text);
         ut.lang = langCode === 'hi' ? 'hi-IN' : 'en-IN';
@@ -234,7 +238,6 @@ export function MarketIntelligence() {
 
   return (
     <div className="space-y-10 animate-in fade-in duration-500 pb-20">
-      {/* Search & Location Selectors */}
       <div className="flex flex-col gap-8 bg-white p-10 rounded-[3rem] shadow-xl border border-border/50">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div className="flex items-center gap-3">
@@ -385,7 +388,7 @@ export function MarketIntelligence() {
           </Card>
         </div>
       </div>
-      <audio ref={audioRef} className="hidden" />
+      <audio ref={audioRef} className="hidden" aria-hidden="true" />
     </div>
   );
 }

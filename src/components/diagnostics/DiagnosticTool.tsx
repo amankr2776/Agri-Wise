@@ -70,6 +70,12 @@ export function DiagnosticTool() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   useEffect(() => {
+    if (typeof window !== 'undefined' && !audioRef.current) {
+      audioRef.current = new Audio();
+    }
+  }, []);
+
+  useEffect(() => {
     if (isCameraActive) {
       const getCameraPermission = async () => {
         try {
@@ -77,6 +83,9 @@ export function DiagnosticTool() {
           setHasCameraPermission(true);
           if (videoRef.current) {
             videoRef.current.srcObject = stream;
+            videoRef.current.onloadedmetadata = () => {
+              videoRef.current?.play().catch(e => console.warn("Camera video play failed", e));
+            };
           }
         } catch (error) {
           console.error('Error accessing camera:', error);
@@ -129,7 +138,6 @@ export function DiagnosticTool() {
     setResult(null);
     
     try {
-      // SIMULATED RAG: Fetch expert context from Firestore before AI call
       let knowledgeBaseContext = "";
       if (firestore) {
         const q = query(collection(firestore, "crops"), where("name", "==", cropType), where("isCertified", "==", true), limit(3));
@@ -184,11 +192,15 @@ export function DiagnosticTool() {
         body: JSON.stringify({ text, langCode })
       });
       const data = await response.json();
-      if (data.audioContent) {
-        if (!audioRef.current) audioRef.current = new Audio();
-        audioRef.current.src = `data:audio/wav;base64,${data.audioContent}`;
-        audioRef.current.onended = () => setIsSpeaking(false);
-        audioRef.current.play();
+      if (data.audioContent && audioRef.current) {
+        try {
+          audioRef.current.src = `data:audio/wav;base64,${data.audioContent}`;
+          audioRef.current.onended = () => setIsSpeaking(false);
+          await audioRef.current.play();
+        } catch (e) {
+          console.warn("Audio playback failed", e);
+          setIsSpeaking(false);
+        }
       } else {
         const ut = new SpeechSynthesisUtterance(text);
         ut.lang = langCode === 'hi' ? 'hi-IN' : 'en-IN';
@@ -279,7 +291,7 @@ export function DiagnosticTool() {
                 <div className="relative group bg-muted/30 border-2 border-dashed border-border rounded-[2.5rem] p-6 text-center hover:bg-primary/5 transition-all cursor-pointer overflow-hidden min-h-[300px] flex flex-col items-center justify-center shadow-inner">
                   {isCameraActive ? (
                     <div className="relative w-full h-full flex flex-col items-center">
-                      <video ref={videoRef} className="w-full aspect-square rounded-2xl object-cover shadow-2xl" autoPlay muted playsInline />
+                      <video ref={videoRef} className="w-full aspect-square rounded-2xl object-cover shadow-2xl" muted playsInline />
                       <div className="absolute bottom-4 flex gap-4">
                         <Button onClick={capturePhoto} className="h-14 w-14 rounded-full bg-white text-primary shadow-xl hover:scale-110 active:scale-95">
                           <Camera className="h-6 w-6" />
@@ -414,7 +426,7 @@ export function DiagnosticTool() {
 
               <div className="p-10 rounded-[3rem] bg-primary/5 border border-primary/10 space-y-6 shadow-sm">
                 <h4 className="text-[10px] font-black text-primary uppercase tracking-[0.2em] flex items-center gap-2">
-                  <Zap className="h-5 w-5" /> Heritage Wisdom (Desi Nuskha)
+                  <Zap className="h-4 w-4" /> Heritage Wisdom (Desi Nuskha)
                 </h4>
                 <ul className="space-y-4">
                   {result.suggestedTraditionalRemedies.map((rem, i) => (
@@ -493,7 +505,7 @@ export function DiagnosticTool() {
         </Card>
       </div>
       <canvas ref={canvasRef} className="hidden" />
-      <audio ref={audioRef} className="hidden" />
+      <audio ref={audioRef} className="hidden" aria-hidden="true" />
     </div>
   );
 }

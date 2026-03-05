@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useMemo, useEffect, useRef } from "react";
@@ -203,7 +202,6 @@ export function MandiLink() {
         title: "Connection Alert", 
         description: "Support grid high-latency. Re-attempting connection..." 
       });
-      // Silent retry logic could be added here
     } finally {
       setChatLoading(false);
     }
@@ -212,7 +210,6 @@ export function MandiLink() {
   const speakResponse = async (text: string) => {
     setIsSpeaking(true);
     try {
-      // Primary: Bhashini Fetch-based synthesis (Standard)
       const response = await fetch('/api/bhashini', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -222,17 +219,20 @@ export function MandiLink() {
       if (!response.ok) throw new Error("Bhashini Grid Busy");
 
       const data = await response.json();
-      if (data.audioContent) {
-        if (!audioRef.current) audioRef.current = new Audio();
-        audioRef.current.src = `data:audio/wav;base64,${data.audioContent}`;
-        audioRef.current.onended = () => setIsSpeaking(false);
-        audioRef.current.play();
+      if (data.audioContent && audioRef.current) {
+        try {
+          audioRef.current.src = `data:audio/wav;base64,${data.audioContent}`;
+          audioRef.current.onended = () => setIsSpeaking(false);
+          await audioRef.current.play();
+        } catch (e) {
+          console.warn("Audio playback failed", e);
+          setIsSpeaking(false);
+        }
       } else {
         throw new Error("No neural content");
       }
     } catch (e) {
       console.warn("Bhashini Fallback Triggered:", e);
-      // Secondary Fallback: Browser-Native Speech Synthesis
       if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
         const utterance = new SpeechSynthesisUtterance(text);
         utterance.lang = langCode === 'hi' ? 'hi-IN' : 'en-IN';
@@ -535,7 +535,7 @@ export function MandiLink() {
           </div>
         </SheetContent>
       </Sheet>
-      <audio ref={audioRef} className="hidden" />
+      <audio ref={audioRef} className="hidden" aria-hidden="true" />
     </Tabs>
   );
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo, useRef } from "react";
+import React, { useState, useMemo, useRef, useEffect } from "react";
 import { 
   ArrowLeft, 
   PlusCircle, 
@@ -95,6 +95,12 @@ export function CropDiagnostics() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const chatScrollRef = useRef<HTMLDivElement>(null);
 
+  useEffect(() => {
+    if (chatScrollRef.current) {
+      chatScrollRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [chatMessages]);
+
   const cropsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
     return query(collection(firestore, "crops"));
@@ -132,10 +138,15 @@ export function CropDiagnostics() {
       }]);
 
       if (response.audioDataUri && audioRef.current) {
-        audioRef.current.src = response.audioDataUri;
-        audioRef.current.play();
-        setIsSpeaking(true);
-        audioRef.current.onended = () => setIsSpeaking(false);
+        try {
+          audioRef.current.src = response.audioDataUri;
+          await audioRef.current.play();
+          setIsSpeaking(true);
+          audioRef.current.onended = () => setIsSpeaking(false);
+        } catch (playError) {
+          console.warn("Audio playback blocked or invalid source:", playError);
+          setIsSpeaking(false);
+        }
       }
     } catch (error) {
       console.error(error);
@@ -300,7 +311,7 @@ export function CropDiagnostics() {
             </Tabs>
           </div>
         </div>
-        <audio ref={audioRef} className="hidden" />
+        <audio ref={audioRef} className="hidden" aria-hidden="true" />
       </div>
     );
   }
@@ -426,10 +437,14 @@ export function CropDiagnostics() {
                             variant="ghost" 
                             size="sm" 
                             className="h-8 text-[10px] gap-2 px-3 bg-muted/50 hover:bg-muted font-bold rounded-full"
-                            onClick={() => {
+                            onClick={async () => {
                               if (audioRef.current) {
-                                audioRef.current.src = m.audioUri;
-                                audioRef.current.play();
+                                try {
+                                  audioRef.current.src = m.audioUri!;
+                                  await audioRef.current.play();
+                                } catch (e) {
+                                  console.warn("Manual audio replay failed", e);
+                                }
                               }
                             }}
                           >
@@ -527,7 +542,7 @@ export function CropDiagnostics() {
           </form>
         </DialogContent>
       </Dialog>
-      <audio ref={audioRef} className="hidden" />
+      <audio ref={audioRef} className="hidden" aria-hidden="true" />
     </div>
   );
 }
