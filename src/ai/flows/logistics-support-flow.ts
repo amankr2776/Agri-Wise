@@ -1,7 +1,7 @@
-
 'use server';
 /**
  * @fileOverview AI Support Agent for Logistics and Mandi-Link disputes.
+ * Includes a heuristic fallback engine to handle AI rate-limiting (429 errors).
  */
 
 import { ai } from '@/ai/genkit';
@@ -32,8 +32,9 @@ const logisticsSupportFlow = ai.defineFlow(
     outputSchema: LogisticsSupportOutputSchema,
   },
   async (input) => {
-    const { output } = await ai.generate({
-      prompt: `You are the KisanMitra Logistics Support Agent.
+    try {
+      const { output } = await ai.generate({
+        prompt: `You are the KisanMitra Logistics Support Agent.
 CRITICAL: Respond ONLY in ${input.language} script.
 
 Context:
@@ -47,11 +48,42 @@ Goal:
 3. Provide helpful, empathetic advice in ${input.language}.
 
 Return a JSON object matching the required schema.`,
-      model: 'googleai/gemini-2.5-flash',
-      output: { schema: LogisticsSupportOutputSchema }
-    });
+        model: 'googleai/gemini-2.5-flash',
+        output: { schema: LogisticsSupportOutputSchema }
+      });
 
-    if (!output) throw new Error('Support agent failed to respond.');
-    return output;
+      if (!output) throw new Error('Support agent failed to respond.');
+      return output;
+    } catch (e: any) {
+      console.warn("Logistics AI Node rate-limited. Triggering Grid Heuristics.", e.message);
+
+      // --- Heuristic Support Fallback ---
+      let text = `Grid Heuristics Active: `;
+      let action: 'Resolve' | 'Escalate' | 'Wait' = 'Wait';
+
+      const q = input.query.toLowerCase();
+      const isDispute = q.includes('money') || q.includes('price') || q.includes('damage') || q.includes('broken');
+
+      if (input.shipmentStatus === 'Reached Destination') {
+        text += `Your ${input.shipmentDetails} has arrived. Please inspect the weight and quality before signing the digital receipt. If everything is correct, select 'Resolve'.`;
+        action = isDispute ? 'Escalate' : 'Resolve';
+      } else if (input.shipmentStatus === 'In Transit' || input.shipmentStatus === 'Picked Up') {
+        text += `Your shipment is currently moving through the national grid. We estimate arrival within the scheduled window. Please monitor the 'Mandi-Link' live map.`;
+        action = isDispute ? 'Escalate' : 'Wait';
+      } else {
+        text += `We are processing your request regarding the ${input.shipmentDetails}. A logistics coordinator will monitor this sector shortly.`;
+        action = 'Wait';
+      }
+
+      if (isDispute) {
+        text += ` (Incident flagged for Expert Review due to potential dispute).`;
+        action = 'Escalate';
+      }
+
+      return {
+        text,
+        actionRecommended: action
+      };
+    }
   }
 );
