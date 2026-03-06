@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useMemo } from "react";
@@ -91,19 +92,12 @@ export function CropDiagnostics() {
           <p className="text-muted-foreground font-medium mt-1 uppercase text-[10px] tracking-[0.2em]">Diagnostic Protocols & Expert Surveillance</p>
         </div>
         
-        {isAuthenticated ? (
-          <Button 
-            onClick={() => setIsReportOpen(true)}
-            className="rounded-2xl h-14 px-8 font-black gap-2 bg-slate-900 text-white shadow-xl hover:bg-slate-800 transition-all hover:scale-105 active:scale-95"
-          >
-            <PlusCircle className="h-5 w-5" /> Manual Field Report
-          </Button>
-        ) : (
-          <div className="flex items-center gap-3 p-4 bg-muted/50 rounded-2xl border border-border">
-            <Lock className="h-4 w-4 text-muted-foreground" />
-            <span className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Sign in to Submit Reports</span>
-          </div>
-        )}
+        <Button 
+          onClick={() => setIsReportOpen(true)}
+          className="rounded-2xl h-14 px-8 font-black gap-2 bg-slate-900 text-white shadow-xl hover:bg-slate-800 transition-all hover:scale-105 active:scale-95"
+        >
+          <PlusCircle className="h-5 w-5" /> Manual Field Report
+        </Button>
       </div>
 
       {/* Primary Detection Agent */}

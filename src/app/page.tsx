@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useEffect } from "react";
@@ -47,7 +48,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useAppState, AppLanguage, Notification } from "@/lib/app-state";
 import { useTranslation } from "@/hooks/use-translation";
 import { cn } from "@/lib/utils";
-import { useFirestore, useCollection, useMemoFirebase, useAuth } from "@/firebase";
+import { useFirestore, useUser, useAuth } from "@/firebase";
 import { collection, query, orderBy, limit, onSnapshot } from "firebase/firestore";
 import { signInAnonymously } from "firebase/auth";
 
@@ -73,7 +74,6 @@ export default function KisanMitraApp() {
   const auth = useAuth();
   const { 
     role, 
-    logout, 
     notifications, 
     setNotifications,
     setActiveAlert,
@@ -81,8 +81,7 @@ export default function KisanMitraApp() {
     name,
     language,
     setLanguage,
-    profileImage,
-    isAuthenticated
+    profileImage
   } = useAppState();
   const [activeSection, setActiveSection] = useState("dashboard");
 
@@ -122,11 +121,6 @@ export default function KisanMitraApp() {
 
     return () => unsubscribe();
   }, [firestore, auth.currentUser, setNotifications, setActiveAlert]);
-
-  const handleLogout = () => {
-    logout();
-    router.push("/login");
-  };
 
   const renderSection = () => {
     switch (activeSection) {

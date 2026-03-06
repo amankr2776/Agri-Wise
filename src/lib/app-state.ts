@@ -1,3 +1,4 @@
+
 "use client";
 
 import { create } from "zustand";
@@ -73,8 +74,8 @@ export const useAppState = create<AppState>()(
   persist(
     (set) => ({
       role: "Farmer",
-      isAuthenticated: false, // Default false, set true on selection
-      name: "Guest Farmer",
+      isAuthenticated: true, // Default to true for Open Grid access
+      name: "Rajesh Kumar",
       city: "Bengaluru",
       state: "Karnataka",
       profileImage: null,
@@ -86,7 +87,7 @@ export const useAppState = create<AppState>()(
       activeAlert: null,
       
       login: (role, name) => set({ role, name, isAuthenticated: true }),
-      logout: () => set({ role: "Farmer", isAuthenticated: false, name: "Guest Farmer" }),
+      logout: () => set({ role: "Farmer", isAuthenticated: true, name: "Rajesh Kumar" }), // Reset but stay "logged in"
       setName: (name) => set({ name }),
       setCity: (city) => set({ city }),
       setState: (state) => set({ state }),
@@ -112,7 +113,7 @@ export const useAppState = create<AppState>()(
       })),
     }),
     {
-      name: "kisan-mitra-auth-v1", // New storage version for authenticated grid
+      name: "kisan-mitra-auth-v1",
     }
   )
 );
