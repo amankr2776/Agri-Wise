@@ -20,7 +20,8 @@ import {
   FlaskConical,
   Zap,
   CheckCircle2,
-  Activity
+  Activity,
+  Award
 } from "lucide-react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
@@ -248,6 +249,16 @@ export function CropDetailView({ crop, onClose }: CropDetailViewProps) {
                 <ShieldCheck className="h-7 w-7 text-primary" />
                 Verified Scientific Profile
               </h4>
+              {crop.isCertified && (
+                <div className="p-6 rounded-[2rem] bg-amber-50 border-2 border-amber-200 shadow-sm space-y-3">
+                  <div className="flex items-center gap-2 text-amber-700 font-black uppercase text-[10px] tracking-widest">
+                    <Award className="h-4 w-4" /> Expert Validation Active
+                  </div>
+                  <p className="text-sm font-bold text-amber-900 leading-relaxed italic">
+                    "{crop.expertNotes || `This crop profile has been audited and certified by Scientist ${crop.verifiedByName || 'Aman Kumar'}.`}"
+                  </p>
+                </div>
+              )}
               <p className="text-slate-600 leading-relaxed font-medium italic">
                 This encyclopedia entry is synchronized with the National Botanical Registry. It provides high-fidelity data for professional farm management.
               </p>
@@ -346,9 +357,9 @@ export function CropDetailView({ crop, onClose }: CropDetailViewProps) {
 
                       <div className="pt-4 border-t border-white/10">
                         <div className="flex items-center gap-2 text-[8px] font-black text-slate-500 uppercase tracking-widest">
-                          {result.confidenceScore === 1.0 ? (
+                          {crop.isCertified || result.confidenceScore === 1.0 ? (
                             <span className="flex items-center gap-2 text-green-400">
-                              <CheckCircle2 className="h-3 w-3" /> Verified Registry Match
+                              <CheckCircle2 className="h-3 w-3" /> Expert Certified Protocol
                             </span>
                           ) : (
                             <span className="flex items-center gap-2">

@@ -21,7 +21,8 @@ import {
   Camera,
   Upload,
   X,
-  ImageIcon
+  ImageIcon,
+  CheckCircle2
 } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -94,26 +95,31 @@ export function ExpertVerificationPortal() {
     if (!firestore || !cert.id) return;
     const docRef = doc(firestore, "crops", cert.id);
     
-    // Use modified values if they exist, otherwise original
+    const verificationNotes = `Certified and refined by Scientist ${expertName} on ${new Date().toLocaleDateString()}. Protocol synchronized with National Grid.`;
+
     updateDocumentNonBlocking(docRef, {
       isCertified: true,
       verifiedAt: new Date().toISOString(),
       verifiedBy: user?.uid,
+      verifiedByName: expertName,
       chemicalCure: editChemicalCure || cert.chemicalCure,
       desiNuskha: editDesiNuskha || cert.desiNuskha,
       imageUrl: editImageUrl || cert.imageUrl,
-      expertNotes: `Certified and modified by Scientist ${expertName} based on regional botanical norms.`
+      expertNotes: verificationNotes
     });
 
     if (cert.reportedBy) {
       dispatchGridNotification(firestore, cert.reportedBy, {
-        title: "Precision Protocol Verified",
-        message: `Expert ${expertName} has certified and refined the treatment for your ${cert.name}.`,
+        title: "Scientific Protocol Verified",
+        message: `Expert ${expertName} has certified the diagnostic protocol for your ${cert.name}. Check your Solution Library.`,
         type: 'update'
       });
     }
 
-    toast({ title: "Protocol Certified", description: "Verified and synchronized with the National Registry." });
+    toast({ 
+      title: "Protocol Certified", 
+      description: "Verified data has been pushed to the farmer's grid." 
+    });
     setSelectedReviewCrop(null);
   };
 
@@ -177,6 +183,7 @@ export function ExpertVerificationPortal() {
                       <CardTitle className="text-2xl font-black">{cert.name}</CardTitle>
                       <Badge variant="outline" className="text-[10px] font-black uppercase border-destructive/20 text-destructive">{cert.diseaseName}</Badge>
                     </div>
+                    <p className="text-xs text-muted-foreground mt-1 font-bold">Reported By: {cert.reportedByName || "Local Node"}</p>
                     <p className="text-sm text-muted-foreground mt-2 line-clamp-2 italic font-medium">"{cert.symptoms}"</p>
                   </CardHeader>
                   <CardFooter className="p-8 pt-0 mt-auto flex gap-3">

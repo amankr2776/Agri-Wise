@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useMemo } from "react";
@@ -21,7 +20,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
+import { useFirestore, useCollection, useUser, useMemoFirebase } from "@/firebase";
 import { query, collection } from "firebase/firestore";
 import { addDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 import { useToast } from "@/hooks/use-toast";
@@ -35,7 +34,8 @@ const CATEGORIES = ["Plant", "Seed", "Vegetable", "Fruit", "Grain"];
 
 export function CropDiagnostics() {
   const { t } = useTranslation();
-  const { role } = useAppState();
+  const { role, name: userName } = useAppState();
+  const { user } = useUser();
   const firestore = useFirestore();
   const { toast } = useToast();
   
@@ -57,7 +57,7 @@ export function CropDiagnostics() {
 
   const handleManualReport = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!firestore) return;
+    if (!firestore || !user) return;
     const formData = new FormData(e.currentTarget);
     addDocumentNonBlocking(collection(firestore, "crops"), {
       name: formData.get("cropName"),
@@ -66,6 +66,8 @@ export function CropDiagnostics() {
       symptoms: formData.get("symptoms"),
       isCertified: false,
       severity: "Warning",
+      reportedBy: user.uid,
+      reportedByName: userName,
       createdAt: new Date().toISOString(),
       imageUrl: `https://picsum.photos/seed/report-${Date.now()}/800/600`
     });
