@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import { 
   AlertTriangle, 
   Globe, 
@@ -19,7 +19,11 @@ import {
   MapPin,
   Save,
   X,
-  FlaskConical
+  FlaskConical,
+  RefreshCw,
+  Trash2,
+  ShieldCheck,
+  ArrowUpRight
 } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -58,32 +62,71 @@ const STATES = [
   "Punjab", "Haryana", "Rajasthan", "Maharashtra", "Uttar Pradesh", "West Bengal", "Karnataka", "Madhya Pradesh"
 ];
 
+const INITIAL_SURVEILLANCE_NODES = [
+  { id: 'node-01', name: 'Doddaballapur', x: 25, y: 30, density: 85, pathogen: 'Onion Rot', state: 'Karnataka' },
+  { id: 'node-02', name: 'Rajanukunte', x: 45, y: 40, density: 72, pathogen: 'Wheat Rust', state: 'Karnataka' },
+  { id: 'node-03', name: 'Devanahalli', x: 65, y: 25, density: 40, pathogen: 'Tomato Blight', state: 'Karnataka' },
+  { id: 'node-04', name: 'Yelahanka', x: 50, y: 60, density: 15, pathogen: 'None', state: 'Karnataka' },
+  { id: 'node-05', name: 'Hoskote', x: 75, y: 55, density: 55, pathogen: 'Paddy Blast', state: 'Karnataka' },
+];
+
 export function MinistryIntelligence() {
   const firestore = useFirestore();
-  const { role } = useAppState();
+  const { role, name: userName } = useAppState();
   const { user } = useUser();
   const { toast } = useToast();
+  
   const [isReportDialogOpen, setIsReportDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [simulatedNodes, setSimulatedNodes] = useState(INITIAL_SURVEILLANCE_NODES);
   
-  // Edit State
   const [editingOutbreakId, setEditingOutbreakId] = useState<string | null>(null);
   const [editStrategy, setEditStrategy] = useState("");
+
+  const isExpertAman = userName === "Aman Kumar";
 
   const outbreaksQuery = useMemoFirebase(() => {
     if (!firestore) return null;
     return query(collection(firestore, "pestOutbreaks"));
   }, [firestore]);
 
-  const { data: outbreaks, isLoading } = useCollection(outbreaksQuery);
+  const { data: dbOutbreaks, isLoading } = useCollection(outbreaksQuery);
+
+  // Combine DB and Simulated data for high-fidelity demo
+  const allNodes = useMemo(() => {
+    const dbMapped = dbOutbreaks?.map(o => ({
+      id: o.id,
+      name: o.pestName,
+      state: o.state,
+      density: o.severity === 'Critical' ? 90 : 50,
+      pathogen: o.pestName,
+      x: Math.random() * 80 + 10,
+      y: Math.random() * 80 + 10,
+      isDb: true
+    })) || [];
+    return [...simulatedNodes, ...dbMapped];
+  }, [simulatedNodes, dbOutbreaks]);
 
   const stats = useMemo(() => {
-    if (!outbreaks) return { critical: 0, states: 0, totalArea: 0 };
-    const critical = outbreaks.filter(o => o.severity === 'Critical').length;
-    const states = new Set(outbreaks.map(o => o.state));
-    const totalArea = outbreaks.reduce((acc, curr) => acc + (Number(curr.areaHectares) || 0), 0);
+    const critical = allNodes.filter(o => o.density > 70).length;
+    const states = new Set(allNodes.map(o => o.state));
+    const totalArea = allNodes.reduce((acc, curr) => acc + (curr.density * 150), 0);
     return { critical, states: states.size, totalArea };
-  }, [outbreaks]);
+  }, [allNodes]);
+
+  const automatedDirectives = useMemo(() => {
+    return allNodes
+      .filter(n => n.density > 50)
+      .map(n => ({
+        id: n.id,
+        title: `${n.name} Crisis`,
+        state: n.state,
+        severity: n.density > 75 ? 'Critical' : 'Warning',
+        strategy: n.density > 75 
+          ? `Immediate Bio-Fence Activation Required. Aerial spray scheduled for ${n.name} sector.` 
+          : `Monitor spread vectors from ${n.name}. Proactive fungicide barrier recommended.`
+      }));
+  }, [allNodes]);
 
   const handleCreateReport = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -105,23 +148,15 @@ export function MinistryIntelligence() {
     addDocumentNonBlocking(collection(firestore, "pestOutbreaks"), data);
     setIsReportDialogOpen(false);
     setIsSubmitting(false);
-    toast({ title: "Bio-Security Alert Issued", description: "Regional hubs have been notified of the vector movement." });
+    toast({ title: "Bio-Security Alert Issued", description: "Regional hubs have been notified." });
   };
 
-  const handleUpdateStrategy = (id: string) => {
-    if (!firestore) return;
-    updateDocumentNonBlocking(doc(firestore, "pestOutbreaks", id), {
-      containmentStrategy: editStrategy,
-      updatedAt: new Date().toISOString()
+  const clearGrid = () => {
+    setSimulatedNodes(prev => prev.map(n => ({ ...n, density: 5, pathogen: 'Contained' })));
+    toast({ 
+      title: "Grid Containment Success", 
+      description: "Bio-fences activated. Pathogen density reduced to safety levels." 
     });
-    setEditingOutbreakId(null);
-    toast({ title: "Protocol Updated", description: "Directives have been synchronized across regional units." });
-  };
-
-  const handleDeleteOutbreak = (id: string) => {
-    if (!firestore) return;
-    deleteDoc(doc(firestore, "pestOutbreaks", id));
-    toast({ title: "Alert Cleared", description: "Outbreak has been marked as contained and removed from surveillance." });
   };
 
   if (role !== "Authority" && role !== "Expert") {
@@ -131,18 +166,7 @@ export function MinistryIntelligence() {
           <Lock className="h-10 w-10" />
         </div>
         <h3 className="text-2xl font-black">Authorized Personnel Only</h3>
-        <p className="text-muted-foreground max-w-sm">Access to government intelligence feeds is restricted to the Ministry of Agriculture and certified experts.</p>
-      </div>
-    );
-  }
-
-  if (isLoading) {
-    return (
-      <div className="space-y-8 max-w-7xl mx-auto">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {[1, 2, 3].map(i => <Skeleton key={i} className="h-32 rounded-[2rem]" />)}
-        </div>
-        <Skeleton className="h-[600px] rounded-[3rem]" />
+        <p className="text-muted-foreground max-w-sm">Access restricted to the Ministry of Agriculture and certified experts.</p>
       </div>
     );
   }
@@ -159,70 +183,58 @@ export function MinistryIntelligence() {
           <p className="text-muted-foreground font-medium mt-1 uppercase text-[10px] tracking-[0.2em]">Bio-Security & Regional Threat Assessment</p>
         </div>
         
-        <Dialog open={isReportDialogOpen} onOpenChange={setIsReportDialogOpen}>
-          <DialogTrigger asChild>
-            <Button className="rounded-2xl h-14 px-8 font-black text-lg shadow-xl shadow-primary/20 bg-primary hover:bg-primary/90">
-              <Plus className="h-6 w-6 mr-2" /> Issue Crisis Alert
+        <div className="flex gap-3">
+          {isExpertAman && (
+            <Button 
+              variant="outline"
+              onClick={clearGrid}
+              className="rounded-2xl h-14 px-6 font-black text-lg border-primary/20 text-primary hover:bg-primary/5"
+            >
+              <Trash2 className="h-5 w-5 mr-2" /> Grid Clear
             </Button>
-          </DialogTrigger>
-          <DialogContent className="rounded-[2.5rem] sm:max-w-[600px] p-10">
-            <DialogHeader>
-              <DialogTitle className="text-3xl font-black tracking-tight">Deploy Containment Protocol</DialogTitle>
-              <DialogDescription className="text-muted-foreground font-medium italic">Broadcast official directives to regional hubs for vector containment.</DialogDescription>
-            </DialogHeader>
-            <form onSubmit={handleCreateReport} className="space-y-6 pt-6">
-              <div className="grid grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase text-muted-foreground ml-2">Pathogen / Pest Name</Label>
-                  <Input name="pestName" placeholder="e.g. Wheat Rust" required className="h-12 rounded-xl bg-muted/30 border-none font-bold" />
+          )}
+          <Dialog open={isReportDialogOpen} onOpenChange={setIsReportDialogOpen}>
+            <DialogTrigger asChild>
+              <Button className="rounded-2xl h-14 px-8 font-black text-lg shadow-xl shadow-primary/20 bg-primary hover:bg-primary/90">
+                <Plus className="h-6 w-6 mr-2" /> Issue Crisis Alert
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="rounded-[2.5rem] sm:max-w-[600px] p-10">
+              <DialogHeader>
+                <DialogTitle className="text-3xl font-black tracking-tight">Deploy Containment Protocol</DialogTitle>
+                <DialogDescription className="text-muted-foreground font-medium italic">Broadcast official directives to regional hubs.</DialogDescription>
+              </DialogHeader>
+              <form onSubmit={handleCreateReport} className="space-y-6 pt-6">
+                <div className="grid grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase text-muted-foreground ml-2">Pathogen / Pest Name</Label>
+                    <Input name="pestName" placeholder="e.g. Wheat Rust" required className="h-12 rounded-xl bg-muted/30 border-none font-bold" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase text-muted-foreground ml-2">Affected State</Label>
+                    <Select name="state" defaultValue="Punjab">
+                      <SelectTrigger className="h-12 rounded-xl bg-muted/30 border-none font-bold">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {STATES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase text-muted-foreground ml-2">Affected State</Label>
-                  <Select name="state" defaultValue="Punjab">
-                    <SelectTrigger className="h-12 rounded-xl bg-muted/30 border-none font-bold">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {STATES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
+                  <Label className="text-[10px] font-black uppercase text-muted-foreground ml-2">Containment Strategy Directive</Label>
+                  <Textarea name="strategy" placeholder="Action: Strategic district-wide fungicide application..." required className="rounded-xl bg-muted/30 border-none min-h-[100px] font-medium" />
                 </div>
-              </div>
-              <div className="grid grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase text-muted-foreground ml-2">Severity Level</Label>
-                  <Select name="severity" defaultValue="Warning">
-                    <SelectTrigger className="h-12 rounded-xl bg-muted/30 border-none font-bold">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Critical">Critical (Immediate)</SelectItem>
-                      <SelectItem value="Warning">Warning (Monitor)</SelectItem>
-                      <SelectItem value="Info">Informational</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase text-muted-foreground ml-2">Movement Vector</Label>
-                  <Input name="vector" placeholder="e.g. North-West" required className="h-12 rounded-xl bg-muted/30 border-none font-bold" />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase text-muted-foreground ml-2">Containment Strategy Directive</Label>
-                <Textarea name="strategy" placeholder="Action: Strategic district-wide fungicide application required..." required className="rounded-xl bg-muted/30 border-none min-h-[100px] font-medium" />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase text-muted-foreground ml-2">Affected Area (Ha)</Label>
-                <Input name="area" type="number" placeholder="Approx Hectares" required className="h-12 rounded-xl bg-muted/30 border-none font-bold" />
-              </div>
-              <DialogFooter>
-                <Button type="submit" disabled={isSubmitting} className="w-full h-14 rounded-2xl font-black text-lg">
-                  {isSubmitting ? <Loader2 className="animate-spin" /> : "Broadcast Official Alert"}
-                </Button>
-              </DialogFooter>
-            </form>
-          </DialogContent>
-        </Dialog>
+                <DialogFooter>
+                  <Button type="submit" disabled={isSubmitting} className="w-full h-14 rounded-2xl font-black text-lg">
+                    {isSubmitting ? <Loader2 className="animate-spin" /> : "Broadcast Official Alert"}
+                  </Button>
+                </DialogFooter>
+              </form>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -266,7 +278,7 @@ export function MinistryIntelligence() {
             <div className="text-4xl font-black text-amber-600 flex items-center gap-2">
               Live <Activity className="h-6 w-6 animate-pulse" />
             </div>
-            <p className="text-[10px] text-amber-600/60 mt-3 uppercase font-bold tracking-wider italic">Grid Analytics: Healthy Latency</p>
+            <p className="text-[10px] text-amber-600/60 mt-3 uppercase font-bold tracking-wider italic">Node Latency: 22ms</p>
           </CardContent>
         </Card>
       </div>
@@ -287,58 +299,60 @@ export function MinistryIntelligence() {
                 <CardDescription className="text-slate-400 font-medium italic">Active clusters and predicted spread vectors based on real-time field diagnostics.</CardDescription>
               </div>
               <Badge className="bg-primary/20 text-primary border border-primary/30 px-4 py-1.5 font-black uppercase text-[10px] shadow-lg">
-                Verified Expert Node: 02
+                {isExpertAman ? 'Expert Node 02 Enabled' : 'Verified Node Access'}
               </Badge>
             </div>
           </CardHeader>
 
           <CardContent className="relative z-10 p-10 h-[500px]">
-            <div className="relative w-full h-full border border-white/5 rounded-[2.5rem] bg-black/20 backdrop-blur-sm overflow-hidden flex items-center justify-center">
-              {outbreaks?.map((outbreak, i) => (
+            <div className="relative w-full h-full border border-white/5 rounded-[2.5rem] bg-black/20 backdrop-blur-sm overflow-hidden">
+              {/* Regional Node Points */}
+              {allNodes.map((node, i) => (
                 <motion.div 
-                  key={outbreak.id}
+                  key={node.id}
                   initial={{ opacity: 0, scale: 0 }}
                   animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: i * 0.2 }}
+                  transition={{ delay: i * 0.1 }}
                   className="absolute flex flex-col items-center group cursor-pointer"
                   style={{ 
-                    top: `${20 + (i * 18) % 65}%`, 
-                    left: `${15 + (i * 25) % 75}%` 
+                    top: `${node.y}%`, 
+                    left: `${node.x}%` 
                   }}
                 >
                   <div className={cn(
-                    "relative h-20 w-20 rounded-full flex items-center justify-center shadow-2xl transition-all group-hover:scale-110",
-                    outbreak.severity === 'Critical' ? 'bg-destructive animate-pulse-engagement shadow-destructive/50' : 'bg-amber-50 shadow-amber-500/50'
+                    "relative h-16 w-16 rounded-full flex items-center justify-center shadow-2xl transition-all group-hover:scale-110",
+                    node.density > 70 ? 'bg-destructive animate-pulse-engagement shadow-destructive/50' : 
+                    node.density > 40 ? 'bg-amber-500 shadow-amber-500/50' : 'bg-primary/40 shadow-primary/20'
                   )}>
-                    <AlertTriangle className="h-10 w-10 text-white" />
+                    <AlertTriangle className={cn("h-8 w-8 text-white", node.density < 40 && "opacity-20")} />
                     
-                    {/* Animated Spread Vector */}
-                    <div className="absolute -right-24 -top-16 text-primary flex flex-col items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
-                      <motion.div
-                        animate={{ x: [0, 40, 0], y: [0, -40, 0] }}
-                        transition={{ repeat: Infinity, duration: 2 }}
-                      >
-                        <MoveUpRight className="h-12 w-12" />
-                      </motion.div>
-                      <span className="text-[9px] font-black uppercase whitespace-nowrap bg-black/80 px-2 py-1 rounded-md border border-primary/20">
-                        Vector: {outbreak.predictedMovementVector || 'North-West'}
-                      </span>
-                    </div>
+                    {/* Animated Spread Vector Arrows */}
+                    {node.density > 60 && (
+                      <div className="absolute -right-20 -top-12 text-primary opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                        <motion.div
+                          animate={{ x: [0, 30, 0], y: [0, -30, 0] }}
+                          transition={{ repeat: Infinity, duration: 1.5 }}
+                        >
+                          <ArrowUpRight className="h-10 w-10" />
+                        </motion.div>
+                      </div>
+                    )}
                   </div>
-                  <div className="mt-4 bg-white/10 backdrop-blur-xl p-4 rounded-2xl border border-white/10 min-w-[160px] text-center shadow-2xl group-hover:bg-white/20 transition-all">
-                    <div className="text-[10px] font-black text-primary uppercase tracking-widest">{outbreak.pestName}</div>
-                    <div className="text-xs font-black">{outbreak.state} Cluster</div>
-                    <div className="text-[8px] font-bold text-slate-400 mt-1 uppercase">{outbreak.areaHectares} Ha Impacted</div>
+                  <div className="mt-3 bg-white/10 backdrop-blur-md p-3 rounded-xl border border-white/10 text-center shadow-xl group-hover:bg-white/20 transition-all min-w-[120px]">
+                    <div className="text-[9px] font-black text-primary uppercase tracking-widest">{node.pathogen}</div>
+                    <div className="text-xs font-black">{node.name}</div>
+                    <div className="text-[8px] font-bold text-slate-400 mt-1 uppercase">Density: {node.density}%</div>
                   </div>
                 </motion.div>
               ))}
-              
-              {!outbreaks?.length && (
-                <div className="h-full w-full flex flex-col items-center justify-center space-y-4">
-                  <Activity className="h-16 w-16 text-slate-500 animate-pulse" />
-                  <p className="text-slate-500 font-black uppercase text-sm tracking-[0.2em]">Scanning Grid for Bio-Security Threats...</p>
-                </div>
-              )}
+
+              {/* Decorative Connections */}
+              <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-20">
+                <line x1="25%" y1="30%" x2="45%" y2="40%" stroke="white" strokeWidth="1" strokeDasharray="5,5" />
+                <line x1="45%" y1="40%" x2="65%" y2="25%" stroke="white" strokeWidth="1" strokeDasharray="5,5" />
+                <line x1="45%" y1="40%" x2="50%" y2="60%" stroke="white" strokeWidth="1" strokeDasharray="5,5" />
+                <line x1="65%" y1="25%" x2="75%" y2="55%" stroke="white" strokeWidth="1" strokeDasharray="5,5" />
+              </svg>
             </div>
           </CardContent>
         </Card>
@@ -348,76 +362,30 @@ export function MinistryIntelligence() {
           <div className="space-y-2">
             <CardTitle className="text-2xl font-black flex items-center gap-3">
               <Navigation className="h-7 w-7 text-primary" />
-              Intelligence Directives
+              Directives
             </CardTitle>
-            <p className="text-xs text-muted-foreground font-medium italic">Automated containment protocols for active grid sectors.</p>
+            <p className="text-xs text-muted-foreground font-medium italic">Automated protocols based on node density.</p>
           </div>
           
           <ScrollArea className="flex-1 pr-2">
             <div className="space-y-6">
-              {outbreaks?.length === 0 ? (
-                <div className="text-center py-20 opacity-30 flex flex-col items-center gap-4">
-                  <CheckCircle className="h-16 w-16 text-primary" />
-                  <p className="font-black uppercase tracking-widest text-xs">National Grid: Bio-Secure</p>
-                </div>
-              ) : outbreaks?.map((o) => (
-                <div key={o.id} className="p-6 rounded-3xl bg-muted/30 border border-border group hover:bg-muted/50 transition-all cursor-pointer relative overflow-hidden">
-                  {o.severity === 'Critical' && <div className="absolute left-0 top-0 bottom-0 w-2 bg-destructive" />}
+              {automatedDirectives.map((d) => (
+                <div key={d.id} className="p-6 rounded-3xl bg-muted/30 border border-border group hover:bg-muted/50 transition-all cursor-pointer relative overflow-hidden">
+                  {d.severity === 'Critical' && <div className="absolute left-0 top-0 bottom-0 w-2 bg-destructive" />}
                   <div className="flex justify-between items-start mb-4">
                     <div className="space-y-1">
-                      <h4 className="text-xs font-black text-primary uppercase tracking-widest flex items-center gap-2">
-                        <MapPin className="h-3.5 w-3.5" /> {o.state} Sector
+                      <h4 className="text-[10px] font-black text-primary uppercase tracking-widest flex items-center gap-2">
+                        <MapPin className="h-3 w-3" /> {d.state} Sector
                       </h4>
-                      <p className="text-lg font-black text-slate-900 tracking-tight">{o.pestName}</p>
+                      <p className="text-lg font-black text-slate-900 tracking-tight">{d.title}</p>
                     </div>
-                    <Badge variant={o.severity === 'Critical' ? 'destructive' : 'default'} className="text-[8px] font-black uppercase px-2">
-                      {o.severity}
+                    <Badge variant={d.severity === 'Critical' ? 'destructive' : 'default'} className="text-[8px] font-black uppercase">
+                      {d.severity}
                     </Badge>
                   </div>
-
-                  {editingOutbreakId === o.id ? (
-                    <div className="space-y-4 animate-in fade-in zoom-in-95 duration-200">
-                      <Textarea 
-                        value={editStrategy} 
-                        onChange={(e) => setEditStrategy(e.target.value)}
-                        className="text-xs font-medium bg-white rounded-xl min-h-[80px]"
-                      />
-                      <div className="flex gap-2">
-                        <Button onClick={() => handleUpdateStrategy(o.id)} size="sm" className="flex-1 h-9 rounded-lg font-black text-[10px] bg-primary">
-                          <Save className="h-3 w-3 mr-1" /> SAVE PROTOCOL
-                        </Button>
-                        <Button variant="ghost" onClick={() => setEditingOutbreakId(null)} size="sm" className="h-9 w-9 p-0 rounded-lg">
-                          <X className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    </div>
-                  ) : (
-                    <>
-                      <p className="text-sm text-slate-700 italic font-medium leading-relaxed border-l-4 border-primary/20 pl-4 mb-6">
-                        "Action: {o.containmentStrategy}"
-                      </p>
-                      <div className="flex items-center justify-between pt-4 border-t border-border/50">
-                        <div className="flex gap-2">
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            onClick={() => { setEditingOutbreakId(o.id); setEditStrategy(o.containmentStrategy); }}
-                            className="h-8 rounded-lg text-[10px] font-black uppercase tracking-widest text-primary hover:bg-primary/10 px-3"
-                          >
-                            <Edit3 className="h-3 w-3 mr-1" /> Refine
-                          </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            onClick={() => handleDeleteOutbreak(o.id)}
-                            className="h-8 rounded-lg text-[10px] font-black uppercase tracking-widest text-destructive hover:bg-destructive/10 px-3"
-                          >
-                            Grid Clear
-                          </Button>
-                        </div>
-                      </div>
-                    </>
-                  )}
+                  <p className="text-sm text-slate-700 italic font-medium leading-relaxed border-l-4 border-primary/20 pl-4">
+                    "{d.strategy}"
+                  </p>
                 </div>
               ))}
             </div>
@@ -435,8 +403,12 @@ export function MinistryIntelligence() {
               <div className="p-5 bg-slate-50 rounded-[2rem] border border-slate-100 flex flex-col items-center justify-center text-center group hover:bg-destructive/5 transition-all">
                 <TrendingUp className="h-6 w-6 text-destructive mb-2 group-hover:scale-110 transition-transform" />
                 <p className="text-[10px] font-bold text-slate-500 uppercase">Onion Price</p>
-                <p className="text-xl font-black text-destructive">+42% spike</p>
-                <p className="text-[8px] font-medium text-slate-400 mt-1 italic">Due to regional rot spread</p>
+                <p className="text-xl font-black text-destructive">
+                  {allNodes.some(n => n.pathogen === 'Onion Rot' && n.density > 70) ? '+42% spike' : 'Stable'}
+                </p>
+                <p className="text-[8px] font-medium text-slate-400 mt-1 italic">
+                  {allNodes.some(n => n.pathogen === 'Onion Rot' && n.density > 70) ? 'Due to rot outbreak' : 'Healthy harvest'}
+                </p>
               </div>
               <div className="p-5 bg-slate-50 rounded-[2rem] border border-slate-100 flex flex-col items-center justify-center text-center group hover:bg-primary/5 transition-all">
                 <TrendingUp className="h-6 w-6 text-primary mb-2 group-hover:scale-110 transition-transform" />
