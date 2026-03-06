@@ -65,7 +65,7 @@ const diagnoseCropPestPrompt = ai.definePrompt({
   input: { schema: FarmerCropPestDiagnosisInputSchema },
   output: { schema: FarmerCropPestDiagnosisOutputSchema },
   config: {
-    temperature: 0.75,
+    temperature: 0.75, // High variability
     topP: 0.95,
     maxOutputTokens: 1024,
   },
