@@ -92,7 +92,7 @@ export function useCollection<T = any>(
             : (memoizedTargetRefOrQuery as unknown as InternalQuery)._query.path.canonicalString()
 
         // GUEST MODE FALLBACK: For reference data reads, log a warning but don't emit a fatal error.
-        const publicPaths = ['crops', 'pests', 'diseases', 'marketPrices', 'mandiPrices', 'posts', 'pestOutbreaks'];
+        const publicPaths = ['crops', 'pests', 'diseases', 'marketPrices', 'mandiPrices', 'posts', 'pestOutbreaks', 'intelligence_directives'];
         const isPublicPath = publicPaths.some(p => path.includes(p));
 
         if (isPublicPath) {

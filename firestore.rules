@@ -19,10 +19,7 @@ service cloud.firestore {
     // Reference Collections & Diagnostic Protocols
     match /crops/{cropId} {
       allow read: if isAuthenticated();
-      // Allow farmers to create diagnostic requests
       allow create: if isAuthenticated();
-      // Only experts can certify (update) or prune (delete)
-      // In demo mode, we allow update if the user is authenticated to ensure the dashboard works
       allow update, delete: if isAuthenticated();
     }
     
@@ -46,6 +43,11 @@ service cloud.firestore {
       allow write: if isAuthenticated();
     }
 
+    match /intelligence_directives/{id} {
+      allow read: if isAuthenticated();
+      allow write: if hasRole('experts') || hasRole('admins');
+    }
+
     // Role markers (for security rules)
     match /roles_experts/{userId} {
       allow read: if isAuthenticated();
@@ -63,7 +65,7 @@ service cloud.firestore {
       allow write: if isOwner(userId);
     }
 
-    // Notification Handshake: Allow experts to create notifications for farmers
+    // Notification Handshake
     match /users/{userId}/notifications/{notifId} {
       allow read: if isOwner(userId);
       allow create: if isAuthenticated();

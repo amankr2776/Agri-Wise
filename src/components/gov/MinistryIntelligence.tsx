@@ -19,7 +19,9 @@ import {
   BrainCircuit,
   RefreshCw,
   Info,
-  CheckCircle2
+  CheckCircle2,
+  Volume2,
+  History
 } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -46,16 +48,12 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { useCollection, useFirestore, useMemoFirebase, useUser } from "@/firebase";
-import { collection, query, getDocs, writeBatch } from "firebase/firestore";
+import { collection, query, getDocs, writeBatch, serverTimestamp, where, orderBy, limit } from "firebase/firestore";
 import { addDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 import { useAppState } from "@/lib/app-state";
 import { useToast } from "@/hooks/use-toast";
 import { motion, AnimatePresence } from "framer-motion";
 import { predictSpreadVector, SpreadPredictionOutput } from "@/ai/flows/spread-prediction-flow";
-
-const STATES = [
-  "Punjab", "Haryana", "Rajasthan", "Maharashtra", "Uttar Pradesh", "West Bengal", "Karnataka", "Madhya Pradesh"
-];
 
 const INITIAL_NODES = [
   { id: 'node-01', name: 'Doddaballapur', x: 25, y: 30, density: 85, pathogen: 'Onion Rot', state: 'Karnataka' },
@@ -76,11 +74,24 @@ export function MinistryIntelligence() {
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [spreadPrediction, setSpreadPrediction] = useState<SpreadPredictionOutput | null>(null);
   
+  // Real-time listener for physical pathogen clusters (Map)
   const outbreaksQuery = useMemoFirebase(() => {
     if (!firestore) return null;
     return query(collection(firestore, "pestOutbreaks"));
   }, [firestore]);
-  const { data: dbOutbreaks, isLoading } = useCollection(outbreaksQuery);
+  const { data: dbOutbreaks } = useCollection(outbreaksQuery);
+
+  // Real-time listener for textual intelligence directives (Sidebar)
+  const directivesQuery = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return query(
+      collection(firestore, "intelligence_directives"), 
+      where("status", "==", "active"),
+      orderBy("timestamp", "desc"),
+      limit(10)
+    );
+  }, [firestore]);
+  const { data: activeDirectives } = useCollection(directivesQuery);
 
   const allNodes = useMemo(() => {
     const dbMapped = dbOutbreaks?.map(o => ({
@@ -127,29 +138,31 @@ export function MinistryIntelligence() {
     const snap = await getDocs(collection(firestore, "pestOutbreaks"));
     snap.forEach(d => batch.delete(d.ref));
     await batch.commit();
-    toast({ title: "Grid Reset", description: "All active pathogen clusters have been cleared by Expert Aman Kumar." });
+    toast({ title: "Grid Reset", description: "All active pathogen clusters have been cleared." });
   };
 
-  const handleCreateReport = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleCreateDirective = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!firestore || !user) return;
     setIsSubmitting(true);
 
     const formData = new FormData(e.currentTarget);
     const data = {
-      pestName: formData.get("pestName") as string,
-      state: formData.get("state") as string,
+      title: formData.get("title") as string,
       severity: formData.get("severity") as string,
-      areaHectares: Number(formData.get("area")),
-      containmentStrategy: formData.get("strategy") as string,
-      reportedBy: user.uid,
-      createdAt: new Date().toISOString()
+      description: formData.get("description") as string,
+      locationNode: formData.get("locationNode") as string,
+      expertId: 'AMAN_EXP_01',
+      status: 'active',
+      timestamp: serverTimestamp()
     };
 
-    addDocumentNonBlocking(collection(firestore, "pestOutbreaks"), data);
+    // This document creation triggers a Fan-out logic prime for a Firebase Cloud Function
+    // to send push notifications to all users in the specified Location Node.
+    addDocumentNonBlocking(collection(firestore, "intelligence_directives"), data);
     setIsReportDialogOpen(false);
     setIsSubmitting(false);
-    toast({ title: "Bio-Security Alert Issued", description: "Grid visualization updated." });
+    toast({ title: "Grid Directive Issued", description: "Protocol broadcasted to affected location nodes." });
   };
 
   if (role !== "Authority" && role !== "Expert") {
@@ -175,7 +188,7 @@ export function MinistryIntelligence() {
               <Globe className="h-8 w-8 text-primary" />
               Live Geospatial Grid
             </h3>
-            <p className="text-slate-400 font-bold uppercase text-[10px] tracking-[0.2em]">Bengaluru Regional Pathogen Heatmap</p>
+            <p className="text-slate-400 font-bold uppercase text-[10px] tracking-[0.2em]">National Bio-Security Heatmap</p>
           </motion.div>
 
           <div className="flex gap-3 pointer-events-auto">
@@ -184,7 +197,7 @@ export function MinistryIntelligence() {
               onClick={handleClearGrid}
               className="rounded-xl h-11 px-6 font-black border-destructive/20 text-destructive bg-slate-900/80 backdrop-blur-md hover:bg-destructive/10"
             >
-              <Trash2 className="h-4 w-4 mr-2" /> Grid Clear
+              <Trash2 className="h-4 w-4 mr-2" /> Cluster Reset
             </Button>
             <Button 
               onClick={handleRunAiPrediction}
@@ -199,7 +212,6 @@ export function MinistryIntelligence() {
 
         {/* Map Interactive Area */}
         <div className="absolute inset-0 flex items-center justify-center">
-          {/* Pathogen Clusters */}
           {allNodes.map((node) => (
             <motion.div 
               key={node.id}
@@ -216,7 +228,6 @@ export function MinistryIntelligence() {
                   "h-4 w-4 rounded-full shadow-[0_0_20px_rgba(255,255,255,0.4)]",
                   node.density > 70 ? 'bg-destructive' : node.density > 40 ? 'bg-amber-500' : 'bg-primary'
                 )} />
-                {/* Pulse Animation for Live Status */}
                 <div className={cn(
                   "absolute inset-0 rounded-full animate-ping opacity-20",
                   node.density > 70 ? 'bg-destructive' : node.density > 40 ? 'bg-amber-500' : 'bg-primary'
@@ -231,7 +242,6 @@ export function MinistryIntelligence() {
             </motion.div>
           ))}
 
-          {/* AI Spread Vectors (SVG) */}
           {spreadPrediction && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="absolute inset-0 pointer-events-none">
               <svg className="w-full h-full">
@@ -270,34 +280,39 @@ export function MinistryIntelligence() {
             </DialogTrigger>
             <DialogContent className="rounded-[3rem] sm:max-w-[600px] p-10 bg-white text-slate-900 border-none shadow-2xl">
               <DialogHeader>
-                <DialogTitle className="text-3xl font-black">Issue Bio-Security Alert</DialogTitle>
-                <DialogDescription className="text-muted-foreground italic">Broadcast containment protocols to the national grid.</DialogDescription>
+                <DialogTitle className="text-3xl font-black tracking-tighter">Issue Bio-Security Alert</DialogTitle>
+                <DialogDescription className="text-muted-foreground italic">Broadcast expert instructions to the national grid nodes.</DialogDescription>
               </DialogHeader>
-              <form onSubmit={handleCreateReport} className="space-y-6 pt-6">
-                <div className="grid grid-cols-2 gap-6">
+              <form onSubmit={handleCreateDirective} className="space-y-6 pt-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <Label className="text-[10px] font-black uppercase text-muted-foreground ml-2">Pathogen Name</Label>
-                    <Input name="pestName" placeholder="e.g. Locust Swarm" required className="h-12 rounded-xl bg-muted/30 border-none font-bold" />
+                    <Label className="text-[10px] font-black uppercase text-muted-foreground ml-2">Alert Title</Label>
+                    <Input name="title" placeholder="e.g. Locust Swarm Detected" required className="h-12 rounded-xl bg-muted/30 border-none font-bold" />
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-[10px] font-black uppercase text-muted-foreground ml-2">State</Label>
-                    <Select name="state" defaultValue="Karnataka">
+                    <Label className="text-[10px] font-black uppercase text-muted-foreground ml-2">Severity Level</Label>
+                    <Select name="severity" defaultValue="ADVISORY">
                       <SelectTrigger className="h-12 rounded-xl bg-muted/30 border-none font-bold">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        {STATES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                        <SelectItem value="CRITICAL">CRITICAL (Red)</SelectItem>
+                        <SelectItem value="ADVISORY">ADVISORY (Blue)</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase text-muted-foreground ml-2">Containment Strategy</Label>
-                  <Textarea name="strategy" placeholder="Action required..." required className="rounded-xl bg-muted/30 border-none min-h-[100px] font-medium" />
+                  <Label className="text-[10px] font-black uppercase text-muted-foreground ml-2">Location Node</Label>
+                  <Input name="locationNode" placeholder="e.g. Rajasthan Border Hub" required className="h-12 rounded-xl bg-muted/30 border-none font-bold" />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-muted-foreground ml-2">Directive Instructions & POV</Label>
+                  <Textarea name="description" placeholder="Share specific manual instructions or scientific reasoning..." required className="rounded-xl bg-muted/30 border-none min-h-[120px] font-medium" />
                 </div>
                 <DialogFooter>
                   <Button type="submit" disabled={isSubmitting} className="w-full h-14 rounded-2xl font-black text-lg bg-primary">
-                    {isSubmitting ? <Loader2 className="animate-spin" /> : "Broadcast Alert"}
+                    {isSubmitting ? <Loader2 className="animate-spin" /> : "Broadcast to Grid"}
                   </Button>
                 </DialogFooter>
               </form>
@@ -308,44 +323,42 @@ export function MinistryIntelligence() {
 
       {/* COLUMN 3: INTELLIGENCE SIDEBAR */}
       <aside className="w-[450px] bg-background flex flex-col p-10 space-y-10">
-        {/* Directives Card */}
-        <Card className="border-none shadow-2xl rounded-[3rem] bg-white text-slate-900 p-8 flex flex-col space-y-6">
+        <Card className="border-none shadow-2xl rounded-[3rem] bg-white text-slate-900 p-8 flex flex-col space-y-6 h-[500px]">
           <div className="flex items-center justify-between">
             <div className="space-y-1">
               <CardTitle className="text-xl font-black flex items-center gap-2">
                 <Navigation className="h-6 w-6 text-primary" />
-                Intelligence Directives
+                Live Directives
               </CardTitle>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Active Containment Protocols</p>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Broadcast History</p>
             </div>
-            <Badge variant="outline" className="h-8 rounded-full px-4 font-black text-[10px] border-primary/20 text-primary uppercase">v4.2</Badge>
+            <Badge variant="outline" className="h-8 rounded-full px-4 font-black text-[10px] border-primary/20 text-primary uppercase">Active</Badge>
           </div>
           
           <ScrollArea className="flex-1 -mr-4 pr-4">
             <div className="space-y-4">
               <AnimatePresence mode="popLayout">
-                {allNodes.filter(n => n.density > 50).map((n, i) => (
+                {activeDirectives?.map((dir, i) => (
                   <motion.div 
-                    key={n.id}
+                    key={dir.id}
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: i * 0.1 }}
                     className={cn(
                       "p-6 rounded-[2rem] border-l-8 transition-all hover:scale-[1.02] cursor-pointer group",
-                      n.density > 75 ? "bg-destructive/5 border-destructive" : "bg-primary/5 border-primary"
+                      dir.severity === 'CRITICAL' ? "bg-destructive/5 border-destructive" : "bg-blue-50 border-blue-500"
                     )}
                   >
                     <div className="flex justify-between items-start mb-3">
-                      <p className="text-[10px] font-black uppercase text-slate-400">{n.name} Node</p>
-                      <Badge variant={n.density > 75 ? "destructive" : "default"} className="text-[8px] font-black uppercase">
-                        {n.density > 75 ? "Priority High" : "Monitoring"}
+                      <p className="text-[10px] font-black uppercase text-slate-400">{dir.locationNode}</p>
+                      <Badge variant={dir.severity === 'CRITICAL' ? "destructive" : "default"} className="text-[8px] font-black uppercase">
+                        {dir.severity}
                       </Badge>
                     </div>
-                    <p className="text-sm font-black leading-tight text-slate-800">
-                      Action: Strategic containment required for {n.pathogen} at {n.name}.
-                    </p>
+                    <p className="text-sm font-black leading-tight text-slate-800">{dir.title}</p>
+                    <p className="text-[10px] text-muted-foreground mt-2 line-clamp-2 italic">"{dir.description}"</p>
                     <div className="flex items-center gap-2 mt-4 text-[10px] font-bold text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <RefreshCw className="h-3 w-3" /> Last Handshake: 2m ago
+                      <History className="h-3 w-3" /> Issued: {dir.timestamp?.toDate().toLocaleTimeString() || 'Just now'}
                     </div>
                   </motion.div>
                 ))}
@@ -354,7 +367,6 @@ export function MinistryIntelligence() {
           </ScrollArea>
         </Card>
 
-        {/* Mandi Pulse Widget */}
         <div className="space-y-6">
           <div className="flex items-center justify-between px-2">
             <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Mandi Inflation Pulse</h4>
@@ -374,7 +386,7 @@ export function MinistryIntelligence() {
                   <p className="text-[10px] font-black text-muted-foreground">Onion Price Spike</p>
                   <p className="text-4xl font-black text-destructive">+42%</p>
                   <p className="text-[8px] font-bold text-destructive/60 uppercase tracking-widest flex items-center gap-1">
-                    <AlertTriangle className="h-3 w-3" /> Pathogen-Induced Inflation
+                    <AlertTriangle className="h-3 w-3" /> Pathogen-Induced Alert
                   </p>
                 </div>
                 <div className="h-14 w-14 rounded-2xl bg-destructive/10 flex items-center justify-center text-destructive">
@@ -399,29 +411,6 @@ export function MinistryIntelligence() {
             </Card>
           </div>
         </div>
-
-        {/* Regional Forecast Card */}
-        <AnimatePresence>
-          {spreadPrediction && (
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-              <Card className="border-none shadow-2xl rounded-[2.5rem] p-8 bg-primary text-white space-y-6 relative overflow-hidden">
-                <div className="absolute top-0 right-0 p-4 opacity-10"><BrainCircuit className="h-24 w-24" /></div>
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 bg-white/20 rounded-xl flex items-center justify-center text-white">
-                    <Wind className="h-6 w-6" />
-                  </div>
-                  <div>
-                    <h4 className="text-lg font-black tracking-tight">48h Forecast</h4>
-                    <p className="text-[10px] font-bold text-white/60 uppercase tracking-widest">Vector Analysis Active</p>
-                  </div>
-                </div>
-                <p className="text-xs font-medium italic leading-relaxed text-white/90">
-                  "{spreadPrediction.strategicAdvice}"
-                </p>
-              </Card>
-            </motion.div>
-          )}
-        </AnimatePresence>
       </aside>
     </div>
   );

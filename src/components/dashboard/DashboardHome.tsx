@@ -46,7 +46,7 @@ import { useTranslation } from "@/hooks/use-translation";
 import { cn } from "@/lib/utils";
 import { motion, animate, AnimatePresence } from "framer-motion";
 import { useFirestore, useCollection, useMemoFirebase, useUser } from "@/firebase";
-import { collection, query, where, orderBy } from "firebase/firestore";
+import { collection, query, where, orderBy, limit } from "firebase/firestore";
 import { FarmerOnboarding } from "./FarmerOnboarding";
 
 interface DashboardHomeProps {
@@ -103,27 +103,23 @@ export function DashboardHome({ onNavigate }: DashboardHomeProps) {
     return () => clearInterval(interval);
   }, []);
 
-  // Real-Time Data Fetching
+  // Real-Time Data Fetching for Farmer Shipments
   const farmerShipmentsQuery = useMemoFirebase(() => {
     if (!firestore || !user || role !== "Farmer") return null;
     return query(collection(firestore, "bookings"), where("farmerId", "==", user.uid));
   }, [firestore, user, role]);
-  const { data: farmerShipments, isLoading: loadingFarmerShipments } = useCollection(farmerShipmentsQuery);
+  const { data: farmerShipments } = useCollection(farmerShipmentsQuery);
 
-  const globalAlertsQuery = useMemoFirebase(() => {
+  // REAL-TIME LISTENER: Intelligence Directives from Experts
+  const directivesQuery = useMemoFirebase(() => {
     if (!firestore) return null;
-    // Simple query to avoid index errors in demo mode
-    return query(collection(firestore, "pestOutbreaks"));
-  }, [firestore]);
-  const { data: globalAlerts, isLoading: loadingAlerts } = useCollection(globalAlertsQuery);
-
-  // Sorting alerts by createdAt descending client-side for immediate display without index requirements
-  const sortedAlerts = useMemo(() => {
-    if (!globalAlerts) return [];
-    return [...globalAlerts].sort((a, b) => 
-      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    return query(
+      collection(firestore, "intelligence_directives"),
+      where("status", "==", "active"),
+      orderBy("timestamp", "desc")
     );
-  }, [globalAlerts]);
+  }, [firestore]);
+  const { data: globalAlerts, isLoading: loadingAlerts } = useCollection(directivesQuery);
 
   const globalPostsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
@@ -156,7 +152,7 @@ export function DashboardHome({ onNavigate }: DashboardHomeProps) {
     e.stopPropagation();
     if (isSpeaking) return;
     
-    const text = `${alert.pestName} directive for ${alert.state}. Severity is ${alert.severity}. Expert advice: ${alert.containmentStrategy}`;
+    const text = `${alert.title} directive for ${alert.locationNode}. Severity is ${alert.severity}. Expert advice: ${alert.description}`;
     setIsSpeaking(true);
     
     try {
@@ -186,7 +182,7 @@ export function DashboardHome({ onNavigate }: DashboardHomeProps) {
       return [
         { id: "diagnostics", label: t("active_alerts"), value: globalAlerts?.length ?? 0, isLoading: loadingAlerts, icon: AlertTriangle, color: "text-destructive", bg: "bg-destructive/10" },
         { id: "market", label: t("best_price"), value: "₹2,450", sub: "Wheat (Nashik)", icon: TrendingUp, color: "text-primary", bg: "bg-primary/10" },
-        { id: "logistics", label: "My Shipments", value: farmerShipments?.length ?? 0, isLoading: loadingFarmerShipments, icon: Truck, color: "text-blue-500", bg: "bg-blue-500/10" },
+        { id: "logistics", label: "My Shipments", value: farmerShipments?.length ?? 0, icon: Truck, color: "text-blue-500", bg: "bg-blue-500/10" },
         { id: "network", label: "Network Posts", value: globalPosts?.length ?? 0, isLoading: loadingPosts, icon: Users, color: "text-amber-500", bg: "bg-amber-500/10" },
       ];
     } else if (role === "Expert" || role === "Authority") {
@@ -206,7 +202,7 @@ export function DashboardHome({ onNavigate }: DashboardHomeProps) {
       ];
     }
     return [];
-  }, [role, t, globalAlerts, loadingAlerts, farmerShipments, loadingFarmerShipments, globalPosts, loadingPosts, pendingPosts, loadingPending, myVehicles, loadingVehicles]);
+  }, [role, t, globalAlerts, loadingAlerts, farmerShipments, globalPosts, loadingPosts, pendingPosts, loadingPending, myVehicles, loadingVehicles]);
 
   const quickActions = useMemo(() => {
     if (role === "Farmer") {
@@ -320,14 +316,14 @@ export function DashboardHome({ onNavigate }: DashboardHomeProps) {
             <div className="space-y-6">
               {loadingAlerts ? (
                 [1, 2, 3].map(i => <div key={i} className="h-40 rounded-[2.5rem] bg-muted/20 animate-pulse" />)
-              ) : !sortedAlerts?.length ? (
+              ) : !globalAlerts?.length ? (
                 <div className="p-10 text-center opacity-40 border-2 border-dashed rounded-[3rem]">
                   <ShieldCheck className="h-12 w-12 mx-auto mb-4" />
-                  <p className="text-sm font-bold">No active pathogen alerts in your sector.</p>
+                  <p className="text-sm font-bold">No active expert directives in your sector.</p>
                 </div>
               ) : (
                 <AnimatePresence mode="popLayout">
-                  {sortedAlerts.map((alert) => (
+                  {globalAlerts.map((alert) => (
                     <motion.div
                       key={alert.id}
                       initial={{ opacity: 0, x: 20 }}
@@ -338,13 +334,13 @@ export function DashboardHome({ onNavigate }: DashboardHomeProps) {
                         onClick={() => setSelectedAlert(alert)} 
                         className={cn(
                           "glass-card border-none cursor-pointer group hover:bg-muted/50 transition-all rounded-[2.5rem] border-l-8 overflow-hidden",
-                          alert.severity === 'Critical' ? "border-destructive shadow-lg shadow-destructive/5" : "border-amber-500"
+                          alert.severity === 'CRITICAL' ? "border-destructive shadow-lg shadow-destructive/5" : "border-blue-500"
                         )}
                       >
                         <CardContent className="p-8 space-y-4">
                           <div className="flex justify-between items-start">
                             <div className="flex gap-2">
-                              {alert.severity === 'Critical' && (
+                              {alert.severity === 'CRITICAL' && (
                                 <Badge variant="destructive" className="font-black uppercase tracking-widest text-[9px] animate-pulse-engagement">Critical</Badge>
                               )}
                               <Badge className="bg-primary/10 text-primary border-none font-black text-[9px] uppercase tracking-widest">
@@ -352,16 +348,16 @@ export function DashboardHome({ onNavigate }: DashboardHomeProps) {
                               </Badge>
                             </div>
                             <span className="text-[10px] font-bold text-muted-foreground">
-                              {alert.createdAt ? new Date(alert.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Just now'}
+                              {alert.timestamp?.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) || 'Just now'}
                             </span>
                           </div>
                           <div className="space-y-1">
-                            <h3 className="text-xl font-black tracking-tight">{alert.pestName}</h3>
-                            <p className="text-sm text-muted-foreground line-clamp-2 leading-relaxed italic">"{alert.containmentStrategy}"</p>
+                            <h3 className="text-xl font-black tracking-tight">{alert.title}</h3>
+                            <p className="text-sm text-muted-foreground line-clamp-2 leading-relaxed italic">"{alert.description}"</p>
                           </div>
                           <div className="pt-4 border-t flex items-center justify-between">
                             <div className="flex items-center gap-2 text-[10px] font-black uppercase text-primary">
-                              <MapPin className="h-3 w-3" /> {alert.state} Hub
+                              <MapPin className="h-3 w-3" /> {alert.locationNode}
                             </div>
                             <div className="flex items-center gap-2">
                               <Button 
@@ -397,12 +393,12 @@ export function DashboardHome({ onNavigate }: DashboardHomeProps) {
               <div className="flex items-center gap-4 mb-4">
                 <div className={cn(
                   "h-16 w-16 rounded-2xl flex items-center justify-center shadow-lg",
-                  selectedAlert?.severity === 'Critical' ? "bg-destructive" : "bg-amber-500"
+                  selectedAlert?.severity === 'CRITICAL' ? "bg-destructive" : "bg-blue-500"
                 )}>
                   <AlertTriangle className="h-10 w-10 text-white" />
                 </div>
                 <div>
-                  <DialogTitle className="text-4xl font-black tracking-tighter">{selectedAlert?.pestName}</DialogTitle>
+                  <DialogTitle className="text-4xl font-black tracking-tighter">{selectedAlert?.title}</DialogTitle>
                   <DialogDescription className="text-slate-400 font-bold uppercase tracking-widest text-[10px]">
                     National Grid Directive | Verified by Dr. Aman Kumar
                   </DialogDescription>
@@ -415,11 +411,11 @@ export function DashboardHome({ onNavigate }: DashboardHomeProps) {
             <div className="grid grid-cols-2 gap-6">
               <div className="p-6 bg-slate-50 rounded-[2rem] border space-y-2">
                 <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Region Affected</p>
-                <p className="text-lg font-black">{selectedAlert?.state}</p>
+                <p className="text-lg font-black">{selectedAlert?.locationNode}</p>
               </div>
               <div className="p-6 bg-slate-50 rounded-[2rem] border space-y-2">
-                <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Area Assessment</p>
-                <p className="text-lg font-black text-destructive">{selectedAlert?.areaHectares || '12,000'} Hectares</p>
+                <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Directive Status</p>
+                <p className="text-lg font-black text-primary uppercase">{selectedAlert?.status || 'Active'}</p>
               </div>
             </div>
 
@@ -430,7 +426,7 @@ export function DashboardHome({ onNavigate }: DashboardHomeProps) {
               <div className="p-8 rounded-[2.5rem] bg-primary/5 border border-primary/10 relative overflow-hidden">
                 <div className="absolute top-0 right-0 p-4 opacity-5"><Zap className="h-20 w-20" /></div>
                 <p className="text-xl font-bold text-slate-800 leading-relaxed italic relative z-10">
-                  "{selectedAlert?.containmentStrategy}"
+                  "{selectedAlert?.description}"
                 </p>
               </div>
             </div>
