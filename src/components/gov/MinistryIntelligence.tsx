@@ -1,11 +1,9 @@
-
 "use client";
 
 import React, { useMemo, useState, useEffect } from "react";
 import { 
   AlertTriangle, 
   Globe, 
-  CheckCircle, 
   ShieldAlert,
   Zap,
   Activity,
@@ -18,14 +16,12 @@ import {
   Trash2,
   ArrowUpRight,
   Wind,
-  Droplets,
   BrainCircuit,
-  Info,
-  RefreshCw
+  RefreshCw,
+  Info
 } from "lucide-react";
-import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -49,7 +45,7 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { useCollection, useFirestore, useMemoFirebase, useUser } from "@/firebase";
-import { collection, query, doc, deleteDoc, writeBatch, getDocs } from "firebase/firestore";
+import { collection, query, getDocs, writeBatch } from "firebase/firestore";
 import { addDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 import { useAppState } from "@/lib/app-state";
 import { useToast } from "@/hooks/use-toast";
@@ -70,7 +66,7 @@ const INITIAL_NODES = [
 
 export function MinistryIntelligence() {
   const firestore = useFirestore();
-  const { role, name: userName } = useAppState();
+  const { role } = useAppState();
   const { user } = useUser();
   const { toast } = useToast();
   
@@ -79,14 +75,12 @@ export function MinistryIntelligence() {
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [spreadPrediction, setSpreadPrediction] = useState<SpreadPredictionOutput | null>(null);
   
-  // Real-time grid data
   const outbreaksQuery = useMemoFirebase(() => {
     if (!firestore) return null;
     return query(collection(firestore, "pestOutbreaks"));
   }, [firestore]);
   const { data: dbOutbreaks, isLoading } = useCollection(outbreaksQuery);
 
-  // Combine DB and Initial nodes for visual depth
   const allNodes = useMemo(() => {
     const dbMapped = dbOutbreaks?.map(o => ({
       id: o.id,
@@ -102,10 +96,8 @@ export function MinistryIntelligence() {
   }, [dbOutbreaks]);
 
   const stats = useMemo(() => {
-    const critical = allNodes.filter(o => o.density > 70).length;
-    const totalArea = allNodes.reduce((acc, curr) => acc + (curr.density * 150), 0);
-    const densityAvg = allNodes.reduce((acc, curr) => acc + curr.density, 0) / allNodes.length;
-    return { critical, totalArea, densityAvg };
+    const densityAvg = allNodes.length ? allNodes.reduce((acc, curr) => acc + curr.density, 0) / allNodes.length : 0;
+    return { densityAvg };
   }, [allNodes]);
 
   const handleRunAiPrediction = async () => {
@@ -162,77 +154,148 @@ export function MinistryIntelligence() {
   if (role !== "Authority" && role !== "Expert") {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] text-center space-y-4">
-        <div className="h-20 w-20 bg-destructive/10 rounded-full flex items-center justify-center text-destructive">
-          <Lock className="h-10 w-10" />
-        </div>
+        <Lock className="h-10 w-10 text-destructive" />
         <h3 className="text-2xl font-black">Authorized Personnel Only</h3>
-        <p className="text-muted-foreground">Access restricted to verified Ministry and Expert nodes.</p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-10 animate-in fade-in duration-700 max-w-7xl mx-auto pb-20">
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-        <div className="space-y-1">
-          <h2 className="text-4xl font-black tracking-tighter text-slate-900 flex items-center gap-3">
-            <ShieldAlert className="h-10 w-10 text-primary" />
-            National Intelligence Grid
-          </h2>
-          <p className="text-muted-foreground font-medium uppercase text-[10px] tracking-[0.2em]">Bio-Security Surveillance & Pathogen Tracking</p>
+    <div className="flex h-full w-full">
+      {/* COLUMN 2: CENTER COMMAND PANEL (THE MAP) */}
+      <div className="flex-1 relative bg-slate-950 border-r border-white/5">
+        <div className="absolute inset-0 bg-[url('https://picsum.photos/seed/darkmap/1200/800')] bg-cover bg-center opacity-20 grayscale brightness-50" />
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-slate-950/50" />
+
+        {/* Top Control Overlay */}
+        <div className="absolute top-8 left-10 right-10 z-20 flex justify-between items-start pointer-events-none">
+          <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="space-y-1">
+            <h3 className="text-3xl font-black tracking-tighter text-white flex items-center gap-3">
+              <Globe className="h-8 w-8 text-primary" />
+              Live Geospatial Grid
+            </h3>
+            <p className="text-slate-400 font-bold uppercase text-[10px] tracking-[0.2em]">Bengaluru Regional Pathogen Heatmap</p>
+          </motion.div>
+
+          <div className="flex gap-3 pointer-events-auto">
+            <Button 
+              variant="outline"
+              onClick={handleClearGrid}
+              className="rounded-xl h-11 px-6 font-black border-destructive/20 text-destructive bg-slate-900/80 backdrop-blur-md hover:bg-destructive/10"
+            >
+              <Trash2 className="h-4 w-4 mr-2" /> Grid Clear
+            </Button>
+            <Button 
+              onClick={handleRunAiPrediction}
+              disabled={isAiLoading}
+              className="rounded-xl h-11 px-6 font-black bg-slate-100 text-slate-900 hover:bg-white gap-2 shadow-xl"
+            >
+              {isAiLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <BrainCircuit className="h-4 w-4" />}
+              AI Threat Forecast
+            </Button>
+          </div>
         </div>
-        
-        <div className="flex gap-3">
-          <Button 
-            variant="outline"
-            onClick={handleClearGrid}
-            className="rounded-2xl h-14 px-6 font-black border-destructive/20 text-destructive hover:bg-destructive/5"
-          >
-            <Trash2 className="h-5 w-5 mr-2" /> Grid Clear
-          </Button>
-          <Button 
-            onClick={handleRunAiPrediction}
-            disabled={isAiLoading}
-            className="rounded-2xl h-14 px-6 font-black bg-slate-900 text-white hover:bg-slate-800 gap-2"
-          >
-            {isAiLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : <BrainCircuit className="h-5 w-5" />}
-            AI Threat Forecast
-          </Button>
+
+        {/* Map Interactive Area */}
+        <div className="absolute inset-0 flex items-center justify-center">
+          {/* Pathogen Clusters */}
+          {allNodes.map((node) => (
+            <motion.div 
+              key={node.id}
+              initial={{ opacity: 0, scale: 0 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="absolute"
+              style={{ top: `${node.y}%`, left: `${node.x}%`, transform: 'translate(-50%, -50%)' }}
+            >
+              <div className={cn(
+                "relative h-24 w-24 rounded-full flex items-center justify-center transition-all",
+                node.density > 70 ? 'bg-destructive/20' : node.density > 40 ? 'bg-amber-500/15' : 'bg-primary/15'
+              )}>
+                <div className={cn(
+                  "h-4 w-4 rounded-full shadow-[0_0_20px_rgba(255,255,255,0.4)]",
+                  node.density > 70 ? 'bg-destructive' : node.density > 40 ? 'bg-amber-500' : 'bg-primary'
+                )} />
+                {/* Pulse Animation for Live Status */}
+                <div className={cn(
+                  "absolute inset-0 rounded-full animate-ping opacity-20",
+                  node.density > 70 ? 'bg-destructive' : node.density > 40 ? 'bg-amber-500' : 'bg-primary'
+                )} />
+              </div>
+              
+              <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 bg-slate-900/90 backdrop-blur-xl p-3 rounded-2xl border border-white/10 text-center min-w-[120px] shadow-2xl">
+                <p className="text-[8px] font-black text-primary uppercase tracking-widest">{node.pathogen}</p>
+                <p className="text-xs font-black text-white">{node.name}</p>
+                <p className="text-[10px] font-bold text-slate-500">{node.density}% Density</p>
+              </div>
+            </motion.div>
+          ))}
+
+          {/* AI Spread Vectors (SVG) */}
+          {spreadPrediction && (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="absolute inset-0 pointer-events-none">
+              <svg className="w-full h-full">
+                <defs>
+                  <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="0" refY="3.5" orient="auto">
+                    <polygon points="0 0, 10 3.5, 0 7" fill="hsl(var(--primary))" />
+                  </marker>
+                </defs>
+                {allNodes.filter(n => n.density > 60).map((n, i) => (
+                  <motion.line 
+                    key={`vector-${i}`}
+                    x1={`${n.x}%`} y1={`${n.y}%`} 
+                    x2={`${n.x + (Math.cos(spreadPrediction.predictedVector.angle * Math.PI / 180) * 15)}%`}
+                    y2={`${n.y + (Math.sin(spreadPrediction.predictedVector.angle * Math.PI / 180) * 15)}%`}
+                    stroke="hsl(var(--primary))"
+                    strokeWidth="3"
+                    strokeDasharray="10,5"
+                    markerEnd="url(#arrowhead)"
+                    initial={{ pathLength: 0 }}
+                    animate={{ pathLength: 1 }}
+                    transition={{ duration: 2, repeat: Infinity }}
+                  />
+                ))}
+              </svg>
+            </motion.div>
+          )}
+        </div>
+
+        {/* Floating Add Alert */}
+        <div className="absolute bottom-10 right-10 z-20">
           <Dialog open={isReportDialogOpen} onOpenChange={setIsReportDialogOpen}>
             <DialogTrigger asChild>
-              <Button className="rounded-2xl h-14 px-8 font-black bg-primary shadow-xl shadow-primary/20">
-                <Plus className="h-6 w-6 mr-2" /> New Alert
+              <Button className="h-16 px-8 rounded-[2rem] font-black text-lg bg-primary shadow-2xl shadow-primary/20 hover:scale-105 active:scale-95 transition-all">
+                <Plus className="h-6 w-6 mr-3" /> New Alert
               </Button>
             </DialogTrigger>
-            <DialogContent className="rounded-[2.5rem] sm:max-w-[600px] p-10">
+            <DialogContent className="rounded-[3rem] sm:max-w-[600px] p-10 bg-slate-900 text-slate-200 border-white/5">
               <DialogHeader>
-                <DialogTitle className="text-3xl font-black">Issue Bio-Security Alert</DialogTitle>
-                <DialogDescription className="italic font-medium">Broadcast containment protocols to the grid.</DialogDescription>
+                <DialogTitle className="text-3xl font-black text-white">Issue Bio-Security Alert</DialogTitle>
+                <DialogDescription className="text-slate-400 italic">Broadcast containment protocols to the national grid.</DialogDescription>
               </DialogHeader>
               <form onSubmit={handleCreateReport} className="space-y-6 pt-6">
                 <div className="grid grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <Label className="text-[10px] font-black uppercase text-muted-foreground ml-2">Pathogen Name</Label>
-                    <Input name="pestName" placeholder="e.g. Locust Swarm" required className="h-12 rounded-xl bg-muted/30 border-none font-bold" />
+                    <Label className="text-[10px] font-black uppercase text-slate-500 ml-2">Pathogen Name</Label>
+                    <Input name="pestName" placeholder="e.g. Locust Swarm" required className="h-12 rounded-xl bg-white/5 border-none font-bold text-white" />
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-[10px] font-black uppercase text-muted-foreground ml-2">State</Label>
+                    <Label className="text-[10px] font-black uppercase text-slate-500 ml-2">State</Label>
                     <Select name="state" defaultValue="Karnataka">
-                      <SelectTrigger className="h-12 rounded-xl bg-muted/30 border-none font-bold">
+                      <SelectTrigger className="h-12 rounded-xl bg-white/5 border-none font-bold text-white">
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="bg-slate-900 border-white/10 text-white">
                         {STATES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
                       </SelectContent>
                     </Select>
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase text-muted-foreground ml-2">Containment Strategy</Label>
-                  <Textarea name="strategy" placeholder="Action required..." required className="rounded-xl bg-muted/30 border-none min-h-[100px] font-medium" />
+                  <Label className="text-[10px] font-black uppercase text-slate-500 ml-2">Containment Strategy</Label>
+                  <Textarea name="strategy" placeholder="Action required..." required className="rounded-xl bg-white/5 border-none min-h-[100px] font-medium text-white" />
                 </div>
                 <DialogFooter>
-                  <Button type="submit" disabled={isSubmitting} className="w-full h-14 rounded-2xl font-black text-lg">
+                  <Button type="submit" disabled={isSubmitting} className="w-full h-14 rounded-2xl font-black text-lg bg-primary">
                     {isSubmitting ? <Loader2 className="animate-spin" /> : "Broadcast Alert"}
                   </Button>
                 </DialogFooter>
@@ -242,198 +305,123 @@ export function MinistryIntelligence() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        {/* Geospatial Intelligence Grid */}
-        <Card className="lg:col-span-8 border-none shadow-2xl rounded-[3rem] overflow-hidden bg-slate-900 text-white relative min-h-[650px]">
-          <div className="absolute inset-0 bg-[url('https://picsum.photos/seed/map/1200/800')] bg-cover bg-center opacity-10" />
-          <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-900/40 to-transparent" />
-          
-          <CardHeader className="relative z-10 p-10 flex flex-row justify-between items-start">
-            <div className="space-y-1">
-              <CardTitle className="text-3xl font-black tracking-tight flex items-center gap-3">
-                <Globe className="h-8 w-8 text-primary" />
-                Live Geospatial Grid
-              </CardTitle>
-              <CardDescription className="text-slate-400 font-medium italic">Bengaluru Regional Pathogen Heatmap & Spread Vectors</CardDescription>
-            </div>
-            <div className="flex flex-col gap-2 items-end">
-              <Badge className="bg-primary/20 text-primary border-primary/30 px-4 py-1.5 font-black uppercase text-[10px]">
-                Active Nodes: {allNodes.length}
-              </Badge>
-              <div className="flex items-center gap-2 text-[10px] text-slate-500 font-bold uppercase">
-                <RefreshCw className="h-3 w-3 animate-spin-slow" /> Real-time Sync
-              </div>
-            </div>
-          </CardHeader>
-
-          <CardContent className="relative z-10 p-10 h-[500px]">
-            <div className="relative w-full h-full border border-white/5 rounded-[2.5rem] bg-black/20 backdrop-blur-sm overflow-hidden">
-              {/* Heatmap Clusters */}
-              {allNodes.map((node, i) => (
-                <motion.div 
-                  key={node.id}
-                  initial={{ opacity: 0, scale: 0 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  className="absolute"
-                  style={{ top: `${node.y}%`, left: `${node.x}%`, transform: 'translate(-50%, -50%)' }}
-                >
-                  <div className={cn(
-                    "relative h-20 w-20 rounded-full flex items-center justify-center transition-all",
-                    node.density > 70 ? 'bg-destructive/30 animate-pulse' : 
-                    node.density > 40 ? 'bg-amber-500/20' : 'bg-primary/20'
-                  )}>
-                    <div className={cn(
-                      "h-4 w-4 rounded-full shadow-[0_0_15px_rgba(255,255,255,0.5)]",
-                      node.density > 70 ? 'bg-destructive' : node.density > 40 ? 'bg-amber-500' : 'bg-primary'
-                    )} />
-                  </div>
-                  <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 bg-slate-900/80 backdrop-blur-md p-2 rounded-lg border border-white/10 text-center min-w-[100px] shadow-2xl">
-                    <p className="text-[8px] font-black text-primary uppercase">{node.pathogen}</p>
-                    <p className="text-[10px] font-bold">{node.name}</p>
-                    <p className="text-[8px] font-bold text-slate-500">{node.density}% Density</p>
-                  </div>
-                </motion.div>
-              ))}
-
-              {/* AI Spread Vector Arrows */}
-              {spreadPrediction && (
-                <motion.div 
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="absolute inset-0 pointer-events-none"
-                >
-                  <svg className="w-full h-full">
-                    <defs>
-                      <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="0" refY="3.5" orient="auto">
-                        <polygon points="0 0, 10 3.5, 0 7" fill="hsl(var(--primary))" />
-                      </marker>
-                    </defs>
-                    {allNodes.filter(n => n.density > 60).map((n, i) => (
-                      <motion.line 
-                        key={`vector-${i}`}
-                        x1={`${n.x}%`} 
-                        y1={`${n.y}%`} 
-                        x2={`${n.x + (Math.cos(spreadPrediction.predictedVector.angle * Math.PI / 180) * 15)}%`}
-                        y2={`${n.y + (Math.sin(spreadPrediction.predictedVector.angle * Math.PI / 180) * 15)}%`}
-                        stroke="hsl(var(--primary))"
-                        strokeWidth="3"
-                        strokeDasharray="10,5"
-                        markerEnd="url(#arrowhead)"
-                        initial={{ pathLength: 0 }}
-                        animate={{ pathLength: 1 }}
-                        transition={{ duration: 2, repeat: Infinity }}
-                      />
-                    ))}
-                  </svg>
-                </motion.div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Intelligence Directives & Pulse */}
-        <div className="lg:col-span-4 space-y-8 flex flex-col">
-          <Card className="border-none shadow-xl rounded-[3rem] p-8 bg-white flex-1 flex flex-col space-y-6">
+      {/* COLUMN 3: INTELLIGENCE SIDEBAR */}
+      <aside className="w-[450px] bg-slate-950 flex flex-col p-10 space-y-10">
+        {/* Directives Card */}
+        <Card className="border-none shadow-2xl rounded-[3rem] bg-white text-slate-900 p-8 flex flex-col space-y-6">
+          <div className="flex items-center justify-between">
             <div className="space-y-1">
               <CardTitle className="text-xl font-black flex items-center gap-2">
                 <Navigation className="h-6 w-6 text-primary" />
-                AI Directives
+                Intelligence Directives
               </CardTitle>
-              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Autonomous Containment Strategies</p>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Active Containment Protocols</p>
             </div>
-            
-            <ScrollArea className="flex-1 pr-4">
-              <div className="space-y-4">
-                {allNodes.filter(n => n.density > 50).map((n) => (
-                  <div key={n.id} className={cn(
-                    "p-5 rounded-[2rem] border-l-8 transition-all hover:scale-[1.02]",
-                    n.density > 75 ? "bg-destructive/5 border-destructive" : "bg-primary/5 border-primary"
-                  )}>
-                    <div className="flex justify-between items-start mb-2">
-                      <p className="text-[10px] font-black uppercase text-muted-foreground">{n.name} Node</p>
+            <Badge variant="outline" className="h-8 rounded-full px-4 font-black text-[10px] border-primary/20 text-primary uppercase">v4.2</Badge>
+          </div>
+          
+          <ScrollArea className="flex-1 -mr-4 pr-4">
+            <div className="space-y-4">
+              <AnimatePresence mode="popLayout">
+                {allNodes.filter(n => n.density > 50).map((n, i) => (
+                  <motion.div 
+                    key={n.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.1 }}
+                    className={cn(
+                      "p-6 rounded-[2rem] border-l-8 transition-all hover:scale-[1.02] cursor-pointer group",
+                      n.density > 75 ? "bg-destructive/5 border-destructive" : "bg-primary/5 border-primary"
+                    )}
+                  >
+                    <div className="flex justify-between items-start mb-3">
+                      <p className="text-[10px] font-black uppercase text-slate-400">{n.name} Node</p>
                       <Badge variant={n.density > 75 ? "destructive" : "default"} className="text-[8px] font-black uppercase">
-                        {n.density > 75 ? "Critical" : "Warning"}
+                        {n.density > 75 ? "Priority High" : "Monitoring"}
                       </Badge>
                     </div>
-                    <p className="text-sm font-bold text-slate-900 leading-tight">
-                      Action: Strategic fungicide application required for {n.name}.
+                    <p className="text-sm font-black leading-tight text-slate-800">
+                      Action: Strategic containment required for {n.pathogen} at {n.name}.
                     </p>
-                    <p className="text-[10px] font-medium text-slate-500 mt-2 italic">
-                      Density increase of {Math.floor(Math.random() * 15) + 10}% detected.
-                    </p>
-                  </div>
+                    <div className="flex items-center gap-2 mt-4 text-[10px] font-bold text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <RefreshCw className="h-3 w-3" /> Last Handshake: 2m ago
+                    </div>
+                  </motion.div>
                 ))}
-              </div>
-            </ScrollArea>
-
-            {/* Mandi Inflation Pulse */}
-            <div className="pt-6 border-t space-y-4">
-              <div className="flex items-center justify-between">
-                <h4 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Mandi Inflation Pulse</h4>
-                <Badge className="bg-amber-500 text-white border-none font-black text-[8px] animate-pulse">Alert Active</Badge>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className={cn(
-                  "p-4 rounded-2xl border text-center transition-all",
-                  stats.densityAvg > 40 ? "bg-destructive/10 border-destructive/20" : "bg-muted/30 border-border"
-                )}>
-                  <TrendingUp className="h-5 w-5 text-destructive mx-auto mb-1" />
-                  <p className="text-[8px] font-black uppercase text-slate-500">Onion Price</p>
-                  <p className="text-xl font-black text-destructive">+42% Spike</p>
-                  {stats.densityAvg > 40 && <p className="text-[7px] font-bold text-destructive/60 uppercase">Pathogen Induced</p>}
-                </div>
-                <div className="p-4 rounded-2xl bg-primary/10 border border-primary/20 text-center">
-                  <TrendingUp className="h-5 w-5 text-primary mx-auto mb-1" />
-                  <p className="text-[8px] font-black uppercase text-slate-500">Wheat Supply</p>
-                  <p className="text-xl font-black text-primary">Stable</p>
-                  <p className="text-[7px] font-bold text-primary/60 uppercase">Nodes Guarded</p>
-                </div>
-              </div>
+              </AnimatePresence>
             </div>
-          </Card>
+          </ScrollArea>
+        </Card>
 
-          {/* AI Forecast Card (Visible when prediction is run) */}
-          <AnimatePresence>
-            {spreadPrediction && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 20 }}
-              >
-                <Card className="border-none shadow-2xl rounded-[2.5rem] p-8 bg-slate-900 text-white space-y-6 relative overflow-hidden">
-                  <div className="absolute top-0 right-0 p-4 opacity-5"><BrainCircuit className="h-24 w-24" /></div>
-                  <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 bg-primary/20 rounded-xl flex items-center justify-center text-primary">
-                      <Wind className="h-6 w-6" />
-                    </div>
-                    <div>
-                      <h4 className="text-lg font-black tracking-tight">48h Spread Forecast</h4>
-                      <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Vector Analysis v2.1</p>
-                    </div>
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-1">
-                      <p className="text-[8px] font-black uppercase text-slate-500">Predicted Direction</p>
-                      <p className="text-lg font-black flex items-center gap-2">
-                        {spreadPrediction.predictedVector.direction} <ArrowUpRight className="h-4 w-4 text-primary" style={{ transform: `rotate(${spreadPrediction.predictedVector.angle - 45}deg)` }} />
-                      </p>
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-[8px] font-black uppercase text-slate-500">Risk Level</p>
-                      <Badge variant="destructive" className="font-black uppercase text-[8px]">{spreadPrediction.predictedVector.riskLevel}</Badge>
-                    </div>
-                  </div>
+        {/* Mandi Pulse Widget */}
+        <div className="space-y-6">
+          <div className="flex items-center justify-between px-2">
+            <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Mandi Inflation Pulse</h4>
+            <div className="flex gap-1">
+              {[1,2,3].map(i => <div key={i} className="h-1 w-1 rounded-full bg-primary animate-pulse" style={{ animationDelay: `${i*0.2}s` }} />)}
+            </div>
+          </div>
 
-                  <div className="p-4 rounded-xl bg-white/5 border border-white/10 italic text-xs font-medium text-slate-300">
-                    "{spreadPrediction.strategicAdvice}"
-                  </div>
-                </Card>
-              </motion.div>
-            )}
-          </AnimatePresence>
+          <div className="grid grid-cols-1 gap-4">
+            <Card className={cn(
+              "p-8 rounded-[2.5rem] border-none shadow-xl transition-all relative overflow-hidden",
+              stats.densityAvg > 40 ? "bg-destructive/10" : "bg-slate-900/50"
+            )}>
+              <div className="absolute top-0 right-0 p-4 opacity-10"><TrendingUp className="h-20 w-20 rotate-12" /></div>
+              <div className="relative z-10 flex items-center justify-between">
+                <div className="space-y-1">
+                  <p className="text-[10px] font-black uppercase text-slate-500">Onion Price Spike</p>
+                  <p className="text-4xl font-black text-destructive">+42%</p>
+                  <p className="text-[8px] font-bold text-destructive/60 uppercase tracking-widest flex items-center gap-1">
+                    <AlertTriangle className="h-3 w-3" /> Pathogen-Induced Inflation
+                  </p>
+                </div>
+                <div className="h-14 w-14 rounded-2xl bg-destructive/20 flex items-center justify-center text-destructive">
+                  <ArrowUpRight className="h-8 w-8" />
+                </div>
+              </div>
+            </Card>
+
+            <Card className="p-8 rounded-[2.5rem] border-none shadow-xl bg-slate-900/50 relative overflow-hidden">
+              <div className="relative z-10 flex items-center justify-between">
+                <div className="space-y-1">
+                  <p className="text-[10px] font-black uppercase text-slate-500">Wheat Supply</p>
+                  <p className="text-4xl font-black text-primary">Stable</p>
+                  <p className="text-[8px] font-bold text-primary/60 uppercase tracking-widest flex items-center gap-1">
+                    <CheckCircle2 className="h-3 w-3" /> Global Buffer Maintained
+                  </p>
+                </div>
+                <div className="h-14 w-14 rounded-2xl bg-primary/20 flex items-center justify-center text-primary">
+                  <Activity className="h-8 w-8" />
+                </div>
+              </div>
+            </Card>
+          </div>
         </div>
-      </div>
+
+        {/* Regional Forecast Card */}
+        <AnimatePresence>
+          {spreadPrediction && (
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+              <Card className="border-none shadow-2xl rounded-[2.5rem] p-8 bg-primary text-white space-y-6 relative overflow-hidden">
+                <div className="absolute top-0 right-0 p-4 opacity-10"><BrainCircuit className="h-24 w-24" /></div>
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 bg-white/20 rounded-xl flex items-center justify-center text-white">
+                    <Wind className="h-6 w-6" />
+                  </div>
+                  <div>
+                    <h4 className="text-lg font-black tracking-tight">48h Forecast</h4>
+                    <p className="text-[10px] font-bold text-white/60 uppercase tracking-widest">Vector Analysis Active</p>
+                  </div>
+                </div>
+                <p className="text-xs font-medium italic leading-relaxed text-white/90">
+                  "{spreadPrediction.strategicAdvice}"
+                </p>
+              </Card>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </aside>
     </div>
   );
 }
