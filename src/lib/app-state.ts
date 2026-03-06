@@ -76,7 +76,7 @@ export const useAppState = create<AppState>()(
   persist(
     (set) => ({
       role: "Farmer",
-      isAuthenticated: false,
+      isAuthenticated: true, // Default to true to remove the mandatory login wall
       name: "Rajesh Kumar",
       city: "Bengaluru",
       state: "Karnataka",

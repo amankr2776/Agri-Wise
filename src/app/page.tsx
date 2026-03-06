@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useEffect, useMemo } from "react";
@@ -86,14 +87,7 @@ export default function KisanMitraApp() {
   } = useAppState();
   const [activeSection, setActiveSection] = useState("dashboard");
 
-  // Redirect to role selector if not authenticated
-  useEffect(() => {
-    if (!isAuthenticated) {
-      router.replace("/login");
-    }
-  }, [isAuthenticated, router]);
-
-  // Initialize Grid Identity
+  // Initialize Grid Identity (Anonymous background auth)
   useEffect(() => {
     if (auth && !auth.currentUser) {
       signInAnonymously(auth).catch(err => console.error("Grid Identity Failure:", err));
@@ -111,7 +105,7 @@ export default function KisanMitraApp() {
 
   // Listen for real-time notifications
   useEffect(() => {
-    if (!firestore || !auth.currentUser || !isAuthenticated) return;
+    if (!firestore || !auth.currentUser) return;
 
     const notifQuery = query(
       collection(firestore, "users", auth.currentUser.uid, "notifications"), 
@@ -132,10 +126,12 @@ export default function KisanMitraApp() {
           setActiveAlert(latest);
         }
       }
+    }, (err) => {
+      console.warn("Notification sync delayed:", err.message);
     });
 
     return () => unsubscribe();
-  }, [firestore, auth.currentUser, setNotifications, setActiveAlert, isAuthenticated]);
+  }, [firestore, auth.currentUser, setNotifications, setActiveAlert]);
 
   const menuItems = useMemo(() => {
     const items = [
@@ -158,8 +154,6 @@ export default function KisanMitraApp() {
     items.push({ id: "network", label: t("network"), icon: Users });
     return items;
   }, [role, t]);
-
-  if (!isAuthenticated) return null;
 
   const handleMenuClick = (item: any) => {
     if (item.url) {
