@@ -26,11 +26,13 @@ import {
   Radio,
   MessageCircle,
   Volume2,
-  UserCheck
+  UserCheck,
+  Building2
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { 
   Dialog, 
   DialogContent, 
