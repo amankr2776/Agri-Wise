@@ -63,6 +63,13 @@ service cloud.firestore {
       allow write: if isOwner(userId);
     }
 
+    // Notification Handshake: Allow experts to create notifications for farmers
+    match /users/{userId}/notifications/{notifId} {
+      allow read: if isOwner(userId);
+      allow create: if isAuthenticated();
+      allow update: if isOwner(userId);
+    }
+
     match /users/{userId}/{allPaths=**} {
       allow read, write: if isOwner(userId);
     }

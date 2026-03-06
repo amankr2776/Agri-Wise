@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useEffect, useMemo } from "react";
@@ -115,10 +114,11 @@ export default function KisanMitraApp() {
   useEffect(() => {
     if (!firestore || !auth.currentUser || !isAuthenticated) return;
 
+    // Listen to users/{uid}/notifications for verified alerts from experts
     const notifQuery = query(
       collection(firestore, "users", auth.currentUser.uid, "notifications"), 
       orderBy("createdAt", "desc"),
-      limit(5)
+      limit(10)
     );
 
     const unsubscribe = onSnapshot(notifQuery, (snapshot) => {
@@ -128,10 +128,11 @@ export default function KisanMitraApp() {
       });
       setNotifications(newNotifs);
 
+      // Pop up the top bar alert if it's a very recent unread notification
       const latest = newNotifs[0];
-      if (latest) {
-        const isRecent = (Date.now() - new Date(latest.createdAt).getTime()) < 30000;
-        if (isRecent && !latest.isRead) {
+      if (latest && !latest.isRead) {
+        const isRecent = (Date.now() - new Date(latest.createdAt).getTime()) < 60000;
+        if (isRecent) {
           setActiveAlert(latest);
         }
       }

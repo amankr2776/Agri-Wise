@@ -112,10 +112,18 @@ export function DashboardHome({ onNavigate }: DashboardHomeProps) {
 
   const globalAlertsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
-    // Order by createdAt to show newest first, requires index in production but works for demo
-    return query(collection(firestore, "pestOutbreaks"), orderBy("createdAt", "desc"));
+    // Simple query to avoid index errors in demo mode
+    return query(collection(firestore, "pestOutbreaks"));
   }, [firestore]);
   const { data: globalAlerts, isLoading: loadingAlerts } = useCollection(globalAlertsQuery);
+
+  // Sorting alerts by createdAt descending client-side for immediate display without index requirements
+  const sortedAlerts = useMemo(() => {
+    if (!globalAlerts) return [];
+    return [...globalAlerts].sort((a, b) => 
+      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+  }, [globalAlerts]);
 
   const globalPostsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
@@ -312,14 +320,14 @@ export function DashboardHome({ onNavigate }: DashboardHomeProps) {
             <div className="space-y-6">
               {loadingAlerts ? (
                 [1, 2, 3].map(i => <div key={i} className="h-40 rounded-[2.5rem] bg-muted/20 animate-pulse" />)
-              ) : !globalAlerts?.length ? (
+              ) : !sortedAlerts?.length ? (
                 <div className="p-10 text-center opacity-40 border-2 border-dashed rounded-[3rem]">
                   <ShieldCheck className="h-12 w-12 mx-auto mb-4" />
                   <p className="text-sm font-bold">No active pathogen alerts in your sector.</p>
                 </div>
               ) : (
                 <AnimatePresence mode="popLayout">
-                  {globalAlerts.map((alert) => (
+                  {sortedAlerts.map((alert) => (
                     <motion.div
                       key={alert.id}
                       initial={{ opacity: 0, x: 20 }}
