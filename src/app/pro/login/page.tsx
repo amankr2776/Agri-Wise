@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState } from "react";
@@ -11,7 +10,8 @@ import {
   Loader2,
   AlertCircle,
   FlaskConical,
-  Truck
+  Truck,
+  Info
 } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -68,7 +68,7 @@ export default function ProfessionalLoginPage() {
             <CardTitle className="text-xl text-white font-bold">Partner Authentication</CardTitle>
             <CardDescription className="text-slate-500 italic">Enter your verified professional credentials.</CardDescription>
           </CardHeader>
-          <CardContent className="p-10 pt-0">
+          <CardContent className="p-10 pt-0 space-y-6">
             <form onSubmit={handleSubmit} className="space-y-6">
               {error && (
                 <Alert variant="destructive" className="bg-destructive/10 border-destructive/20 text-destructive rounded-2xl">
@@ -117,6 +117,14 @@ export default function ProfessionalLoginPage() {
                 )}
               </Button>
             </form>
+
+            <div className="p-4 rounded-2xl bg-primary/5 border border-primary/10 flex gap-3 items-start">
+              <Info className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+              <div>
+                <p className="text-[9px] font-black text-primary uppercase tracking-widest">Demo Access Credentials</p>
+                <p className="text-[10px] text-slate-400 font-medium">Use <span className="text-white font-bold">AMAN_EXP_01</span> (Expert) or <span className="text-white font-bold">SIMRAN_LOG_01</span> (Logistics) with passkey <span className="text-white font-bold">password123</span>.</p>
+              </div>
+            </div>
           </CardContent>
           <CardFooter className="p-8 border-t border-slate-800 bg-slate-950/50 flex flex-col items-center gap-4">
             <div className="flex gap-6 opacity-40">
