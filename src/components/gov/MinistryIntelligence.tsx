@@ -44,6 +44,7 @@ import {
   SelectTrigger, 
   SelectValue 
 } from "@/components/ui/select";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { useCollection, useFirestore, useMemoFirebase, useUser } from "@/firebase";
 import { collection, query, doc, deleteDoc } from "firebase/firestore";
@@ -307,7 +308,7 @@ export function MinistryIntelligence() {
                 >
                   <div className={cn(
                     "relative h-20 w-20 rounded-full flex items-center justify-center shadow-2xl transition-all group-hover:scale-110",
-                    outbreak.severity === 'Critical' ? 'bg-destructive animate-pulse-engagement shadow-destructive/50' : 'bg-amber-500 shadow-amber-500/50'
+                    outbreak.severity === 'Critical' ? 'bg-destructive animate-pulse-engagement shadow-destructive/50' : 'bg-amber-50 shadow-amber-500/50'
                   )}>
                     <AlertTriangle className="h-10 w-10 text-white" />
                     
