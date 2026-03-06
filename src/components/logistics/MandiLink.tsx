@@ -137,6 +137,7 @@ export function MandiLink() {
       estimatedFare: estFare,
       status: "Pending",
       destination: `${filterCity || 'Regional'} Mandi Hub`,
+      contact: v.contact || "+91 00000 00000",
       createdAt: new Date().toISOString()
     });
     toast({ title: "Booking Requested", description: `Transport request sent to ${v.agencyName}.` });
@@ -361,12 +362,17 @@ export function MandiLink() {
                             <MapPin className="h-3.5 w-3.5 text-primary" />
                             <span>{v.city}, {v.state}</span>
                           </div>
+                          {v.contact && <p className="text-[10px] font-black text-slate-400 mt-2 flex items-center gap-1"><Phone className="h-2.5 w-2.5" /> Direct Line: {v.contact}</p>}
                         </div>
                         <div className="flex gap-3 pt-2">
                           <Button onClick={() => handleBook(v)} className="flex-1 h-12 rounded-xl font-black shadow-lg shadow-primary/20">Book Harvest</Button>
-                          <Button variant="outline" size="icon" className="h-12 w-12 rounded-xl" asChild>
-                            <a href={`tel:${v.contact}`}><Phone className="h-5 w-5" /></a>
-                          </Button>
+                          {v.contact && (
+                            <Button variant="outline" size="icon" className="h-12 w-12 rounded-xl border-primary/20 text-primary hover:bg-primary/5" asChild>
+                              <a href={`tel:${v.contact}`} title={`Call ${v.agencyName}`}>
+                                <Phone className="h-5 w-5" />
+                              </a>
+                            </Button>
+                          )}
                         </div>
                       </Card>
                     </motion.div>
@@ -423,6 +429,13 @@ export function MandiLink() {
                       <Button variant="outline" className="rounded-xl h-12 px-6 font-black gap-2" onClick={() => startSupportChat(booking)}>
                         <MessageCircle className="h-4 w-4" /> Chat Support
                       </Button>
+                      {booking.contact && (
+                        <Button variant="outline" className="rounded-xl h-12 px-6 font-black gap-2 border-primary/20 text-primary" asChild>
+                          <a href={`tel:${booking.contact}`}>
+                            <Phone className="h-4 w-4" /> Call Agency
+                          </a>
+                        </Button>
+                      )}
                     </div>
                   </div>
                 </div>

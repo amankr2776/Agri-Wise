@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useEffect } from "react";
@@ -147,7 +146,7 @@ export function FleetManagement() {
             type: template.type,
             plateNumber: plate,
             pricePerKm: template.price + Math.floor(Math.random() * 10),
-            contact: "+91 90000 00000",
+            contact: "+91 98765 43210",
             city: district,
             state: state.name,
             isAvailable: true,
@@ -176,7 +175,7 @@ export function FleetManagement() {
       type: formData.get("type") as string,
       plateNumber: (formData.get("plateNumber") as string).toUpperCase(),
       pricePerKm: Number(formData.get("pricePerKm")) || profile?.basePrice || 25,
-      contact: formData.get("contact") as string || profile?.phone || "+919876543210",
+      contact: formData.get("contact") as string || profile?.phoneNumber || "+919876543210",
       city: formData.get("city") as string,
       state: formData.get("state") as string,
       isAvailable: true,
@@ -197,16 +196,14 @@ export function FleetManagement() {
     const formData = new FormData(e.currentTarget);
     setDocumentNonBlocking(userRef, {
       id: user.uid,
-      firstName: formData.get("agencyName"),
-      phone: formData.get("contact"),
+      phoneNumber: formData.get("contact"),
       basePrice: Number(formData.get("basePrice")),
-      city: formData.get("city"),
-      state: formData.get("state"),
+      // Locked fields for this specific demo requirement
       role: "Logistics"
     }, { merge: true });
 
     setIsUpdatingProfile(false);
-    toast({ title: "Profile Updated", description: "Agency details have been synchronized." });
+    toast({ title: "Profile Updated", description: "Your price and contact details have been synchronized." });
   };
 
   const getNextStatus = (current: string) => {
@@ -244,7 +241,7 @@ export function FleetManagement() {
             <DialogContent className="rounded-[2rem] sm:max-w-[425px]">
               <DialogHeader>
                 <DialogTitle className="text-2xl font-black">Register New Vehicle</DialogTitle>
-                <DialogDescription>Add a new custom unit to your active service fleet.</DialogDescription>
+                <DialogDescription>Add a new unit to your active service fleet.</DialogDescription>
               </DialogHeader>
               <form onSubmit={handleAddVehicle} className="space-y-6 pt-4">
                 <div className="space-y-2">
@@ -275,6 +272,10 @@ export function FleetManagement() {
                 <div className="space-y-2">
                   <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Plate Number</Label>
                   <Input name="plateNumber" placeholder="e.g. PB-02-AT-1234" required className="rounded-xl h-12 bg-muted/30 border-none font-bold uppercase" />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Contact No. for this Vehicle</Label>
+                  <Input name="contact" placeholder="+91 00000 00000" defaultValue={profile?.phoneNumber || ""} className="rounded-xl h-12 bg-muted/30 border-none font-bold" />
                 </div>
                 <div className="space-y-2">
                   <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Price per KM (₹)</Label>
@@ -402,6 +403,7 @@ export function FleetManagement() {
                     <p className="text-xs font-bold text-muted-foreground flex items-center gap-1 mt-2">
                       <MapPin className="h-3.5 w-3.5 text-primary" /> {v.city}, {v.state}
                     </p>
+                    <p className="text-[10px] font-black text-slate-400 mt-1">Contact: {v.contact}</p>
                   </div>
                   <div className="pt-4 border-t flex justify-between items-center">
                     <span className="text-[10px] font-black text-muted-foreground uppercase">Rate / KM</span>
@@ -454,30 +456,31 @@ export function FleetManagement() {
 
         <TabsContent value="settings">
           <Card className="border-none shadow-xl rounded-[3rem] bg-white overflow-hidden p-10">
+            <CardHeader className="px-0 pb-10">
+              <CardTitle className="text-2xl font-black">Agency Intelligence Settings</CardTitle>
+              <CardDescription>Update your commercial rates and primary dispatch contact number.</CardDescription>
+            </CardHeader>
             <form onSubmit={handleUpdateProfile} className="space-y-8 max-w-2xl">
               <div className="space-y-6">
                 <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-2">Agency Name</Label>
-                  <Input name="agencyName" defaultValue={profile?.firstName || ""} className="rounded-2xl h-14 bg-muted/30 border-none font-bold text-lg" />
-                </div>
-                <div className="grid grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-2">Base City</Label>
-                    <Input name="city" defaultValue={profile?.city || ""} className="rounded-xl h-12 bg-muted/30 border-none font-bold" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-2">State</Label>
-                    <Input name="state" defaultValue={profile?.state || ""} className="rounded-xl h-12 bg-muted/30 border-none font-bold" />
-                  </div>
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-2">Primary Contact Number (For Farmers)</Label>
+                  <Input name="contact" defaultValue={profile?.phoneNumber || ""} placeholder="+91 00000 00000" className="rounded-2xl h-14 bg-muted/30 border-none font-bold text-lg" />
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-2">Default Rate (₹/KM)</Label>
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-2">Standard Agency Rate (₹/KM)</Label>
                   <Input name="basePrice" type="number" defaultValue={profile?.basePrice || 25} className="rounded-2xl h-14 bg-muted/30 border-none font-bold text-lg" />
+                </div>
+                <div className="p-6 rounded-3xl bg-muted/20 border border-dashed flex items-center gap-4">
+                  <Building2 className="h-6 w-6 text-muted-foreground" />
+                  <div className="space-y-0.5">
+                    <p className="text-[10px] font-black uppercase text-muted-foreground">Registered Location</p>
+                    <p className="text-sm font-bold">{profile?.city}, {profile?.state}</p>
+                  </div>
                 </div>
               </div>
               <Button type="submit" disabled={isUpdatingProfile} className="w-full h-14 rounded-2xl font-black text-lg">
                 {isUpdatingProfile ? <Loader2 className="animate-spin" /> : <Save className="h-5 w-5 mr-2" />}
-                Sync Agency Identity
+                Sync Commercial Identity
               </Button>
             </form>
           </Card>
