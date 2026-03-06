@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
@@ -21,7 +20,8 @@ import {
   UserCheck,
   Send,
   MessageCircle,
-  Activity
+  Activity,
+  Info
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
