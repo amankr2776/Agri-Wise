@@ -162,9 +162,9 @@ export function MinistryIntelligence() {
   }
 
   return (
-    <div className="flex h-full w-full">
+    <div className="flex h-full w-full bg-background">
       {/* COLUMN 2: CENTER COMMAND PANEL (THE MAP) */}
-      <div className="flex-1 relative bg-slate-950 border-r border-white/5">
+      <div className="flex-1 relative bg-slate-950 border-r border-border">
         <div className="absolute inset-0 bg-[url('https://picsum.photos/seed/darkmap/1200/800')] bg-cover bg-center opacity-20 grayscale brightness-50" />
         <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-slate-950/50" />
 
@@ -189,7 +189,7 @@ export function MinistryIntelligence() {
             <Button 
               onClick={handleRunAiPrediction}
               disabled={isAiLoading}
-              className="rounded-xl h-11 px-6 font-black bg-slate-100 text-slate-900 hover:bg-white gap-2 shadow-xl"
+              className="rounded-xl h-11 px-6 font-black bg-white text-slate-900 hover:bg-slate-100 gap-2 shadow-xl"
             >
               {isAiLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <BrainCircuit className="h-4 w-4" />}
               AI Threat Forecast
@@ -223,9 +223,9 @@ export function MinistryIntelligence() {
                 )} />
               </div>
               
-              <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 bg-slate-900/90 backdrop-blur-xl p-3 rounded-2xl border border-white/10 text-center min-w-[120px] shadow-2xl">
+              <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 bg-white/90 backdrop-blur-xl p-3 rounded-2xl border border-border text-center min-w-[120px] shadow-2xl">
                 <p className="text-[8px] font-black text-primary uppercase tracking-widest">{node.pathogen}</p>
-                <p className="text-xs font-black text-white">{node.name}</p>
+                <p className="text-xs font-black text-slate-900">{node.name}</p>
                 <p className="text-[10px] font-bold text-slate-500">{node.density}% Density</p>
               </div>
             </motion.div>
@@ -268,32 +268,32 @@ export function MinistryIntelligence() {
                 <Plus className="h-6 w-6 mr-3" /> New Alert
               </Button>
             </DialogTrigger>
-            <DialogContent className="rounded-[3rem] sm:max-w-[600px] p-10 bg-slate-900 text-slate-200 border-white/5">
+            <DialogContent className="rounded-[3rem] sm:max-w-[600px] p-10 bg-white text-slate-900 border-none shadow-2xl">
               <DialogHeader>
-                <DialogTitle className="text-3xl font-black text-white">Issue Bio-Security Alert</DialogTitle>
-                <DialogDescription className="text-slate-400 italic">Broadcast containment protocols to the national grid.</DialogDescription>
+                <DialogTitle className="text-3xl font-black">Issue Bio-Security Alert</DialogTitle>
+                <DialogDescription className="text-muted-foreground italic">Broadcast containment protocols to the national grid.</DialogDescription>
               </DialogHeader>
               <form onSubmit={handleCreateReport} className="space-y-6 pt-6">
                 <div className="grid grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <Label className="text-[10px] font-black uppercase text-slate-500 ml-2">Pathogen Name</Label>
-                    <Input name="pestName" placeholder="e.g. Locust Swarm" required className="h-12 rounded-xl bg-white/5 border-none font-bold text-white" />
+                    <Label className="text-[10px] font-black uppercase text-muted-foreground ml-2">Pathogen Name</Label>
+                    <Input name="pestName" placeholder="e.g. Locust Swarm" required className="h-12 rounded-xl bg-muted/30 border-none font-bold" />
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-[10px] font-black uppercase text-slate-500 ml-2">State</Label>
+                    <Label className="text-[10px] font-black uppercase text-muted-foreground ml-2">State</Label>
                     <Select name="state" defaultValue="Karnataka">
-                      <SelectTrigger className="h-12 rounded-xl bg-white/5 border-none font-bold text-white">
+                      <SelectTrigger className="h-12 rounded-xl bg-muted/30 border-none font-bold">
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent className="bg-slate-900 border-white/10 text-white">
+                      <SelectContent>
                         {STATES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
                       </SelectContent>
                     </Select>
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase text-slate-500 ml-2">Containment Strategy</Label>
-                  <Textarea name="strategy" placeholder="Action required..." required className="rounded-xl bg-white/5 border-none min-h-[100px] font-medium text-white" />
+                  <Label className="text-[10px] font-black uppercase text-muted-foreground ml-2">Containment Strategy</Label>
+                  <Textarea name="strategy" placeholder="Action required..." required className="rounded-xl bg-muted/30 border-none min-h-[100px] font-medium" />
                 </div>
                 <DialogFooter>
                   <Button type="submit" disabled={isSubmitting} className="w-full h-14 rounded-2xl font-black text-lg bg-primary">
@@ -307,7 +307,7 @@ export function MinistryIntelligence() {
       </div>
 
       {/* COLUMN 3: INTELLIGENCE SIDEBAR */}
-      <aside className="w-[450px] bg-slate-950 flex flex-col p-10 space-y-10">
+      <aside className="w-[450px] bg-background flex flex-col p-10 space-y-10">
         {/* Directives Card */}
         <Card className="border-none shadow-2xl rounded-[3rem] bg-white text-slate-900 p-8 flex flex-col space-y-6">
           <div className="flex items-center justify-between">
@@ -357,7 +357,7 @@ export function MinistryIntelligence() {
         {/* Mandi Pulse Widget */}
         <div className="space-y-6">
           <div className="flex items-center justify-between px-2">
-            <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Mandi Inflation Pulse</h4>
+            <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Mandi Inflation Pulse</h4>
             <div className="flex gap-1">
               {[1,2,3].map(i => <div key={i} className="h-1 w-1 rounded-full bg-primary animate-pulse" style={{ animationDelay: `${i*0.2}s` }} />)}
             </div>
@@ -366,33 +366,33 @@ export function MinistryIntelligence() {
           <div className="grid grid-cols-1 gap-4">
             <Card className={cn(
               "p-8 rounded-[2.5rem] border-none shadow-xl transition-all relative overflow-hidden",
-              stats.densityAvg > 40 ? "bg-destructive/10" : "bg-slate-900/50"
+              stats.densityAvg > 40 ? "bg-destructive/5 border-destructive/10" : "bg-white"
             )}>
               <div className="absolute top-0 right-0 p-4 opacity-10"><TrendingUp className="h-20 w-20 rotate-12" /></div>
               <div className="relative z-10 flex items-center justify-between">
                 <div className="space-y-1">
-                  <p className="text-[10px] font-black uppercase text-slate-500">Onion Price Spike</p>
+                  <p className="text-[10px] font-black text-muted-foreground">Onion Price Spike</p>
                   <p className="text-4xl font-black text-destructive">+42%</p>
                   <p className="text-[8px] font-bold text-destructive/60 uppercase tracking-widest flex items-center gap-1">
                     <AlertTriangle className="h-3 w-3" /> Pathogen-Induced Inflation
                   </p>
                 </div>
-                <div className="h-14 w-14 rounded-2xl bg-destructive/20 flex items-center justify-center text-destructive">
+                <div className="h-14 w-14 rounded-2xl bg-destructive/10 flex items-center justify-center text-destructive">
                   <ArrowUpRight className="h-8 w-8" />
                 </div>
               </div>
             </Card>
 
-            <Card className="p-8 rounded-[2.5rem] border-none shadow-xl bg-slate-900/50 relative overflow-hidden">
+            <Card className="p-8 rounded-[2.5rem] border-none shadow-xl bg-white relative overflow-hidden">
               <div className="relative z-10 flex items-center justify-between">
                 <div className="space-y-1">
-                  <p className="text-[10px] font-black uppercase text-slate-500">Wheat Supply</p>
+                  <p className="text-[10px] font-black text-muted-foreground">Wheat Supply</p>
                   <p className="text-4xl font-black text-primary">Stable</p>
                   <p className="text-[8px] font-bold text-primary/60 uppercase tracking-widest flex items-center gap-1">
                     <CheckCircle2 className="h-3 w-3" /> Global Buffer Maintained
                   </p>
                 </div>
-                <div className="h-14 w-14 rounded-2xl bg-primary/20 flex items-center justify-center text-primary">
+                <div className="h-14 w-14 rounded-2xl bg-primary/10 flex items-center justify-center text-primary">
                   <Activity className="h-8 w-8" />
                 </div>
               </div>
