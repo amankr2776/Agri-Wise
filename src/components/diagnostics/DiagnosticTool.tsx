@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
@@ -27,10 +28,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { diagnoseCropPest, FarmerCropPestDiagnosisOutput } from "@/ai/flows/farmer-crop-pest-diagnosis";
-import { useFirestore } from "@/firebase";
+import { useFirestore, useUser } from "@/firebase";
 import { collection } from "firebase/firestore";
 import { addDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 import { useToast } from "@/hooks/use-toast";
@@ -54,8 +53,9 @@ const LANG_MAP: Record<string, string> = {
 
 export function DiagnosticTool() {
   const firestore = useFirestore();
+  const { user } = useUser();
   const { toast } = useToast();
-  const { language, langCode } = useAppState();
+  const { language, langCode, name: userName } = useAppState();
   
   const [cropType, setCropType] = useState("");
   const [symptoms, setSymptoms] = useState("");
@@ -143,7 +143,7 @@ export function DiagnosticTool() {
     setIsSentToExpert(false);
     setResult(null);
 
-    // 1. Instant Registry Lookup (Offline Ready & Strict Dataset Enforcement)
+    // 1. Instant Registry Lookup
     const match = getRegistryMatch(cropType, symptoms);
     if (match) {
       const registryResult: FarmerCropPestDiagnosisOutput = {
@@ -162,7 +162,7 @@ export function DiagnosticTool() {
       return;
     }
     
-    // 2. AI Multimodal Analysis (Network Dependent - only if no registry match)
+    // 2. AI Multimodal Analysis
     try {
       const res = await diagnoseCropPest({
         cropType: cropType || "Unspecified Crop",
@@ -174,7 +174,6 @@ export function DiagnosticTool() {
       setResult(res);
       speakResult(res);
     } catch (err) {
-      console.error(err);
       toast({ variant: "destructive", title: "Agronomist Node Offline", description: "Grid high-latency. Re-attempting connection..." });
     } finally {
       setLoading(false);
@@ -210,14 +209,9 @@ export function DiagnosticTool() {
       });
       const data = await response.json();
       if (data.audioContent && audioRef.current) {
-        try {
-          audioRef.current.src = `data:audio/wav;base64,${data.audioContent}`;
-          audioRef.current.onended = () => setIsSpeaking(false);
-          await audioRef.current.play();
-        } catch (e) {
-          console.warn("Audio playback failed", e);
-          setIsSpeaking(false);
-        }
+        audioRef.current.src = `data:audio/wav;base64,${data.audioContent}`;
+        audioRef.current.onended = () => setIsSpeaking(false);
+        await audioRef.current.play();
       } else {
         const ut = new SpeechSynthesisUtterance(text);
         ut.lang = langCode === 'hi' ? 'hi-IN' : 'en-IN';
@@ -230,7 +224,7 @@ export function DiagnosticTool() {
   };
 
   const handleSendToExpert = () => {
-    if (!firestore || !result) return;
+    if (!firestore || !result || !user) return;
     const colRef = collection(firestore, "crops");
     addDocumentNonBlocking(colRef, {
       name: cropType || "Unknown",
@@ -243,6 +237,8 @@ export function DiagnosticTool() {
       isCertified: false,
       aiReasoning: result.scientificReasoning,
       symptoms: symptoms,
+      reportedBy: user.uid,
+      reportedByName: userName,
       createdAt: new Date().toISOString()
     });
     setIsSentToExpert(true);
@@ -250,7 +246,7 @@ export function DiagnosticTool() {
   };
 
   return (
-    <div className="max-w-5xl mx-auto pb-20 space-y-10">
+    <div className="space-y-10">
       <Card className="border-none shadow-2xl rounded-[3rem] overflow-hidden bg-white">
         <CardHeader className="bg-slate-900 text-white p-10 md:p-12 relative overflow-hidden">
           <div className="absolute top-0 right-0 p-10 opacity-10">
@@ -261,13 +257,13 @@ export function DiagnosticTool() {
               <Badge className="bg-primary/20 text-primary border-none font-black text-[10px] uppercase tracking-widest px-4 py-1">Agronomist Agent v4.2</Badge>
               <CardTitle className="text-4xl font-black tracking-tight flex items-center gap-4">
                 <Sparkles className="h-10 w-10 text-primary" />
-                Senior AI Agronomist
+                Senior Detection Agent
               </CardTitle>
-              <CardDescription className="text-slate-400 font-medium italic text-lg">"Namaste! Share your crop symptoms for a precision diagnosis."</CardDescription>
+              <CardDescription className="text-slate-400 font-medium italic text-lg">"Submit crop evidence for zero-latency pathogen analysis."</CardDescription>
             </div>
             <div className="flex items-center gap-3">
               <span className="h-3 w-3 bg-green-500 rounded-full animate-pulse shadow-[0_0_10px_rgba(34,197,94,0.5)]" />
-              <p className="text-xs font-black uppercase tracking-widest text-slate-400">Precision Engine: Active</p>
+              <p className="text-xs font-black uppercase tracking-widest text-slate-400">Grid Connected</p>
             </div>
           </div>
         </CardHeader>
@@ -278,9 +274,9 @@ export function DiagnosticTool() {
             <div className="lg:col-span-7 space-y-8">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-4">Target Crop Family</label>
+                  <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-4">Crop Name</label>
                   <Input
-                    placeholder="e.g. Tomato, Litchi, Wheat"
+                    placeholder="e.g. Wheat, Tomato"
                     value={cropType}
                     onChange={(e) => setCropType(e.target.value)}
                     className="rounded-2xl h-14 bg-muted/30 border-none font-black text-lg focus-visible:ring-primary shadow-inner"
@@ -299,9 +295,9 @@ export function DiagnosticTool() {
               </div>
 
               <div className="space-y-2">
-                <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-4">Observations & Symptoms</label>
+                <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-4">Symptoms Observation</label>
                 <Textarea
-                  placeholder="Tell me what's wrong: 'Yellow spots appearing on edges', 'Stunted growth', etc."
+                  placeholder="Describe lesions, pests, or color changes..."
                   value={symptoms}
                   onChange={(e) => setSymptoms(e.target.value)}
                   className="rounded-[2rem] bg-muted/30 border-none min-h-[180px] font-medium p-8 focus-visible:ring-primary shadow-inner text-xl leading-relaxed"
@@ -314,7 +310,7 @@ export function DiagnosticTool() {
                 className="w-full h-20 text-2xl font-black bg-primary hover:bg-primary/90 rounded-[2.5rem] shadow-2xl shadow-primary/20 transition-all active:scale-[0.98] group"
               >
                 {loading ? <Loader2 className="h-8 w-8 animate-spin mr-4" /> : <Send className="h-8 w-8 mr-4 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />}
-                Analyze Field Evidence
+                Run Precision Analysis
               </Button>
             </div>
 
@@ -332,14 +328,6 @@ export function DiagnosticTool() {
                         <X className="h-8 w-8" />
                       </Button>
                     </div>
-                    {!hasCameraPermission && (
-                      <div className="absolute inset-0 bg-black/60 flex items-center justify-center p-6 text-center rounded-[2rem]">
-                        <Alert variant="destructive" className="border-none bg-white max-w-xs">
-                          <AlertTitle className="font-black">Camera Required</AlertTitle>
-                          <AlertDescription>Enable camera permissions to capture leaf health.</AlertDescription>
-                        </Alert>
-                      </div>
-                    )}
                   </div>
                 ) : photo ? (
                   <div className="relative w-full h-full">
@@ -373,7 +361,7 @@ export function DiagnosticTool() {
                     </div>
                     <div className="space-y-2">
                       <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">Field Evidence Intake</p>
-                      <p className="text-sm font-medium text-slate-400 italic">Capture a clear photo of the symptoms.</p>
+                      <p className="text-sm font-medium text-slate-400 italic">Capture photo for visual verification.</p>
                     </div>
                   </div>
                 )}
@@ -381,13 +369,12 @@ export function DiagnosticTool() {
             </div>
           </div>
 
-          {/* AI Result Area */}
+          {/* Result Area */}
           <AnimatePresence mode="wait">
             {result && (
               <motion.div
                 initial={{ opacity: 0, y: 40 }}
                 animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 40 }}
                 className="pt-12 border-t border-slate-100"
               >
                 <div className="flex flex-col gap-10">
@@ -395,16 +382,10 @@ export function DiagnosticTool() {
                     <div className="space-y-3">
                       <div className="flex items-center gap-4">
                         <h3 className="text-4xl font-black tracking-tight text-slate-900">{result.pathogenIdentification}</h3>
-                        {result.confidenceScore === 1.0 ? (
-                          <Badge className="bg-green-500/10 text-green-600 border-none px-4 py-1.5 font-black text-[10px] uppercase tracking-widest shadow-sm">Verified Registry Match</Badge>
-                        ) : (
-                          <Badge variant="destructive" className="animate-pulse px-4 py-1.5 font-black text-[10px] uppercase tracking-widest gap-2">
-                            <AlertTriangle className="h-3 w-3" /> Preliminary Analysis
-                          </Badge>
-                        )}
+                        <Badge className="bg-primary/10 text-primary border-none px-4 py-1.5 font-black text-[10px] uppercase tracking-widest shadow-sm">AI Diagnosis</Badge>
                       </div>
                       <p className="text-xl font-medium text-slate-500 italic flex items-center gap-2">
-                        <MessageCircle className="h-5 w-5 text-primary" /> Specialized Agent Response
+                        <MessageCircle className="h-5 w-5 text-primary" /> Scientific Analysis Complete
                       </p>
                     </div>
                     <Button 
@@ -424,9 +405,6 @@ export function DiagnosticTool() {
                         <Bot className="h-5 w-5 text-primary" /> Diagnosis & Reasoning
                       </h4>
                       <p className="text-2xl font-medium text-slate-700 leading-relaxed italic">"{result.diagnosis}"</p>
-                      <div className="p-6 rounded-2xl bg-white border border-slate-200 mt-6">
-                        <p className="text-sm font-bold text-slate-500 leading-relaxed"><span className="text-primary font-black uppercase text-[10px] mr-2">Logic Trace:</span> {result.scientificReasoning}</p>
-                      </div>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-10 pt-10">
@@ -465,22 +443,20 @@ export function DiagnosticTool() {
                   </div>
 
                   <div className="flex flex-col items-center gap-8 py-10">
-                    {!result.isBotanicallyValid && (
-                      <div className="flex items-center gap-6 text-sm text-amber-700 bg-amber-50 p-8 rounded-[2.5rem] border border-amber-200 font-bold shadow-sm max-w-3xl">
-                        <AlertTriangle className="h-10 w-10 shrink-0 text-amber-500 animate-pulse" />
-                        <p className="leading-relaxed">Precision alert: The identification is currently based on broad-spectrum indicators. For a certified protocol, please request expert validation below.</p>
-                      </div>
-                    )}
+                    <div className="flex items-center gap-6 text-sm text-slate-500 bg-muted/30 p-8 rounded-[2.5rem] border border-border font-bold shadow-sm max-w-3xl">
+                      <Info className="h-10 w-10 shrink-0 text-primary" />
+                      <p className="leading-relaxed">This analysis is an AI synthesis. For a certified protocol or if you are not satisfied with the result, please request expert validation below.</p>
+                    </div>
                     <Button 
                       onClick={handleSendToExpert}
-                      disabled={isSentToExpert || result.confidenceScore === 1.0}
+                      disabled={isSentToExpert}
                       className={cn(
                         "w-full max-w-md h-20 rounded-[2.5rem] font-black gap-4 transition-all text-xl shadow-2xl",
-                        (isSentToExpert || result.confidenceScore === 1.0) ? "bg-green-50 text-green-600 border-4 border-green-200" : "bg-slate-900 text-white hover:bg-slate-800"
+                        isSentToExpert ? "bg-green-50 text-green-600 border-4 border-green-200" : "bg-slate-900 text-white hover:bg-slate-800"
                       )}
                     >
-                      {(isSentToExpert || result.confidenceScore === 1.0) ? <CheckCircle2 className="h-8 w-8" /> : <UserCheck className="h-8 w-8" />}
-                      {(isSentToExpert || result.confidenceScore === 1.0) ? "Protocol Authenticated" : "Certify via Human Expert"}
+                      {isSentToExpert ? <CheckCircle2 className="h-8 w-8" /> : <UserCheck className="h-8 w-8" />}
+                      {isSentToExpert ? "Request Logged" : "Not Satisfied? Ask Expert"}
                     </Button>
                   </div>
                 </div>

@@ -25,8 +25,7 @@ import {
   RefreshCw,
   ShieldCheck,
   Microscope,
-  Radio,
-  Sparkles
+  Radio
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -45,7 +44,6 @@ import { cn } from "@/lib/utils";
 import { motion, animate } from "framer-motion";
 import { useFirestore, useCollection, useMemoFirebase, useUser } from "@/firebase";
 import { collection, query, where } from "firebase/firestore";
-import { AIAssistant } from "@/components/ai/AIAssistant";
 
 interface DashboardHomeProps {
   onNavigate: (section: string) => void;
@@ -329,17 +327,6 @@ export function DashboardHome({ onNavigate }: DashboardHomeProps) {
               ))}
             </div>
           </div>
-
-          {/* Farmer Dedicated AI Assistant Section */}
-          {role === 'Farmer' && (
-            <div className="space-y-8">
-              <h2 className="text-2xl font-black flex items-center gap-3">
-                <Sparkles className="h-7 w-7 text-primary" /> 
-                Specialized AI Guidance
-              </h2>
-              <AIAssistant />
-            </div>
-          )}
         </div>
 
         <div className="lg:col-span-4 space-y-8">

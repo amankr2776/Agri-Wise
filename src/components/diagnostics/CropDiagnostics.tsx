@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useMemo } from "react";
@@ -10,7 +11,10 @@ import {
   ShieldCheck,
   Search,
   X,
-  ArrowLeft
+  ArrowLeft,
+  Sparkles,
+  Zap,
+  Bot
 } from "lucide-react";
 import Image from "next/image";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -29,6 +33,7 @@ import { useAppState } from "@/lib/app-state";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { CropDetailView } from "./CropDetailView";
+import { DiagnosticTool } from "./DiagnosticTool";
 
 const CATEGORIES = ["Plant", "Seed", "Vegetable", "Fruit", "Grain"];
 
@@ -76,45 +81,56 @@ export function CropDiagnostics() {
   };
 
   return (
-    <div className="space-y-10 animate-in fade-in duration-500">
+    <div className="space-y-12 animate-in fade-in duration-500 pb-20">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div>
           <h2 className="text-4xl font-black tracking-tighter text-slate-900 flex items-center gap-3">
             <FlaskConical className="h-10 w-10 text-primary" />
-            Precision Diagnostic Lab
+            National Precision Lab
           </h2>
-          <p className="text-muted-foreground font-medium mt-1 uppercase text-[10px] tracking-[0.2em]">National Agricultural & Pathogen Surveillance</p>
+          <p className="text-muted-foreground font-medium mt-1 uppercase text-[10px] tracking-[0.2em]">Diagnostic Protocols & Expert Surveillance</p>
         </div>
         <Button 
           onClick={() => setIsReportOpen(true)}
           className="rounded-2xl h-14 px-8 font-black gap-2 bg-slate-900 text-white shadow-xl hover:bg-slate-800 transition-all hover:scale-105 active:scale-95"
         >
-          <PlusCircle className="h-5 w-5" /> {t("report_issue")}
+          <PlusCircle className="h-5 w-5" /> Manual Field Report
         </Button>
       </div>
 
-      <div className="space-y-8">
+      {/* Primary Detection Agent */}
+      <section className="space-y-8">
+        <div className="flex items-center gap-3">
+          <div className="h-10 w-10 bg-primary/10 rounded-xl flex items-center justify-center text-primary">
+            <Bot className="h-6 w-6" />
+          </div>
+          <h3 className="text-2xl font-black tracking-tight">AI Detection Agent</h3>
+        </div>
+        <DiagnosticTool />
+      </section>
+
+      {/* Solution Library */}
+      <div className="space-y-8 pt-12 border-t">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 bg-primary/10 rounded-xl flex items-center justify-center text-primary">
               <Library className="h-6 w-6" />
             </div>
-            <h3 className="text-2xl font-black tracking-tight">Solution Library</h3>
+            <h3 className="text-2xl font-black tracking-tight">Verified Protocol Library</h3>
           </div>
           
           <div className="flex flex-wrap gap-2 p-1.5 bg-muted/50 rounded-2xl w-fit">
             {CATEGORIES.map(cat => (
-              <Button
+              <button
                 key={cat}
                 onClick={() => setSelectedCategory(cat)}
-                variant={selectedCategory === cat ? "default" : "ghost"}
                 className={cn(
                   "rounded-xl font-black text-xs uppercase tracking-widest px-6 h-11 transition-all",
-                  selectedCategory === cat ? "bg-primary text-white shadow-lg" : "text-muted-foreground hover:bg-primary/5 hover:text-primary"
+                  selectedCategory === cat ? "bg-primary text-white shadow-lg" : "text-muted-foreground hover:text-primary"
                 )}
               >
                 {cat}s
-              </Button>
+              </button>
             ))}
           </div>
         </div>
