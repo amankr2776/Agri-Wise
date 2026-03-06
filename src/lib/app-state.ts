@@ -1,3 +1,4 @@
+
 "use client";
 
 import { create } from "zustand";
@@ -53,6 +54,7 @@ interface AppState {
   notifications: Notification[];
   activeAlert: Notification | null;
   fleetActiveTab: string;
+  searchCount: number;
   
   // Actions
   login: (role: UserRole, name: string) => void;
@@ -67,13 +69,14 @@ interface AppState {
   setNotifications: (notifications: Notification[]) => void;
   setActiveAlert: (alert: Notification | null) => void;
   markNotificationsAsRead: () => void;
+  incrementSearchCount: () => void;
 }
 
 export const useAppState = create<AppState>()(
   persist(
     (set) => ({
       role: "Farmer",
-      isAuthenticated: false, // Start unauthenticated to force role selection
+      isAuthenticated: false,
       name: "Rajesh Kumar",
       city: "Bengaluru",
       state: "Karnataka",
@@ -84,6 +87,7 @@ export const useAppState = create<AppState>()(
       fleetActiveTab: "bookings",
       notifications: [],
       activeAlert: null,
+      searchCount: 0,
       
       login: (role, name) => set({ role, name, isAuthenticated: true }),
       logout: () => set({ isAuthenticated: false, role: "Farmer" }),
@@ -110,6 +114,7 @@ export const useAppState = create<AppState>()(
       markNotificationsAsRead: () => set((state) => ({
         notifications: state.notifications.map(n => ({ ...n, isRead: true }))
       })),
+      incrementSearchCount: () => set((state) => ({ searchCount: state.searchCount + 1 })),
     }),
     {
       name: "kisan-mitra-auth-v1",
