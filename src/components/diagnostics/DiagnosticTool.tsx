@@ -224,10 +224,14 @@ export function DiagnosticTool() {
   };
 
   const handleSendToExpert = () => {
-    if (!firestore || !result || !user) return;
+    if (!firestore || !result || !user) {
+      toast({ variant: "destructive", title: "Syncing Identity", description: "Grid node is initializing. Please wait 2 seconds." });
+      return;
+    }
+    
     const colRef = collection(firestore, "crops");
     addDocumentNonBlocking(colRef, {
-      name: cropType || "Unknown",
+      name: cropType || "Unknown Crop",
       category: "Plant",
       diseaseName: result.pathogenIdentification,
       severity: result.isBotanicallyValid ? "Medium" : "Warning",
@@ -238,13 +242,14 @@ export function DiagnosticTool() {
       status: "pending_expert_review",
       assignedExpertId: "AMAN_EXP_01",
       aiReasoning: result.scientificReasoning,
-      symptoms: symptoms,
+      symptoms: symptoms || "Visual evidence only.",
       reportedBy: user.uid,
       reportedByName: userName,
       createdAt: new Date().toISOString()
     });
+    
     setIsSentToExpert(true);
-    toast({ title: "Verification Requested", description: "Expert Aman Kumar (AMAN_EXP_01) has been alerted." });
+    toast({ title: "Expert Alerted", description: "Dr. Aman Kumar (AMAN_EXP_01) has received your request for verification." });
   };
 
   return (

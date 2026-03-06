@@ -16,10 +16,13 @@ service cloud.firestore {
       return isAuthenticated() && exists(/databases/$(database)/documents/roles_$(role)/$(request.auth.uid));
     }
 
-    // Reference Collections: Read-only for all authenticated users
+    // Reference Collections & Diagnostic Protocols
     match /crops/{cropId} {
       allow read: if isAuthenticated();
-      allow write: if hasRole('experts') || hasRole('admins');
+      // Allow farmers to create diagnostic requests
+      allow create: if isAuthenticated();
+      // Only experts can certify (update) or prune (delete)
+      allow update, delete: if hasRole('experts') || hasRole('admins');
     }
     
     match /pests/{pestId} {
@@ -68,7 +71,7 @@ service cloud.firestore {
     // Logistics & Bookings
     match /vehicles/{vehicleId} {
       allow read: if isAuthenticated();
-      allow create: if hasRole('logisticsProviders');
+      allow create: if hasRole('logisticsProviders') || isAuthenticated();
       allow update, delete: if isOwner(resource.data.ownerId);
     }
 

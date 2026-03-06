@@ -128,15 +128,6 @@ export function ExpertVerificationPortal() {
     }
   }, [selectedReviewCrop]);
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => setEditImageUrl(reader.result as string);
-      reader.readAsDataURL(file);
-    }
-  };
-
   const handleCertifyProtocol = async (cropData: any, isNew = false) => {
     if (!firestore || !user) return;
 
