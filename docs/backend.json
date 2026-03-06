@@ -1,11 +1,10 @@
-
 {
   "entities": {
     "UserProfile": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "UserProfile",
       "type": "object",
-      "description": "Represents a user of the AgriWise application, such as a farmer, government authority, or logistics provider. Stores essential profile information and preferences.",
+      "description": "Stores information about a user of the AgriWise application, including their role and basic contact details. This entity serves as a base for different user types such as farmers, experts, government officials, and logistics providers.",
       "properties": {
         "id": {
           "type": "string",
@@ -13,94 +12,837 @@
         },
         "name": {
           "type": "string",
-          "description": "The full name of the user."
+          "description": "Full name of the user."
         },
         "email": {
           "type": "string",
-          "description": "The email address of the user (optional, for communication).",
+          "description": "User's email address.",
           "format": "email"
         },
         "phoneNumber": {
           "type": "string",
-          "description": "The primary contact phone number for the user."
-        },
-        "addressCity": {
-          "type": "string",
-          "description": "The city where the user primarily resides, used for location-based services like Mandi price mapping and local alerts."
-        },
-        "addressState": {
-          "type": "string",
-          "description": "The state where the user primarily resides."
-        },
-        "preferredLanguage": {
-          "type": "string",
-          "description": "The user's preferred language for the application interface and voice interactions (e.g., 'en', 'hi', 'bho')."
+          "description": "User's phone number."
         },
         "role": {
           "type": "string",
-          "description": "The role of the user within the system (e.g., 'farmer', 'government_authority', 'logistics_provider', 'expert')."
+          "description": "The role of the user within the system (e.g., 'Farmer', 'Expert', 'GovernmentOfficial', 'LogisticsProvider')."
         },
-        "savedCropIds": {
-          "type": "array",
-          "description": "References to Crop entities that the user has marked as 'saved' to receive personalized price change alerts. (Relationship: UserProfile N:N Crop)",
-          "items": {
-            "type": "string"
-          }
-        },
-        "createdAt": {
+        "location": {
           "type": "string",
-          "description": "Timestamp when the user profile was created.",
-          "format": "date-time"
+          "description": "General geographical location or address of the user (e.g., state, district, village)."
         },
-        "updatedAt": {
+        "profileImageUrl": {
           "type": "string",
-          "description": "Timestamp when the user profile was last updated.",
-          "format": "date-time"
+          "description": "URL to the user's profile picture.",
+          "format": "uri"
         }
       },
       "required": [
         "id",
         "name",
-        "phoneNumber",
-        "addressCity",
-        "addressState",
-        "preferredLanguage",
         "role"
       ]
     },
-    "LogisticsTicket": {
+    "Crop": {
       "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "LogisticsTicket",
+      "title": "Crop",
       "type": "object",
-      "description": "Represents a reported issue or dispute related to a logistics shipment.",
+      "description": "Represents a type of agricultural crop, including its common attributes and links to associated pests and diseases.",
       "properties": {
-        "id": { "type": "string" },
-        "shipmentId": { "type": "string" },
-        "farmerId": { "type": "string" },
-        "farmerName": { "type": "string" },
-        "issueType": { "type": "string", "enum": ["Delay", "Damaged Goods", "Pricing Dispute", "Other"] },
-        "description": { "type": "string" },
-        "status": { "type": "string", "enum": ["Open", "In Review", "Resolved"] },
-        "isEscalated": { "type": "boolean" },
-        "createdAt": { "type": "string", "format": "date-time" }
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Crop entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "Common name of the crop (e.g., 'Wheat', 'Rice', 'Sugarcane')."
+        },
+        "scientificName": {
+          "type": "string",
+          "description": "Scientific name of the crop."
+        },
+        "description": {
+          "type": "string",
+          "description": "Detailed description of the crop, including ideal growing conditions, varieties, etc."
+        },
+        "imageUrl": {
+          "type": "string",
+          "description": "URL to an image representing the crop.",
+          "format": "uri"
+        },
+        "commonPestIds": {
+          "type": "array",
+          "description": "References to Pest entities commonly affecting this crop. (Relationship: Crop N:N Pest)",
+          "items": {
+            "type": "string"
+          }
+        },
+        "commonDiseaseIds": {
+          "type": "array",
+          "description": "References to Disease entities commonly affecting this crop. (Relationship: Crop N:N Disease)",
+          "items": {
+            "type": "string"
+          }
+        }
       },
-      "required": ["shipmentId", "farmerId", "issueType", "status"]
+      "required": [
+        "id",
+        "name"
+      ]
     },
-    "Conversation": {
+    "Pest": {
       "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Conversation",
+      "title": "Pest",
       "type": "object",
-      "description": "A structured exchange between a user and the AI Assistant.",
+      "description": "Represents a common agricultural pest, including its characteristics, impact on crops, and typical symptoms.",
       "properties": {
-        "id": { "type": "string" },
-        "userId": { "type": "string" },
-        "prompt": { "type": "string" },
-        "answer": { "type": "string" },
-        "suggestedAction": { "type": "string" },
-        "imageUrl": { "type": "string" },
-        "createdAt": { "type": "string", "format": "date-time" }
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Pest entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "Common name of the pest (e.g., 'Aphid', 'Armyworm', 'Whitefly')."
+        },
+        "scientificName": {
+          "type": "string",
+          "description": "Scientific name of the pest."
+        },
+        "description": {
+          "type": "string",
+          "description": "Detailed description of the pest, its life cycle, feeding habits, and damage caused."
+        },
+        "imageUrl": {
+          "type": "string",
+          "description": "URL to an image representing the pest.",
+          "format": "uri"
+        },
+        "symptomsCaused": {
+          "type": "array",
+          "description": "A list of typical symptoms this pest causes in affected crops (e.g., 'Leaf curling', 'Stunted growth').",
+          "items": {
+            "type": "string"
+          }
+        },
+        "affectedCropIds": {
+          "type": "array",
+          "description": "References to Crop entities commonly affected by this pest. (Relationship: Pest N:N Crop)",
+          "items": {
+            "type": "string"
+          }
+        }
       },
-      "required": ["userId", "prompt", "answer", "createdAt"]
+      "required": [
+        "id",
+        "name",
+        "description"
+      ]
+    },
+    "Disease": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Disease",
+      "type": "object",
+      "description": "Represents a common agricultural disease affecting crops, including its causes and symptoms.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Disease entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "Common name of the disease (e.g., 'Rust', 'Powdery Mildew', 'Blight')."
+        },
+        "scientificName": {
+          "type": "string",
+          "description": "Scientific name of the pathogen or disease agent."
+        },
+        "description": {
+          "type": "string",
+          "description": "Detailed description of the disease, its causes (e.g., fungal, bacterial, viral), and typical progression."
+        },
+        "imageUrl": {
+          "type": "string",
+          "description": "URL to an image representing the disease.",
+          "format": "uri"
+        },
+        "symptoms": {
+          "type": "array",
+          "description": "A list of observable symptoms of the disease in crops (e.g., 'Yellowing leaves', 'Lesions', 'Wilting').",
+          "items": {
+            "type": "string"
+          }
+        },
+        "affectedCropIds": {
+          "type": "array",
+          "description": "References to Crop entities commonly affected by this disease. (Relationship: Disease N:N Crop)",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "description"
+      ]
+    },
+    "Remedy": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Remedy",
+      "type": "object",
+      "description": "Details of a specific solution or treatment for a crop issue, encompassing both chemical and traditional methods ('Desi Nuskha').",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Remedy entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the remedy (e.g., 'Neem Oil Solution', 'Pesticide X', 'Garlic Spray')."
+        },
+        "type": {
+          "type": "string",
+          "description": "Type of remedy ('Chemical', 'Traditional')."
+        },
+        "description": {
+          "type": "string",
+          "description": "Detailed instructions or description of how to prepare and apply the remedy."
+        },
+        "ingredients": {
+          "type": "array",
+          "description": "List of ingredients for traditional remedies or active components for chemical ones.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "applicationMethod": {
+          "type": "string",
+          "description": "Description of how the remedy should be applied (e.g., 'Foliar spray', 'Soil drench')."
+        },
+        "targetPestIds": {
+          "type": "array",
+          "description": "References to Pest entities that this remedy targets. (Relationship: Remedy N:N Pest)",
+          "items": {
+            "type": "string"
+          }
+        },
+        "targetDiseaseIds": {
+          "type": "array",
+          "description": "References to Disease entities that this remedy targets. (Relationship: Remedy N:N Disease)",
+          "items": {
+            "type": "string"
+          }
+        },
+        "isCertified": {
+          "type": "boolean",
+          "description": "Boolean indicating if an agricultural expert has certified this remedy as effective and safe."
+        },
+        "averageRating": {
+          "type": "number",
+          "description": "Average rating for the traditional remedy based on user votes (1-5)."
+        },
+        "voteCount": {
+          "type": "number",
+          "description": "Total number of votes received for this remedy."
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "type",
+        "description"
+      ]
+    },
+    "DiagnosticSession": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "DiagnosticSession",
+      "type": "object",
+      "description": "Records a farmer's diagnostic query, the AI's suggestions, and subsequent expert verification status for crop and pest issues.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the DiagnosticSession entity."
+        },
+        "farmerId": {
+          "type": "string",
+          "description": "Reference to the UserProfile of the farmer who initiated the session. (Relationship: UserProfile 1:N DiagnosticSession)"
+        },
+        "cropId": {
+          "type": "string",
+          "description": "Reference to the Crop entity related to the diagnostic query. (Relationship: Crop 1:N DiagnosticSession)"
+        },
+        "symptomsInput": {
+          "type": "string",
+          "description": "Text description of symptoms or problem provided by the farmer."
+        },
+        "imageIds": {
+          "type": "array",
+          "description": "References to Media entities (images) uploaded by the farmer for diagnosis. (Relationship: Media N:N DiagnosticSession)",
+          "items": {
+            "type": "string"
+          }
+        },
+        "aiSuggestedRemedyIds": {
+          "type": "array",
+          "description": "References to Remedy entities suggested by the AI based on the diagnosis. (Relationship: Remedy N:N DiagnosticSession)",
+          "items": {
+            "type": "string"
+          }
+        },
+        "aiReasoning": {
+          "type": "string",
+          "description": "The reasoning provided by the AI for its diagnostic suggestions."
+        },
+        "expertVerificationId": {
+          "type": "string",
+          "description": "Reference to the Verification entity if an expert has reviewed and certified this session. (Relationship: DiagnosticSession 1:1 Verification)"
+        },
+        "status": {
+          "type": "string",
+          "description": "Current status of the diagnostic session (e.g., 'Pending AI', 'AI Reviewed', 'Expert Verified', 'Resolved')."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp when the diagnostic session was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp when the diagnostic session was last updated.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "farmerId",
+        "cropId",
+        "symptomsInput",
+        "aiSuggestedRemedyIds",
+        "status",
+        "createdAt"
+      ]
+    },
+    "Verification": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Verification",
+      "type": "object",
+      "description": "Records an expert's review and certification status for a specific entity, such as a diagnostic session or a traditional remedy.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Verification entity."
+        },
+        "expertId": {
+          "type": "string",
+          "description": "Reference to the UserProfile of the expert performing the verification. (Relationship: UserProfile 1:N Verification)"
+        },
+        "verifiedEntityId": {
+          "type": "string",
+          "description": "The unique identifier of the entity (e.g., DiagnosticSession, Remedy) that is being verified."
+        },
+        "verifiedEntityType": {
+          "type": "string",
+          "description": "The type of entity being verified (e.g., 'DiagnosticSession', 'Remedy')."
+        },
+        "isCertified": {
+          "type": "boolean",
+          "description": "Boolean indicating if the entity (suggestion/remedy) is approved/certified by the expert."
+        },
+        "notes": {
+          "type": "string",
+          "description": "Any comments or additional advice from the expert regarding the verification."
+        },
+        "verifiedAt": {
+          "type": "string",
+          "description": "Timestamp when the verification occurred.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "expertId",
+        "verifiedEntityId",
+        "verifiedEntityType",
+        "isCertified",
+        "verifiedAt"
+      ]
+    },
+    "MarketPrice": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "MarketPrice",
+      "type": "object",
+      "description": "Stores historical and real-time market prices for crops in specific states, used for market intelligence and trend analysis.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the MarketPrice entity."
+        },
+        "cropId": {
+          "type": "string",
+          "description": "Reference to the Crop entity for which the price is recorded. (Relationship: Crop 1:N MarketPrice)"
+        },
+        "stateId": {
+          "type": "string",
+          "description": "Reference to the State entity where the price is recorded. (Relationship: State 1:N MarketPrice)"
+        },
+        "pricePerUnit": {
+          "type": "number",
+          "description": "The price of the crop per standard unit (e.g., per Kg, per Quintal)."
+        },
+        "unit": {
+          "type": "string",
+          "description": "The unit of measure for the price (e.g., 'Kg', 'Quintal', 'Maund')."
+        },
+        "recordedAt": {
+          "type": "string",
+          "description": "Timestamp when the price was recorded.",
+          "format": "date-time"
+        },
+        "trend": {
+          "type": "string",
+          "description": "AI-analyzed trend of the price ('Rising', 'Stable', 'Falling')."
+        }
+      },
+      "required": [
+        "id",
+        "cropId",
+        "stateId",
+        "pricePerUnit",
+        "unit",
+        "recordedAt",
+        "trend"
+      ]
+    },
+    "State": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "State",
+      "type": "object",
+      "description": "Represents a geographical state, primarily used for categorizing market intelligence data.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the State entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "Full name of the state (e.g., 'Uttar Pradesh', 'Maharashtra')."
+        },
+        "code": {
+          "type": "string",
+          "description": "Short code or abbreviation for the state (e.g., 'UP', 'MH')."
+        }
+      },
+      "required": [
+        "id",
+        "name"
+      ]
+    },
+    "PriceAlert": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "PriceAlert",
+      "type": "object",
+      "description": "Records an alert triggered when a crop's market price significantly deviates from its average, to notify government authorities.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the PriceAlert entity."
+        },
+        "cropId": {
+          "type": "string",
+          "description": "Reference to the Crop entity associated with the alert. (Relationship: Crop 1:N PriceAlert)"
+        },
+        "stateId": {
+          "type": "string",
+          "description": "Reference to the State entity where the price alert originated. (Relationship: State 1:N PriceAlert)"
+        },
+        "currentPrice": {
+          "type": "number",
+          "description": "The current price of the crop that triggered the alert."
+        },
+        "averagePrice": {
+          "type": "number",
+          "description": "The calculated average price for the crop in that state, used for comparison."
+        },
+        "percentageChange": {
+          "type": "number",
+          "description": "The percentage increase or decrease from the average price that triggered the alert."
+        },
+        "alertTriggeredAt": {
+          "type": "string",
+          "description": "Timestamp when the price alert was generated.",
+          "format": "date-time"
+        },
+        "status": {
+          "type": "string",
+          "description": "Status of the alert (e.g., 'Active', 'Acknowledged', 'Resolved')."
+        },
+        "notifiedAuthorities": {
+          "type": "boolean",
+          "description": "Boolean indicating if government authorities have been notified of this price alert."
+        }
+      },
+      "required": [
+        "id",
+        "cropId",
+        "stateId",
+        "currentPrice",
+        "averagePrice",
+        "percentageChange",
+        "alertTriggeredAt",
+        "status",
+        "notifiedAuthorities"
+      ]
+    },
+    "LogisticsProvider": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "LogisticsProvider",
+      "type": "object",
+      "description": "Information about a logistics company offering specialized transport services for agricultural produce.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the LogisticsProvider entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to the UserProfile of the associated logistics provider's admin/contact person. (Relationship: UserProfile 1:1 LogisticsProvider)"
+        },
+        "companyName": {
+          "type": "string",
+          "description": "Official name of the logistics company."
+        },
+        "contactPerson": {
+          "type": "string",
+          "description": "Name of the primary contact person at the logistics company."
+        },
+        "phoneNumber": {
+          "type": "string",
+          "description": "Contact phone number for the logistics company."
+        },
+        "email": {
+          "type": "string",
+          "description": "Contact email address for the logistics company.",
+          "format": "email"
+        },
+        "address": {
+          "type": "string",
+          "description": "Physical address of the logistics company's main office or depot."
+        },
+        "serviceAreas": {
+          "type": "array",
+          "description": "List of states or regions where the logistics provider offers services.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "description": {
+          "type": "string",
+          "description": "A brief description of the services offered by the logistics provider."
+        },
+        "availableTransportOptionIds": {
+          "type": "array",
+          "description": "References to specific TransportOption entities offered by this provider. (Relationship: TransportOption N:N LogisticsProvider)",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "companyName",
+        "phoneNumber",
+        "serviceAreas"
+      ]
+    },
+    "TransportOption": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "TransportOption",
+      "type": "object",
+      "description": "Details about a specific transport service (vehicle, capacity, pricing) offered by a logistics provider.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the TransportOption entity."
+        },
+        "logisticsProviderId": {
+          "type": "string",
+          "description": "Reference to the LogisticsProvider offering this transport option. (Relationship: LogisticsProvider 1:N TransportOption)"
+        },
+        "vehicleType": {
+          "type": "string",
+          "description": "Type of vehicle (e.g., 'Truck', 'Mini-Truck', 'Trailer', 'Refrigerated Van')."
+        },
+        "loadCapacityKg": {
+          "type": "number",
+          "description": "Maximum load capacity of the vehicle in kilograms."
+        },
+        "pricePerKm": {
+          "type": "number",
+          "description": "Price charged per kilometer for this transport option."
+        },
+        "availableFromDate": {
+          "type": "string",
+          "description": "Date from which this transport option is available.",
+          "format": "date"
+        },
+        "availableToDate": {
+          "type": "string",
+          "description": "Date until which this transport option is available.",
+          "format": "date"
+        },
+        "description": {
+          "type": "string",
+          "description": "Further details or specific conditions about the transport option."
+        }
+      },
+      "required": [
+        "id",
+        "logisticsProviderId",
+        "vehicleType",
+        "loadCapacityKg",
+        "pricePerKm"
+      ]
+    },
+    "Post": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Post",
+      "type": "object",
+      "description": "A user-generated post in the Kisan Social Network, allowing farmers to share updates, photos, and information.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Post entity."
+        },
+        "authorId": {
+          "type": "string",
+          "description": "Reference to the UserProfile of the post creator. (Relationship: UserProfile 1:N Post)"
+        },
+        "content": {
+          "type": "string",
+          "description": "The text content of the post."
+        },
+        "imageIds": {
+          "type": "array",
+          "description": "References to Media entities (images) attached to the post. (Relationship: Media N:N Post)",
+          "items": {
+            "type": "string"
+          }
+        },
+        "pestSightingId": {
+          "type": "string",
+          "description": "Optional reference to a PestSighting entity if the post is specifically about a pest report. (Relationship: Post 1:1 PestSighting)"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp when the post was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp when the post was last updated.",
+          "format": "date-time"
+        },
+        "likeCount": {
+          "type": "number",
+          "description": "Total number of likes the post has received."
+        },
+        "commentCount": {
+          "type": "number",
+          "description": "Total number of comments the post has received."
+        }
+      },
+      "required": [
+        "id",
+        "authorId",
+        "content",
+        "createdAt"
+      ]
+    },
+    "Comment": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Comment",
+      "type": "object",
+      "description": "A comment made by a user on a social network post.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Comment entity."
+        },
+        "postId": {
+          "type": "string",
+          "description": "Reference to the Post entity this comment belongs to. (Relationship: Post 1:N Comment)"
+        },
+        "authorId": {
+          "type": "string",
+          "description": "Reference to the UserProfile of the comment author. (Relationship: UserProfile 1:N Comment)"
+        },
+        "content": {
+          "type": "string",
+          "description": "The text content of the comment."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp when the comment was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp when the comment was last updated.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "postId",
+        "authorId",
+        "content",
+        "createdAt"
+      ]
+    },
+    "NuskhaVote": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "NuskhaVote",
+      "type": "object",
+      "description": "Records an upvote or downvote cast by a farmer for a traditional 'Desi Nuskha' remedy.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the NuskhaVote entity."
+        },
+        "remedyId": {
+          "type": "string",
+          "description": "Reference to the Remedy entity (specifically traditional remedies) being voted on. (Relationship: Remedy 1:N NuskhaVote)"
+        },
+        "voterId": {
+          "type": "string",
+          "description": "Reference to the UserProfile of the farmer casting the vote. (Relationship: UserProfile 1:N NuskhaVote)"
+        },
+        "voteType": {
+          "type": "string",
+          "description": "Type of vote ('Upvote', 'Downvote')."
+        },
+        "votedAt": {
+          "type": "string",
+          "description": "Timestamp when the vote was cast.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "remedyId",
+        "voterId",
+        "voteType",
+        "votedAt"
+      ]
+    },
+    "PestSighting": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "PestSighting",
+      "type": "object",
+      "description": "A crowd-sourced report of a pest sighting, including GPS coordinates, to contribute to real-time outbreak maps.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the PestSighting entity."
+        },
+        "reporterId": {
+          "type": "string",
+          "description": "Reference to the UserProfile of the farmer reporting the sighting. (Relationship: UserProfile 1:N PestSighting)"
+        },
+        "pestId": {
+          "type": "string",
+          "description": "Reference to the Pest entity that was sighted. (Relationship: Pest 1:N PestSighting)"
+        },
+        "cropId": {
+          "type": "string",
+          "description": "Reference to the Crop entity on which the pest was sighted. (Relationship: Crop 1:N PestSighting)"
+        },
+        "locationLatitude": {
+          "type": "number",
+          "description": "Latitude coordinate of the pest sighting location."
+        },
+        "locationLongitude": {
+          "type": "number",
+          "description": "Longitude coordinate of the pest sighting location."
+        },
+        "sightingDate": {
+          "type": "string",
+          "description": "Date when the pest sighting occurred.",
+          "format": "date"
+        },
+        "description": {
+          "type": "string",
+          "description": "Additional details or observations about the pest sighting."
+        },
+        "imageIds": {
+          "type": "array",
+          "description": "References to Media entities (images) related to the sighting for visual evidence. (Relationship: Media N:N PestSighting)",
+          "items": {
+            "type": "string"
+          }
+        },
+        "status": {
+          "type": "string",
+          "description": "Status of the pest sighting report (e.g., 'Reported', 'Confirmed', 'Resolved')."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp when the report was created.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "reporterId",
+        "pestId",
+        "cropId",
+        "locationLatitude",
+        "locationLongitude",
+        "sightingDate",
+        "createdAt"
+      ]
+    },
+    "Media": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Media",
+      "type": "object",
+      "description": "Stores metadata and references for images or other media files uploaded across the AgriWise application.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Media entity."
+        },
+        "url": {
+          "type": "string",
+          "description": "The URL where the media file is stored (e.g., cloud storage URL).",
+          "format": "uri"
+        },
+        "type": {
+          "type": "string",
+          "description": "Type of media (e.g., 'image', 'video', 'document')."
+        },
+        "uploadedBy": {
+          "type": "string",
+          "description": "Reference to the UserProfile who uploaded the media. (Relationship: UserProfile 1:N Media)"
+        },
+        "uploadedAt": {
+          "type": "string",
+          "description": "Timestamp when the media was uploaded.",
+          "format": "date-time"
+        },
+        "description": {
+          "type": "string",
+          "description": "A brief description or caption for the media file."
+        }
+      },
+      "required": [
+        "id",
+        "url",
+        "type",
+        "uploadedBy",
+        "uploadedAt"
+      ]
     }
   },
   "auth": {
@@ -112,35 +854,370 @@
   "firestore": {
     "structure": [
       {
-        "path": "/users/{userId}",
+        "path": "/userProfiles/{userId}",
         "definition": {
           "entityName": "UserProfile",
           "schema": {
             "$ref": "#/backend/entities/UserProfile"
           },
-          "description": "Stores user profile information."
+          "description": "Stores detailed information about a user. Access is restricted to the owner matching `request.auth.uid`. The 'role' field is for display; actual authorization roles are determined by existence in `/roles_...` collections.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user, matching `request.auth.uid`."
+            }
+          ]
         }
       },
       {
-        "path": "/users/{userId}/conversations/{conversationId}",
+        "path": "/roles_admins/{userId}",
         "definition": {
-          "entityName": "Conversation",
+          "entityName": "UserProfile",
           "schema": {
-            "$ref": "#/backend/entities/Conversation"
+            "$ref": "#/backend/entities/UserProfile"
           },
-          "description": "History of AI assistant interactions."
+          "description": "Marker collection for admin roles. Document existence signifies 'Admin' role for `userId`.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user who holds the 'Admin' role."
+            }
+          ]
         }
       },
       {
-        "path": "/logisticsTickets/{ticketId}",
+        "path": "/roles_experts/{userId}",
         "definition": {
-          "entityName": "LogisticsTicket",
+          "entityName": "UserProfile",
           "schema": {
-            "$ref": "#/backend/entities/LogisticsTicket"
+            "$ref": "#/backend/entities/UserProfile"
           },
-          "description": "Incident reports for logistics disputes."
+          "description": "Marker collection for expert roles. Document existence signifies 'Expert' role for `userId`.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user who holds the 'Expert' role."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/roles_governmentOfficials/{userId}",
+        "definition": {
+          "entityName": "UserProfile",
+          "schema": {
+            "$ref": "#/backend/entities/UserProfile"
+          },
+          "description": "Marker collection for government official roles. Document existence signifies 'Government Official' role for `userId`.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user who holds the 'Government Official' role."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/roles_logisticsProviders/{userId}",
+        "definition": {
+          "entityName": "UserProfile",
+          "schema": {
+            "$ref": "#/backend/entities/UserProfile"
+          },
+          "description": "Marker collection for logistics provider roles. Document existence signifies 'Logistics Provider Admin/Contact' role for `userId`.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user who holds the 'Logistics Provider' role."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/crops/{cropId}",
+        "definition": {
+          "entityName": "Crop",
+          "schema": {
+            "$ref": "#/backend/entities/Crop"
+          },
+          "description": "Stores general information about agricultural crops. Publicly readable by all authenticated users for reference, with write access restricted to 'Admin' or 'Expert' roles.",
+          "params": [
+            {
+              "name": "cropId",
+              "description": "Unique identifier for the crop."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/pests/{pestId}",
+        "definition": {
+          "entityName": "Pest",
+          "schema": {
+            "$ref": "#/backend/entities/Pest"
+          },
+          "description": "Stores general information about agricultural pests. Publicly readable by all authenticated users for reference, with write access restricted to 'Admin' or 'Expert' roles.",
+          "params": [
+            {
+              "name": "pestId",
+              "description": "Unique identifier for the pest."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/diseases/{diseaseId}",
+        "definition": {
+          "entityName": "Disease",
+          "schema": {
+            "$ref": "#/backend/entities/Disease"
+          },
+          "description": "Stores general information about agricultural diseases. Publicly readable by all authenticated users for reference, with write access restricted to 'Admin' or 'Expert' roles.",
+          "params": [
+            {
+              "name": "diseaseId",
+              "description": "Unique identifier for the disease."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/remedies/{remedyId}",
+        "definition": {
+          "entityName": "Remedy",
+          "schema": {
+            "$ref": "#/backend/entities/Remedy"
+          },
+          "description": "Stores details on chemical and traditional remedies. Publicly readable. 'Expert' roles can update `isCertified` status. `averageRating` and `voteCount` are denormalized aggregates from `/remedies/{remedyId}/nuskhaVotes`.",
+          "params": [
+            {
+              "name": "remedyId",
+              "description": "Unique identifier for the remedy."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/remedies/{remedyId}/nuskhaVotes/{voteId}",
+        "definition": {
+          "entityName": "NuskhaVote",
+          "schema": {
+            "$ref": "#/backend/entities/NuskhaVote"
+          },
+          "description": "Records individual votes for traditional remedies. The document includes `voterId` for authorization independence, allowing users to manage their own votes.",
+          "params": [
+            {
+              "name": "remedyId",
+              "description": "The unique identifier of the parent remedy."
+            },
+            {
+              "name": "voteId",
+              "description": "Unique identifier for the nuskha vote."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/diagnosticSessions/{sessionId}",
+        "definition": {
+          "entityName": "DiagnosticSession",
+          "schema": {
+            "$ref": "#/backend/entities/DiagnosticSession"
+          },
+          "description": "Records a farmer's diagnostic query and AI suggestions. Includes `farmerId` for owner-based access and `status` for querying by experts. May include an `assignedExpertId` field for expert assignment.",
+          "params": [
+            {
+              "name": "sessionId",
+              "description": "Unique identifier for the diagnostic session."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/verifications/{verificationId}",
+        "definition": {
+          "entityName": "Verification",
+          "schema": {
+            "$ref": "#/backend/entities/Verification"
+          },
+          "description": "Records an expert's review/certification. Includes `expertId` for ownership. To support Authorization Independence, for verifications of type 'DiagnosticSession', the `farmerId` of the verified session is denormalized into this document.",
+          "params": [
+            {
+              "name": "verificationId",
+              "description": "Unique identifier for the verification."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/marketPrices/{marketPriceId}",
+        "definition": {
+          "entityName": "MarketPrice",
+          "schema": {
+            "$ref": "#/backend/entities/MarketPrice"
+          },
+          "description": "Stores market prices. Publicly readable by all authenticated users. Includes `cropId` and `stateId` for efficient querying (QAPs). Write access restricted to 'Admin' or 'Government Official' roles.",
+          "params": [
+            {
+              "name": "marketPriceId",
+              "description": "Unique identifier for the market price record."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/states/{stateId}",
+        "definition": {
+          "entityName": "State",
+          "schema": {
+            "$ref": "#/backend/entities/State"
+          },
+          "description": "Stores geographical state information. Publicly readable by all authenticated users for reference. Write access restricted to 'Admin' roles.",
+          "params": [
+            {
+              "name": "stateId",
+              "description": "Unique identifier for the state."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/priceAlerts/{alertId}",
+        "definition": {
+          "entityName": "PriceAlert",
+          "schema": {
+            "$ref": "#/backend/entities/PriceAlert"
+          },
+          "description": "Records alerts for significant crop price changes. Readable and updateable by 'Government Official' and 'Admin' roles. Includes `status` for efficient querying of active alerts (QAPs).",
+          "params": [
+            {
+              "name": "alertId",
+              "description": "Unique identifier for the price alert."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/logisticsProviders/{logisticsProviderId}",
+        "definition": {
+          "entityName": "LogisticsProvider",
+          "schema": {
+            "$ref": "#/backend/entities/LogisticsProvider"
+          },
+          "description": "Information about logistics companies. Publicly readable. The `userId` field (referencing the UserProfile of the contact person) enables owner-based write access for the logistics provider's admin.",
+          "params": [
+            {
+              "name": "logisticsProviderId",
+              "description": "Unique identifier for the logistics provider."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/transportOptions/{transportOptionId}",
+        "definition": {
+          "entityName": "TransportOption",
+          "schema": {
+            "$ref": "#/backend/entities/TransportOption"
+          },
+          "description": "Details about a transport service offered by a logistics provider. Includes `logisticsProviderId` and denormalized `logisticsProviderOwnerId` (the `userId` of the associated LogisticsProvider) for authorization independence.",
+          "params": [
+            {
+              "name": "transportOptionId",
+              "description": "Unique identifier for the transport option."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/posts/{postId}",
+        "definition": {
+          "entityName": "Post",
+          "schema": {
+            "$ref": "#/backend/entities/Post"
+          },
+          "description": "User-generated social network posts. Publicly readable. Includes `authorId` for owner-based write access. `likeCount` and `commentCount` are denormalized aggregates.",
+          "params": [
+            {
+              "name": "postId",
+              "description": "Unique identifier for the post."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/posts/{postId}/comments/{commentId}",
+        "definition": {
+          "entityName": "Comment",
+          "schema": {
+            "$ref": "#/backend/entities/Comment"
+          },
+          "description": "Comments on social network posts. Publicly readable. Includes `authorId` for owner-based write access.",
+          "params": [
+            {
+              "name": "postId",
+              "description": "The unique identifier of the parent post."
+            },
+            {
+              "name": "commentId",
+              "description": "Unique identifier for the comment."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/pestSightings/{sightingId}",
+        "definition": {
+          "entityName": "PestSighting",
+          "schema": {
+            "$ref": "#/backend/entities/PestSighting"
+          },
+          "description": "Crowd-sourced pest sighting reports. Publicly readable (for outbreak maps). Includes `reporterId` for owner-based write access and `status` for expert/government official updates and filtering (QAPs).",
+          "params": [
+            {
+              "name": "sightingId",
+              "description": "Unique identifier for the pest sighting report."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/media_public/{mediaId}",
+        "definition": {
+          "entityName": "Media",
+          "schema": {
+            "$ref": "#/backend/entities/Media"
+          },
+          "description": "Stores metadata for publicly accessible media files (e.g., in posts, crop/pest images). Publicly readable. Includes `uploadedBy` for owner-based management.",
+          "params": [
+            {
+              "name": "mediaId",
+              "description": "Unique identifier for the public media file."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/media_private/{mediaId}",
+        "definition": {
+          "entityName": "Media",
+          "schema": {
+            "$ref": "#/backend/entities/Media"
+          },
+          "description": "Stores metadata for private, user-specific media files (e.g., diagnostic session images). Access restricted to the owner (`userId` in path matching `request.auth.uid`). Includes `uploadedBy` which must match `userId`.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user who owns this private media, matching `request.auth.uid`."
+            },
+            {
+              "name": "mediaId",
+              "description": "Unique identifier for the private media file."
+            }
+          ]
         }
       }
-    ]
+    ],
+    "reasoning": "The Firestore structure is designed to be secure, scalable, and debuggable, adhering strictly to the core design principles and strategy mandates. The primary goal is to facilitate simple, robust, and easily debuggable security rules.\n\n**Authorization Independence (CRITICAL):** This principle is addressed by denormalizing authorization context into the documents themselves. For example:\n*   In the `/transportOptions/{transportOptionId}` collection, each document will include `logisticsProviderOwnerId` (the `userId` of the associated `LogisticsProvider`). This allows security rules to directly check `request.auth.uid == resource.data.logisticsProviderOwnerId` without requiring a `get()` operation on the parent `/logisticsProviders` document, thus preventing rule complexity and transaction breakages.\n*   Similarly, for `Verification` entities that pertain to a `DiagnosticSession`, the `farmerId` is denormalized into the `Verification` document. This allows a farmer to independently check the verification status of their session (e.g., `resource.data.farmerId == request.auth.uid`) without needing to fetch the parent `DiagnosticSession` document within the rules.\n*   Other entities like `Post`, `Comment`, `DiagnosticSession`, `PestSighting`, and `Media` (both public and private) include explicit `authorId`, `farmerId`, `reporterId`, or `uploadedBy` fields which directly map to `request.auth.uid` for ownership checks, ensuring authorization independence for user-owned data.\n\n**QAPs (Rules are not Filters):** This structure supports Query-Able Paths (QAPs) through two main strategies:\n1.  **Structural Segregation for Homogeneous Security Posture:** Collections like `/crops`, `/pests`, `/diseases`, `/states`, `/marketPrices`, `/posts`, and `/media_public` are designed with a uniform 'public read' security posture. This allows `list` operations (like the one that caused the error for `/crops`) without requiring complex `where` clauses in security rules or filtering client-side. The presence of `request.auth.uid` implies the user is authenticated, and these collections are intended for general consumption by all authenticated users.\n2.  **Denormalized Fields for Specific Queries:** For collections requiring more granular access or role-based listing, key authorization/status fields are denormalized. For instance:\n    *   `DiagnosticSession` includes `farmerId` for farmers to list their own sessions, and `status` (and potentially `assignedExpertId`) for experts to query pending or assigned sessions.\n    *   `PriceAlerts` include `status` to allow government officials to easily query 'Active' alerts.\n    *   `PestSightings` include `reporterId` for owners and `status` for broader visibility and filtering on maps.\n\n**DBAC (Database-Backed Access Control):** User roles are managed using dedicated, top-level collections (e.g., `/roles_admins/{userId}`, `/roles_experts/{userId}`). Authorization rules will check for the *existence* of a document at these paths (e.g., `exists(/databases/$(database)/documents/roles_experts/$(request.auth.uid))`) rather than relying on a `role` field within the `UserProfile` document. This provides a clear, consistent, and scalable method for role-based access control.\n\n**Structural Segregation Examples:**\n*   `Media` is split into `/media_public/{mediaId}` (for globally accessible images, e.g., in posts, product images) and `/users/{userId}/media_private/{mediaId}` (for user-specific, private images, e.g., diagnostic session uploads). This ensures distinct security postures and simplifies rules for each.\n\n**Addressing the Runtime Error:** The original error `Missing or insufficient permissions: ... method: \"list\", path: \"/databases/(default)/documents/crops\"` will be resolved because the `/crops/{cropId}` path is now explicitly designed for public read access (for all authenticated users), aligning with its nature as reference data. This allows users to list all available crops without permission issues, supporting the 'AI-Driven Crop & Pest Diagnostics' feature."
   }
 }
