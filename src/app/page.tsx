@@ -1,6 +1,7 @@
+
 'use client';
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { 
   LayoutDashboard, 
@@ -14,9 +15,9 @@ import {
   CheckCircle2,
   Globe,
   Fingerprint,
-  Lock,
   ChevronDown,
   LogOut,
+  FlaskConical,
   ShieldAlert
 } from "lucide-react";
 import { 
@@ -33,7 +34,6 @@ import {
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
 import { 
   Popover,
   PopoverContent,
@@ -49,7 +49,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useAppState, AppLanguage, Notification } from "@/lib/app-state";
 import { useTranslation } from "@/hooks/use-translation";
 import { cn } from "@/lib/utils";
-import { useFirestore, useUser, useAuth } from "@/firebase";
+import { useFirestore, useAuth } from "@/firebase";
 import { collection, query, orderBy, limit, onSnapshot, doc, setDoc } from "firebase/firestore";
 import { signInAnonymously } from "firebase/auth";
 
@@ -95,14 +95,14 @@ export default function KisanMitraApp() {
     }
   }, [isAuthenticated, router]);
 
-  // Initialize Grid Identity (Ensure auth.uid exists for security rules)
+  // Initialize Grid Identity
   useEffect(() => {
     if (auth && !auth.currentUser) {
       signInAnonymously(auth).catch(err => console.error("Grid Identity Failure:", err));
     }
   }, [auth]);
 
-  // Register Role Marker in Firestore once authenticated
+  // Register Role Marker in Firestore
   useEffect(() => {
     if (auth?.currentUser && firestore && role) {
       const collectionName = role === 'Expert' ? 'roles_experts' : role === 'Logistics' ? 'roles_logisticsProviders' : 'roles_farmers';
@@ -128,7 +128,6 @@ export default function KisanMitraApp() {
       });
       setNotifications(newNotifs);
 
-      // Check for very recent alert to trigger top bar
       const latest = newNotifs[0];
       if (latest) {
         const isRecent = (Date.now() - new Date(latest.createdAt).getTime()) < 30000;
@@ -141,7 +140,37 @@ export default function KisanMitraApp() {
     return () => unsubscribe();
   }, [firestore, auth.currentUser, setNotifications, setActiveAlert, isAuthenticated]);
 
+  const menuItems = useMemo(() => {
+    const items = [
+      { id: "dashboard", label: t("dashboard"), icon: LayoutDashboard },
+      { id: "diagnostics", label: t("diagnostics"), icon: Leaf },
+      { id: "market", label: t("market"), icon: TrendingUp },
+    ];
+
+    if (role === 'Expert' || role === 'Authority') {
+      items.push(
+        { id: "expert-portal", label: "Expert Portal", icon: FlaskConical, url: "/pro/expert-panel" },
+        { id: "surveillance", label: "Surveillance Hub", icon: ShieldAlert, url: "/pro/surveillance" }
+      );
+    } else if (role === 'Logistics') {
+      items.push({ id: "logistics-bridge", label: "Logistics Bridge", icon: Truck, url: "/pro/logistics-bridge" });
+    } else {
+      items.push({ id: "logistics", label: t("mandi_link"), icon: Package });
+    }
+
+    items.push({ id: "network", label: t("network"), icon: Users });
+    return items;
+  }, [role, t]);
+
   if (!isAuthenticated) return null;
+
+  const handleMenuClick = (item: any) => {
+    if (item.url) {
+      router.push(item.url);
+    } else {
+      setActiveSection(item.id);
+    }
+  };
 
   const renderSection = () => {
     switch (activeSection) {
@@ -154,14 +183,6 @@ export default function KisanMitraApp() {
       default: return <DashboardHome onNavigate={setActiveSection} />;
     }
   };
-
-  const menuItems = [
-    { id: "dashboard", label: t("dashboard"), icon: LayoutDashboard },
-    { id: "diagnostics", label: t("diagnostics"), icon: Leaf },
-    { id: "market", label: t("market"), icon: TrendingUp },
-    { id: "logistics", label: t("mandi_link"), icon: Package },
-    { id: "network", label: t("network"), icon: Users },
-  ];
 
   const unreadCount = notifications.filter(n => !n.isRead).length;
 
@@ -188,7 +209,7 @@ export default function KisanMitraApp() {
                 <SidebarMenuItem key={item.id}>
                   <SidebarMenuButton 
                     isActive={activeSection === item.id}
-                    onClick={() => setActiveSection(item.id)}
+                    onClick={() => handleMenuClick(item)}
                     tooltip={item.label}
                     className="h-12 px-4 data-[active=true]:bg-primary/10 data-[active=true]:text-primary transition-all rounded-xl mx-2 w-auto"
                   >
@@ -200,7 +221,7 @@ export default function KisanMitraApp() {
             </SidebarMenu>
           </SidebarContent>
           <SidebarFooter className="border-t p-4 space-y-2">
-            <SidebarMenuButton onClick={() => logout()} className="h-12 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-900 border border-slate-200">
+            <SidebarMenuButton onClick={() => router.push('/login')} className="h-12 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-900 border border-slate-200">
               <LogOut className="h-5 w-5" /> <span className="font-bold">Switch Role</span>
             </SidebarMenuButton>
             <SidebarMenuButton onClick={() => setActiveSection("settings")} className="h-12 rounded-xl">
@@ -228,9 +249,6 @@ export default function KisanMitraApp() {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="w-48 rounded-2xl p-2 shadow-2xl border-none">
-                  <div className="p-2 border-b mb-2">
-                    <p className="text-[8px] font-black uppercase text-muted-foreground tracking-widest">Select Grid Language</p>
-                  </div>
                   <ScrollArea className="h-64">
                     {LANGUAGES.map((lang) => (
                       <DropdownMenuItem 
