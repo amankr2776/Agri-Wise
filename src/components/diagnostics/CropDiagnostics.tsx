@@ -40,8 +40,6 @@ export function CropDiagnostics() {
   const { toast } = useToast();
   
   const [selectedCategory, setSelectedCategory] = useState<string>("Grain");
-  const [activeView, setActiveView] = useState<'gallery' | 'detail'>('gallery');
-  const [selectedCrop, setSelectedCrop] = useState<any>(null);
   const [isReportOpen, setIsReportOpen] = useState(false);
   
   const cropsQuery = useMemoFirebase(() => {

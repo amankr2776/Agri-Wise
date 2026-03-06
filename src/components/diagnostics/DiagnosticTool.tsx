@@ -310,7 +310,7 @@ export function DiagnosticTool() {
               <div className="relative group bg-muted/30 border-2 border-dashed border-border rounded-[3rem] p-8 text-center hover:bg-primary/5 transition-all cursor-pointer overflow-hidden min-h-[400px] flex flex-col items-center justify-center shadow-inner">
                 {isCameraActive ? (
                   <div className="relative w-full h-full flex flex-col items-center gap-6">
-                    <video ref={videoRef} className="w-full aspect-square rounded-[2rem] object-cover shadow-2xl border-4 border-white" muted playsInline />
+                    <video ref={videoRef} className="w-full aspect-square rounded-[2rem] object-cover shadow-2xl border-4 border-white" autoPlay muted playsInline />
                     <div className="flex gap-4">
                       <Button onClick={capturePhoto} className="h-16 w-16 rounded-full bg-white text-primary shadow-xl hover:scale-110 active:scale-95">
                         <Camera className="h-8 w-8" />
