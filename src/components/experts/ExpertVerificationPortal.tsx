@@ -29,7 +29,8 @@ import {
   Calendar,
   History,
   MessageCircle,
-  ArrowRight
+  ArrowRight,
+  Globe
 } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -129,20 +130,15 @@ export function ExpertVerificationPortal() {
     }
   };
 
-  /**
-   * Refactored Certification Logic
-   * Handles both "Quick Certify" and "Detailed Audit" without race conditions.
-   */
   const handleCertifyProtocol = async (cropData: any, isNew = false) => {
     if (!firestore || !user) return;
 
-    // Use current state for manual audits, or provided crop data for quick actions
     const finalData = {
-      name: isNew || !selectedReviewCrop ? cropData.name : editName,
-      diseaseName: isNew || !selectedReviewCrop ? cropData.diseaseName : editDisease,
-      chemicalCure: isNew || !selectedReviewCrop ? cropData.chemicalCure : editChemicalCure,
-      desiNuskha: isNew || !selectedReviewCrop ? cropData.desiNuskha : editDesiNuskha,
-      imageUrl: isNew || !selectedReviewCrop ? cropData.imageUrl : editImageUrl,
+      name: isNew ? cropData.name : editName,
+      diseaseName: isNew ? cropData.diseaseName : editDisease,
+      chemicalCure: isNew ? cropData.chemicalCure : editChemicalCure,
+      desiNuskha: isNew ? cropData.desiNuskha : editDesiNuskha,
+      imageUrl: isNew ? cropData.imageUrl : editImageUrl,
       isCertified: true,
       verifiedBy: user.uid,
       verifiedByName: expertName,
@@ -162,7 +158,6 @@ export function ExpertVerificationPortal() {
       const docRef = doc(firestore, "crops", targetId);
       updateDocumentNonBlocking(docRef, finalData);
       
-      // Notify reporting farmer if this was an audit request
       const recipientId = cropData?.reportedBy || selectedReviewCrop?.reportedBy;
       if (recipientId) {
         dispatchGridNotification(firestore, recipientId, {
@@ -381,13 +376,32 @@ export function ExpertVerificationPortal() {
                 <h4 className="text-[10px] font-black uppercase text-primary tracking-widest flex items-center gap-2">
                   <ImageIcon className="h-4 w-4" /> Botanical Evidence
                 </h4>
-                <div className="relative group rounded-[2rem] overflow-hidden border-4 border-muted/30 shadow-xl aspect-video bg-muted/50">
-                  <img src={editImageUrl} className="w-full h-full object-cover" alt="Audit Evidence" />
-                  <label className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center cursor-pointer text-white">
-                    <Upload className="h-10 w-10 mb-2" />
-                    <span className="font-black text-xs uppercase">Replace with High-Res Reference</span>
-                    <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
-                  </label>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="relative group rounded-[2rem] overflow-hidden border-4 border-muted/30 shadow-xl aspect-video bg-muted/50">
+                    <img src={editImageUrl} className="w-full h-full object-cover" alt="Audit Evidence" />
+                    <label className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center cursor-pointer text-white">
+                      <Upload className="h-10 w-10 mb-2" />
+                      <span className="font-black text-xs uppercase">Upload New File</span>
+                      <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
+                    </label>
+                  </div>
+                  <div className="space-y-4 flex flex-col justify-center">
+                    <div className="space-y-2">
+                      <Label className="text-[10px] font-black uppercase text-muted-foreground ml-2">Manual Image URL (Override)</Label>
+                      <div className="relative">
+                        <Globe className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-primary" />
+                        <Input 
+                          value={editImageUrl} 
+                          onChange={(e) => setEditImageUrl(e.target.value)} 
+                          placeholder="Paste image URL here..." 
+                          className="h-12 rounded-xl bg-muted/30 border-none pl-10 font-bold" 
+                        />
+                      </div>
+                    </div>
+                    <p className="text-[10px] text-muted-foreground italic px-2 leading-relaxed">
+                      "Manual entry allows linking to high-fidelity scientific references from external botanical databases."
+                    </p>
+                  </div>
                 </div>
               </div>
 
@@ -452,6 +466,10 @@ export function ExpertVerificationPortal() {
                 <Label className="text-[10px] font-black uppercase text-muted-foreground ml-2">Disease</Label>
                 <Input value={editDisease} onChange={(e) => setEditDisease(e.target.value)} placeholder="e.g. Yellow Rust" className="h-12 rounded-xl bg-muted/30 border-none font-bold" />
               </div>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-[10px] font-black uppercase text-muted-foreground ml-2">Image URL</Label>
+              <Input value={editImageUrl} onChange={(e) => setEditImageUrl(e.target.value)} placeholder="https://..." className="h-12 rounded-xl bg-muted/30 border-none font-bold" />
             </div>
             <div className="space-y-2">
               <Label className="text-[10px] font-black uppercase text-muted-foreground ml-2">Professional Neutralizer</Label>

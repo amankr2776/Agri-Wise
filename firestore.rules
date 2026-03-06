@@ -6,28 +6,8 @@ service cloud.firestore {
      * AgriWise Security Rules
      * 
      * CORE PHILOSOPHY:
-     * This ruleset implements a robust, role-based and ownership-based authorization model for the 
-     * AgriWise agricultural platform. It prioritizes Authorization Independence by relying on 
-     * denormalized identity fields (e.g., ownerId, farmerId, expertId) directly on documents, 
-     * minimizing the need for cross-document lookups (get() calls).
-     * 
-     * DATA STRUCTURE:
-     * - Shared Reference Data: Crops, Pests, Diseases, Remedies, and Market Prices are top-level 
-     *   and generally readable by all authenticated users.
-     * - Social & Crowd-Sourced Data: Posts, Comments, and Pest Sightings are public but 
-     *   restrict writes to their respective authors/reporters.
-     * - Private/Diagnostic Data: Diagnostic Sessions and Private Media are strictly secured 
-     *   to the involved Farmer and reviewing Experts.
-     * - Role Management: Uses a Database-Backed Access Control (DBAC) pattern where document 
-     *   existence in specific "roles_..." collections defines user permissions.
-     * 
-     * KEY SECURITY DECISIONS:
-     * - Public Listing: Enabled for reference collections (Crops, Pests, etc.) to resolve 
-     *   permission errors during global reference queries.
-     * - Denormalization: Fields like 'logisticsProviderOwnerId' and 'farmerId' (in verifications) 
-     *   are used to grant access without parent-document reads.
-     * - Immutability: Critical relational fields (like author IDs) are enforced as immutable 
-     *   during updates to prevent identity spoofing.
+     * This ruleset implements a robust, role-based and ownership-based authorization model.
+     * It prioritizes Authorization Independence and Query-Able Paths (QAPs).
      */
 
     // --- GLOBAL HELPER FUNCTIONS ---
@@ -63,25 +43,36 @@ service cloud.firestore {
     // --- COLLECTION RULES ---
 
     /**
-     * @description User profiles containing contact and role info.
-     * @path /userProfiles/{userId}
-     * @allow (create) if auth.uid matches userId.
-     * @deny (write) if trying to modify another user's profile.
-     * @principle Ownership-based write access with relational path integrity.
+     * @description Reference Data (Crops, Pests, Diseases).
+     * Publicly readable by all authenticated users.
      */
-    match /userProfiles/{userId} {
-      allow get, list: if isSignedIn();
-      allow create: if isOwner(userId) && request.resource.data.id == userId;
-      allow update: if isOwner(userId) && resource != null && request.resource.data.id == resource.data.id;
-      allow delete: if isAdmin() && resource != null;
+    match /crops/{cropId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin() || isExpert();
+    }
+
+    match /pests/{pestId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin() || isExpert();
+    }
+
+    match /diseases/{diseaseId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin() || isExpert();
     }
 
     /**
-     * @description Role markers (DBAC). Only Admins manage roles.
-     * @path /roles_{roleType}/{userId}
-     * @allow (read) if signed in.
-     * @deny (write) if not an Admin.
-     * @principle Centralized role management via marker collections.
+     * @description User profiles containing contact and role info.
+     */
+    match /userProfiles/{userId} {
+      allow get, list: if isSignedIn();
+      allow create: if isOwner(userId);
+      allow update: if isOwner(userId);
+      allow delete: if isAdmin();
+    }
+
+    /**
+     * @description Role markers (DBAC).
      */
     match /roles_admins/{userId} { allow read: if isSignedIn(); allow write: if isAdmin(); }
     match /roles_experts/{userId} { allow read: if isSignedIn(); allow write: if isAdmin(); }
@@ -89,104 +80,60 @@ service cloud.firestore {
     match /roles_logisticsProviders/{userId} { allow read: if isSignedIn(); allow write: if isAdmin(); }
 
     /**
-     * @description Agricultural reference data (Crops, Pests, Diseases).
-     * @path /crops/{cropId}, /pests/{pestId}, /diseases/{diseaseId}
-     * @allow (list/get) if signed in. Resolves list permission errors.
-     * @deny (write) if not Admin or Expert.
-     * @principle Public read with restricted privileged writes.
-     */
-    match /crops/{cropId} {
-      allow get, list: if isSignedIn();
-      allow create, update, delete: if isAdmin() || isExpert();
-    }
-
-    match /pests/{pestId} {
-      allow get, list: if isSignedIn();
-      allow create, update, delete: if isAdmin() || isExpert();
-    }
-
-    match /diseases/{diseaseId} {
-      allow get, list: if isSignedIn();
-      allow create, update, delete: if isAdmin() || isExpert();
-    }
-
-    /**
-     * @description Remedy information and social voting on traditional remedies.
-     * @path /remedies/{remedyId}
-     * @allow (read) all authenticated users. (update) Experts for certification.
-     * @principle Role-based updates for status fields.
+     * @description Remedy information and social voting.
      */
     match /remedies/{remedyId} {
-      allow get, list: if isSignedIn();
-      allow create: if isAdmin() || isExpert();
-      allow update: if isAdmin() || isExpert();
+      allow read: if isSignedIn();
+      allow create, update: if isAdmin() || isExpert();
       allow delete: if isAdmin();
 
       match /nuskhaVotes/{voteId} {
-        allow get, list: if isSignedIn();
+        allow read: if isSignedIn();
         allow create: if isSignedIn() && request.resource.data.voterId == request.auth.uid;
-        allow update: if isExistingOwner('voterId') && request.resource.data.voterId == resource.data.voterId;
-        allow delete: if isExistingOwner('voterId');
+        allow update, delete: if isExistingOwner('voterId');
       }
     }
 
     /**
      * @description Farmer diagnostic sessions.
-     * @path /diagnosticSessions/{sessionId}
-     * @allow (read/write) if owner (farmerId) or Expert.
-     * @principle Ownership and Role-based access to private diagnostic data.
      */
     match /diagnosticSessions/{sessionId} {
       allow get, list: if isExistingOwner('farmerId') || isExpert() || isAdmin();
       allow create: if isSignedIn() && request.resource.data.farmerId == request.auth.uid;
-      allow update: if (isExistingOwner('farmerId') || isExpert()) && request.resource.data.farmerId == resource.data.farmerId;
+      allow update: if (isExistingOwner('farmerId') || isExpert());
       allow delete: if isAdmin();
     }
 
     /**
-     * @description Expert verifications of sessions or remedies.
-     * @path /verifications/{verificationId}
-     * @allow (read) if Expert (owner) or denormalized farmerId matches auth.uid.
-     * @principle Authorization Independence via denormalized farmerId.
+     * @description Expert verifications.
      */
     match /verifications/{verificationId} {
       allow get, list: if isExpert() || isExistingOwner('expertId') || (isSignedIn() && resource.data.farmerId == request.auth.uid);
       allow create: if isExpert() && request.resource.data.expertId == request.auth.uid;
-      allow update: if isExistingOwner('expertId') && request.resource.data.expertId == resource.data.expertId;
+      allow update: if isExistingOwner('expertId');
       allow delete: if isAdmin();
     }
 
     /**
      * @description Market intelligence and state info.
-     * @path /marketPrices/{marketPriceId}, /states/{stateId}
-     * @allow (read) all users. (write) Admin or Gov Officials.
-     * @principle Sector-specific role restricted writes.
      */
     match /marketPrices/{marketPriceId} {
-      allow get, list: if isSignedIn();
+      allow read: if isSignedIn();
+      allow create, update, delete: if isAdmin() || isGovOfficial();
+    }
+
+    match /mandiPrices/{priceId} {
+      allow read: if isSignedIn();
       allow create, update, delete: if isAdmin() || isGovOfficial();
     }
 
     match /states/{stateId} {
-      allow get, list: if isSignedIn();
-      allow create, update, delete: if isAdmin();
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
     }
 
     /**
-     * @description Price alerts for government monitoring.
-     * @path /priceAlerts/{alertId}
-     * @allow (read/write) Admin or Gov Officials only.
-     * @principle Sensitive regulatory data restricted to specific roles.
-     */
-    match /priceAlerts/{alertId} {
-      allow read, write: if isAdmin() || isGovOfficial();
-    }
-
-    /**
-     * @description Logistics provider data and transport options.
-     * @path /logisticsProviders/{logisticsProviderId}
-     * @allow (write) if auth.uid matches the userId field in document.
-     * @principle Field-based ownership for organizational profiles.
+     * @description Logistics and transport.
      */
     match /logisticsProviders/{logisticsProviderId} {
       allow get, list: if isSignedIn();
@@ -194,70 +141,60 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
-    match /transportOptions/{transportOptionId} {
-      allow get, list: if isSignedIn();
-      allow create: if isAdmin() || (isSignedIn() && request.resource.data.logisticsProviderOwnerId == request.auth.uid);
-      allow update: if isAdmin() || isExistingOwner('logisticsProviderOwnerId');
-      allow delete: if isAdmin() || isExistingOwner('logisticsProviderOwnerId');
+    match /vehicles/{vehicleId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin() || (isSignedIn() && request.resource.data.ownerId == request.auth.uid);
+    }
+
+    match /bookings/{bookingId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn();
+      allow update: if isSignedIn();
+      allow delete: if isAdmin();
     }
 
     /**
-     * @description Social network posts and comments.
-     * @path /posts/{postId}
-     * @allow (create) if authorId matches auth.uid. (read) public.
-     * @principle Standard social ownership model with public consumption.
+     * @description Social network and maps.
      */
     match /posts/{postId} {
-      allow get, list: if isSignedIn();
+      allow read: if isSignedIn();
       allow create: if isSignedIn() && request.resource.data.authorId == request.auth.uid;
-      allow update: if isExistingOwner('authorId') && request.resource.data.authorId == resource.data.authorId;
+      allow update: if isExistingOwner('authorId') || isExpert();
       allow delete: if isExistingOwner('authorId') || isAdmin();
 
       match /comments/{commentId} {
-        allow get, list: if isSignedIn();
+        allow read: if isSignedIn();
         allow create: if isSignedIn() && request.resource.data.authorId == request.auth.uid;
-        allow update: if isExistingOwner('authorId') && request.resource.data.authorId == resource.data.authorId;
-        allow delete: if isExistingOwner('authorId') || isAdmin();
+        allow update, delete: if isExistingOwner('authorId') || isAdmin();
       }
     }
 
-    /**
-     * @description Crowd-sourced pest sightings for outbreak maps.
-     * @path /pestSightings/{sightingId}
-     * @allow (update) if reporter or Expert/Gov (for status).
-     * @principle Multi-role access for collaborative status management.
-     */
-    match /pestSightings/{sightingId} {
-      allow get, list: if isSignedIn();
-      allow create: if isSignedIn() && request.resource.data.reporterId == request.auth.uid;
-      allow update: if isExistingOwner('reporterId') || isExpert() || isGovOfficial();
-      allow delete: if isExistingOwner('reporterId') || isAdmin();
+    match /pestOutbreaks/{outbreakId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin() || isExpert() || isGovOfficial();
     }
 
     /**
-     * @description Public media metadata (post images, crop icons).
-     * @path /media_public/{mediaId}
-     * @allow (read) public. (write) if owner (uploadedBy).
-     * @principle Ownership for management, public for display.
+     * @description Notifications.
+     */
+    match /users/{userId}/notifications/{notifId} {
+      allow read, write: if isOwner(userId) || isExpert() || isAdmin();
+    }
+    
+    match /users/{userId}/conversations/{convId} {
+      allow read, write: if isOwner(userId);
+    }
+
+    /**
+     * @description Media.
      */
     match /media_public/{mediaId} {
-      allow get, list: if isSignedIn();
-      allow create: if isSignedIn() && request.resource.data.uploadedBy == request.auth.uid;
-      allow update: if isExistingOwner('uploadedBy') && request.resource.data.uploadedBy == resource.data.uploadedBy;
-      allow delete: if isExistingOwner('uploadedBy') || isAdmin();
+      allow read: if isSignedIn();
+      allow write: if isSignedIn();
     }
 
-    /**
-     * @description Private media metadata (diagnostic uploads).
-     * @path /users/{userId}/media_private/{mediaId}
-     * @allow (read/write) if userId in path matches auth.uid.
-     * @principle Strict path-based ownership for sensitive user assets.
-     */
     match /users/{userId}/media_private/{mediaId} {
-      allow get, list: if isOwner(userId);
-      allow create: if isOwner(userId) && request.resource.data.uploadedBy == userId;
-      allow update: if isOwner(userId) && resource != null && request.resource.data.uploadedBy == resource.data.uploadedBy;
-      allow delete: if isOwner(userId);
+      allow read, write: if isOwner(userId);
     }
   }
 }
