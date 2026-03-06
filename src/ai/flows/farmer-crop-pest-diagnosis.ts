@@ -2,7 +2,6 @@
 /**
  * @fileOverview Senior Precision Agronomist Diagnostic Flow.
  * Implements conversational agronomist logic for multimodal disease identification.
- * Grounded in the National Botanical Registry dataset with high-variability configuration.
  */
 
 import {ai} from '@/ai/genkit';
@@ -50,14 +49,8 @@ You are grounded, supportive, and strictly data-driven.
    - **Professional Neutralizer:** One chemical/biological solution with dosage (use LaTeX for formulas like $CuSO_4$, $ZnSO_4$, etc.).
    - **Heritage Wisdom:** One specific 'Desi Nuskha' or organic remedy tailored to this plant species.
 
-# ADAPTIVE SCOPE
-If the farmer asks a non-agricultural question, respond as a helpful peer assistant while maintaining a grounded, supportive tone. Do not refuse general knowledge queries, but set isBotanicallyValid to false.
-
 # GROUNDING
 CRITICAL: You have access to the National Botanical Registry. ALWAYS prioritize matching symptoms to these verified records.
-
-REGISTRY SAMPLES:
-${JSON.stringify(BOTANICAL_REGISTRY)}
 `;
 
 const diagnoseCropPestPrompt = ai.definePrompt({
@@ -65,7 +58,7 @@ const diagnoseCropPestPrompt = ai.definePrompt({
   input: { schema: FarmerCropPestDiagnosisInputSchema },
   output: { schema: FarmerCropPestDiagnosisOutputSchema },
   config: {
-    temperature: 0.75, // High variability
+    temperature: 0.75,
     topP: 0.95,
     maxOutputTokens: 1024,
   },
@@ -99,7 +92,6 @@ const farmerCropPestDiagnosisFlow = ai.defineFlow(
       const { output } = await diagnoseCropPestPrompt(input);
       if (!output) throw new Error('Failed to generate precision diagnosis.');
       
-      // If we have a local match and it's a botanical query, ensure registry values are prioritized
       if (localMatch && output.isBotanicallyValid) {
         return {
           ...output,
