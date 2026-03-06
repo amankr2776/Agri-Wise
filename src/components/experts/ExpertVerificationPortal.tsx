@@ -30,7 +30,8 @@ import {
   History,
   MessageCircle,
   ArrowRight,
-  Globe
+  Globe,
+  Award
 } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -88,11 +89,16 @@ export function ExpertVerificationPortal() {
   const [editChemicalCure, setEditChemicalCure] = useState("");
   const [editDesiNuskha, setEditDesiNuskha] = useState("");
   const [editImageUrl, setEditImageUrl] = useState("");
+  const [editExpertPov, setEditExpertPov] = useState("");
 
   // Queries
   const pendingCertsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
-    return query(collection(firestore, "crops"), where("isCertified", "==", false), orderBy("createdAt", "desc"));
+    return query(
+      collection(firestore, "crops"), 
+      where("status", "==", "pending_expert_review"), 
+      orderBy("createdAt", "desc")
+    );
   }, [firestore]);
   const { data: pendingCerts, isLoading: loadingCerts } = useCollection(pendingCertsQuery);
 
@@ -118,6 +124,7 @@ export function ExpertVerificationPortal() {
       setEditChemicalCure(selectedReviewCrop.chemicalCure || "");
       setEditDesiNuskha(selectedReviewCrop.desiNuskha || "");
       setEditImageUrl(selectedReviewCrop.imageUrl || "");
+      setEditExpertPov(selectedReviewCrop.expertNotes || "");
     }
   }, [selectedReviewCrop]);
 
@@ -140,11 +147,12 @@ export function ExpertVerificationPortal() {
       desiNuskha: isNew ? cropData.desiNuskha : editDesiNuskha,
       imageUrl: isNew ? cropData.imageUrl : editImageUrl,
       isCertified: true,
+      status: "resolved",
       verifiedBy: user.uid,
       verifiedByName: expertName,
       verifiedAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
-      expertNotes: `Certified by ${expertName}. Professional botanical protocol synchronized.`
+      expertNotes: isNew ? cropData.expertNotes : editExpertPov || `Certified by ${expertName}. Professional botanical protocol synchronized.`
     };
 
     if (isNew) {
@@ -161,14 +169,14 @@ export function ExpertVerificationPortal() {
       const recipientId = cropData?.reportedBy || selectedReviewCrop?.reportedBy;
       if (recipientId) {
         dispatchGridNotification(firestore, recipientId, {
-          title: "Scientific Protocol Verified",
-          message: `Expert ${expertName} has certified the cure for ${finalData.name}. Check your library!`,
+          title: "Expert Solution Certified",
+          message: `Dr. ${expertName} has verified your ${finalData.name} report. View refined cure now!`,
           type: 'update'
         });
       }
       
       setSelectedReviewCrop(null);
-      toast({ title: "Changes Synchronized", description: "The grid library has been updated." });
+      toast({ title: "Solution Certified", description: "Verification badge and refinements synced to farmer." });
     }
   };
 
@@ -203,7 +211,7 @@ export function ExpertVerificationPortal() {
         <div className="flex gap-3">
           <Button 
             onClick={() => {
-              setEditName(""); setEditDisease(""); setEditChemicalCure(""); setEditDesiNuskha(""); setEditImageUrl("");
+              setEditName(""); setEditDisease(""); setEditChemicalCure(""); setEditDesiNuskha(""); setEditImageUrl(""); setEditExpertPov("");
               setIsAddCropOpen(true);
             }}
             className="rounded-2xl h-14 px-8 font-black gap-2 bg-slate-900 text-white shadow-xl hover:bg-slate-800 transition-all hover:scale-105 active:scale-95"
@@ -216,7 +224,7 @@ export function ExpertVerificationPortal() {
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="bg-muted/50 rounded-full p-1 h-14 mb-10 w-fit">
           <TabsTrigger value="protocols" className="rounded-full px-10 h-12 data-[state=active]:bg-primary data-[state=active]:text-white font-black text-xs uppercase tracking-widest gap-2">
-            Recent Requests <Badge className="bg-white/20 text-[10px]">{pendingCerts?.length || 0}</Badge>
+            Verification Queue <Badge className="bg-white/20 text-[10px]">{pendingCerts?.length || 0}</Badge>
           </TabsTrigger>
           <TabsTrigger value="inventory" className="rounded-full px-10 h-12 data-[state=active]:bg-primary data-[state=active]:text-white font-black text-xs uppercase tracking-widest gap-2">
             Global Inventory <Badge className="bg-white/20 text-[10px]">{inventory?.length || 0}</Badge>
@@ -241,7 +249,7 @@ export function ExpertVerificationPortal() {
                   <div className="relative aspect-video">
                     <img src={cert.imageUrl || "https://picsum.photos/seed/agri/800/400"} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" alt={cert.name} />
                     <div className="absolute top-6 left-6">
-                      <Badge className="bg-amber-500/90 text-white font-black uppercase text-[10px] tracking-widest px-4 py-1.5 shadow-xl">New Request</Badge>
+                      <Badge className="bg-amber-500/90 text-white font-black uppercase text-[10px] tracking-widest px-4 py-1.5 shadow-xl">Audit Required</Badge>
                     </div>
                   </div>
                   <CardHeader className="p-10 pb-6">
@@ -251,15 +259,15 @@ export function ExpertVerificationPortal() {
                     </div>
                     <div className="flex items-center gap-2 mt-2 text-muted-foreground">
                       <User className="h-3 w-3" />
-                      <p className="text-[10px] font-bold uppercase tracking-wider">Reported By: {cert.reportedByName || "Local Node"}</p>
+                      <p className="text-[10px] font-bold uppercase tracking-wider">Farmer: {cert.reportedByName || "Local Node"}</p>
                     </div>
                     <p className="text-sm text-slate-600 mt-4 line-clamp-2 italic font-medium leading-relaxed">"{cert.symptoms}"</p>
                   </CardHeader>
                   <CardFooter className="p-10 pt-0 mt-auto flex gap-4">
                     <Button variant="outline" className="flex-1 h-14 rounded-2xl font-black gap-2 border-primary/20 text-primary hover:bg-primary/5" onClick={() => setSelectedReviewCrop(cert)}>
-                      <Edit3 className="h-5 w-5" /> Audit
+                      <Edit3 className="h-5 w-5" /> Refine & Certify
                     </Button>
-                    <Button className="flex-1 h-14 rounded-2xl font-black" onClick={() => handleCertifyProtocol(cert)}>Quick Certify</Button>
+                    <Button className="flex-1 h-14 rounded-2xl font-black" onClick={() => handleCertifyProtocol(cert)}>Quick Approve</Button>
                   </CardFooter>
                 </Card>
               ))}
@@ -350,7 +358,7 @@ export function ExpertVerificationPortal() {
         </TabsContent>
       </Tabs>
 
-      {/* Edit/Audit Dialog */}
+      {/* Verification & POV Dialog */}
       <Dialog open={!!selectedReviewCrop} onOpenChange={() => setSelectedReviewCrop(null)}>
         <DialogContent className="rounded-[3rem] sm:max-w-3xl p-0 overflow-hidden border-none shadow-2xl">
           <div className="bg-slate-900 p-10 text-white relative">
@@ -363,8 +371,8 @@ export function ExpertVerificationPortal() {
                   <BrainCircuit className="h-7 w-7" />
                 </div>
                 <div>
-                  <DialogTitle className="text-3xl font-black tracking-tight">Scientific Audit Hub</DialogTitle>
-                  <DialogDescription className="text-slate-400 font-bold uppercase tracking-widest text-[10px]">Registry Protocol v4.2 Active</DialogDescription>
+                  <DialogTitle className="text-3xl font-black tracking-tight">Scientific Audit & POV</DialogTitle>
+                  <DialogDescription className="text-slate-400 font-bold uppercase tracking-widest text-[10px]">Verification Node: {expertName}</DialogDescription>
                 </div>
               </div>
             </DialogHeader>
@@ -374,76 +382,60 @@ export function ExpertVerificationPortal() {
             <div className="p-10 space-y-10">
               <div className="space-y-4">
                 <h4 className="text-[10px] font-black uppercase text-primary tracking-widest flex items-center gap-2">
-                  <ImageIcon className="h-4 w-4" /> Botanical Evidence
+                  <ImageIcon className="h-4 w-4" /> Farmer Evidence & AI Synthesis
                 </h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="relative group rounded-[2rem] overflow-hidden border-4 border-muted/30 shadow-xl aspect-video bg-muted/50">
+                  <div className="relative rounded-[2rem] overflow-hidden border-4 border-muted/30 shadow-xl aspect-video bg-muted/50">
                     <img src={editImageUrl} className="w-full h-full object-cover" alt="Audit Evidence" />
-                    <label className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center cursor-pointer text-white">
-                      <Upload className="h-10 w-10 mb-2" />
-                      <span className="font-black text-xs uppercase">Upload New File</span>
-                      <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
-                    </label>
                   </div>
-                  <div className="space-y-4 flex flex-col justify-center">
-                    <div className="space-y-2">
-                      <Label className="text-[10px] font-black uppercase text-muted-foreground ml-2">Manual Image URL (Override)</Label>
-                      <div className="relative">
-                        <Globe className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-primary" />
-                        <Input 
-                          value={editImageUrl} 
-                          onChange={(e) => setEditImageUrl(e.target.value)} 
-                          placeholder="Paste image URL here..." 
-                          className="h-12 rounded-xl bg-muted/30 border-none pl-10 font-bold" 
-                        />
-                      </div>
-                    </div>
-                    <p className="text-[10px] text-muted-foreground italic px-2 leading-relaxed">
-                      "Manual entry allows linking to high-fidelity scientific references from external botanical databases."
+                  <div className="p-6 rounded-[2rem] bg-amber-50 border-2 border-amber-100 space-y-3">
+                    <h4 className="text-[10px] font-black uppercase text-amber-600 tracking-widest flex items-center gap-2">
+                      <Bot className="h-4 w-4" /> AI Scientific Logic Trace
+                    </h4>
+                    <p className="text-xs font-medium text-amber-900 leading-relaxed italic">
+                      "{selectedReviewCrop?.aiReasoning || "AI model prioritized visual markers for identification."}"
                     </p>
                   </div>
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase text-muted-foreground ml-2">Crop Name</Label>
-                  <Input value={editName} onChange={(e) => setEditName(e.target.value)} className="h-12 rounded-xl bg-muted/30 border-none font-bold" />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase text-muted-foreground ml-2">Disease / Pathogen</Label>
-                  <Input value={editDisease} onChange={(e) => setEditDisease(e.target.value)} className="h-12 rounded-xl bg-muted/30 border-none font-bold" />
-                </div>
-              </div>
-
               <div className="space-y-6">
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase text-muted-foreground ml-2">Professional Neutralizer ($LaTeX$ supported)</Label>
-                  <Textarea value={editChemicalCure} onChange={(e) => setEditChemicalCure(e.target.value)} placeholder="e.g. Apply $CuSO_4$ (2g/L)..." className="rounded-xl bg-muted/30 border-none font-bold min-h-[100px]" />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase text-muted-foreground ml-2">Heritage Wisdom / Desi Nuskha</Label>
-                  <Textarea value={editDesiNuskha} onChange={(e) => setEditDesiNuskha(e.target.value)} className="rounded-xl bg-muted/30 border-none font-medium min-h-[100px]" />
+                <h4 className="text-[10px] font-black uppercase text-primary tracking-widest flex items-center gap-2">
+                  <Edit3 className="h-4 w-4" /> Refine Cures (Expert Modification)
+                </h4>
+                <div className="grid grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase text-muted-foreground ml-2">Professional Neutralizer ($LaTeX$)</Label>
+                    <Textarea value={editChemicalCure} onChange={(e) => setEditChemicalCure(e.target.value)} placeholder="Refine the chemical solution..." className="rounded-xl bg-muted/30 border-none font-bold min-h-[100px]" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase text-muted-foreground ml-2">Heritage Wisdom / Desi Nuskha</Label>
+                    <Textarea value={editDesiNuskha} onChange={(e) => setEditDesiNuskha(e.target.value)} placeholder="Refine the organic alternative..." className="rounded-xl bg-muted/30 border-none font-medium min-h-[100px]" />
+                  </div>
                 </div>
               </div>
 
-              {selectedReviewCrop?.aiReasoning && (
-                <div className="p-6 rounded-[2rem] bg-amber-50 border-2 border-amber-100 space-y-3">
-                  <h4 className="text-[10px] font-black uppercase text-amber-600 tracking-widest flex items-center gap-2">
-                    <Bot className="h-4 w-4" /> AI Scientific Logic Trace
-                  </h4>
-                  <p className="text-sm font-medium text-amber-900 leading-relaxed italic">
-                    "{selectedReviewCrop.aiReasoning}"
-                  </p>
+              <div className="space-y-4">
+                <h4 className="text-[10px] font-black uppercase text-primary tracking-widest flex items-center gap-2">
+                  <MessageCircle className="h-4 w-4" /> Professional POV & Manual Advice
+                </h4>
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-muted-foreground ml-2">Expert Notes for Farmer</Label>
+                  <Textarea 
+                    value={editExpertPov} 
+                    onChange={(e) => setEditExpertPov(e.target.value)} 
+                    placeholder="Type your manual advice here. This will be shown as a primary expert insight." 
+                    className="rounded-2xl bg-muted/30 border-none font-bold text-lg min-h-[120px] p-6 focus-visible:ring-primary shadow-inner" 
+                  />
                 </div>
-              )}
+              </div>
             </div>
           </ScrollArea>
 
           <DialogFooter className="p-10 pt-0 flex gap-4">
             <Button variant="outline" className="flex-1 rounded-xl h-14 font-black" onClick={() => setSelectedReviewCrop(null)}>Discard</Button>
-            <Button className="flex-1 rounded-xl h-14 font-black gap-2 shadow-xl shadow-primary/20" onClick={() => handleCertifyProtocol(null)}>
-              <Save className="h-5 w-5" /> Certify Protocol
+            <Button className="flex-1 rounded-xl h-14 font-black gap-2 shadow-xl shadow-primary/20 bg-primary" onClick={() => handleCertifyProtocol(null)}>
+              <CheckCircle2 className="h-5 w-5" /> Certify & Notify Farmer
             </Button>
           </DialogFooter>
         </DialogContent>

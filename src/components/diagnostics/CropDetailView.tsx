@@ -115,6 +115,8 @@ export function CropDetailView({ crop, onClose }: CropDetailViewProps) {
           desiNuskha: res.suggestedTraditionalRemedies[0],
           aiReasoning: res.scientificReasoning,
           isCertified: false,
+          status: "pending_expert_review",
+          assignedExpertId: "AMAN_EXP_01",
           reportedBy: user.uid,
           reportedByName: userName,
           imageUrl: crop.imageUrl,
@@ -204,7 +206,14 @@ export function CropDetailView({ crop, onClose }: CropDetailViewProps) {
         </Button>
         <div className="absolute bottom-8 left-10 text-white drop-shadow-lg">
           <Badge className="bg-primary text-white mb-3 px-4 py-1 font-black uppercase text-[10px] tracking-widest">{crop.category}</Badge>
-          <h2 className="text-5xl font-black tracking-tighter">{crop.name}</h2>
+          <div className="flex items-center gap-3">
+            <h2 className="text-5xl font-black tracking-tighter">{crop.name}</h2>
+            {crop.isCertified && (
+              <Badge className="bg-amber-500 text-white border-none font-black text-[10px] uppercase tracking-widest gap-1 shadow-lg">
+                <ShieldCheck className="h-3 w-3" /> Verified by Expert
+              </Badge>
+            )}
+          </div>
         </div>
       </div>
 
@@ -247,20 +256,29 @@ export function CropDetailView({ crop, onClose }: CropDetailViewProps) {
             <div className="space-y-4">
               <h4 className="text-2xl font-black tracking-tight flex items-center gap-3">
                 <ShieldCheck className="h-7 w-7 text-primary" />
-                Verified Scientific Profile
+                Scientific Validation Hub
               </h4>
-              {crop.isCertified && (
-                <div className="p-6 rounded-[2rem] bg-amber-50 border-2 border-amber-200 shadow-sm space-y-3">
-                  <div className="flex items-center gap-2 text-amber-700 font-black uppercase text-[10px] tracking-widest">
-                    <Award className="h-4 w-4" /> Expert Validation Active
+              {crop.isCertified ? (
+                <div className="p-8 rounded-[2.5rem] bg-amber-50 border-4 border-amber-200 shadow-xl space-y-4 relative overflow-hidden">
+                  <div className="absolute top-0 right-0 p-6 opacity-10"><Award className="h-32 w-32 rotate-12" /></div>
+                  <div className="flex items-center gap-3 text-amber-700 font-black uppercase text-xs tracking-[0.2em]">
+                    <ShieldCheck className="h-5 w-5" /> Professional Expert POV
                   </div>
-                  <p className="text-sm font-bold text-amber-900 leading-relaxed italic">
-                    "{crop.expertNotes || `This crop profile has been audited and certified by Scientist ${crop.verifiedByName || 'Aman Kumar'}.`}"
+                  <p className="text-xl font-bold text-amber-900 leading-relaxed italic relative z-10">
+                    "{crop.expertNotes || `This solution has been certified by Scientist Dr. ${crop.verifiedByName || 'Aman Kumar'}. Use exactly as prescribed.`}"
                   </p>
+                  <div className="flex items-center gap-2 pt-2 border-t border-amber-200">
+                    <p className="text-[10px] font-black text-amber-600 uppercase">Verified On: {new Date(crop.verifiedAt).toLocaleDateString()}</p>
+                  </div>
                 </div>
-              )}
+              ) : crop.status === "pending_expert_review" ? (
+                <div className="p-6 rounded-[2rem] bg-blue-50 border-2 border-blue-200 flex items-center gap-4">
+                  <Loader2 className="h-6 w-6 animate-spin text-blue-500" />
+                  <p className="text-sm font-black text-blue-700 uppercase tracking-widest italic">Awaiting Expert Audit (AMAN_EXP_01)...</p>
+                </div>
+              ) : null}
               <p className="text-slate-600 leading-relaxed font-medium italic">
-                This encyclopedia entry is synchronized with the National Botanical Registry. It provides high-fidelity data for professional farm management.
+                All data in this profile is synchronized with the National Botanical Registry. Expert validation ensures maximum safety and yield protection.
               </p>
             </div>
           </div>

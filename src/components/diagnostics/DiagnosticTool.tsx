@@ -235,6 +235,8 @@ export function DiagnosticTool() {
       chemicalCure: result.suggestedChemicalRemedies[0],
       desiNuskha: result.suggestedTraditionalRemedies[0],
       isCertified: false,
+      status: "pending_expert_review",
+      assignedExpertId: "AMAN_EXP_01",
       aiReasoning: result.scientificReasoning,
       symptoms: symptoms,
       reportedBy: user.uid,
@@ -242,7 +244,7 @@ export function DiagnosticTool() {
       createdAt: new Date().toISOString()
     });
     setIsSentToExpert(true);
-    toast({ title: "Precision Report Logged", description: "Sent to senior human agronomist for certification." });
+    toast({ title: "Verification Requested", description: "Expert Aman Kumar (AMAN_EXP_01) has been alerted." });
   };
 
   return (
@@ -456,7 +458,7 @@ export function DiagnosticTool() {
                       )}
                     >
                       {isSentToExpert ? <CheckCircle2 className="h-8 w-8" /> : <UserCheck className="h-8 w-8" />}
-                      {isSentToExpert ? "Request Logged" : "Not Satisfied? Ask Expert"}
+                      {isSentToExpert ? "Expert Request Logged" : "Not Satisfied? Ask Expert"}
                     </Button>
                   </div>
                 </div>
