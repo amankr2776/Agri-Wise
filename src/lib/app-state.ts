@@ -55,7 +55,7 @@ interface AppState {
   fleetActiveTab: string;
   
   // Actions
-  login: (role: UserRole) => void;
+  login: (role: UserRole, name: string) => void;
   logout: () => void;
   setName: (name: string) => void;
   setCity: (city: string) => void;
@@ -72,8 +72,8 @@ export const useAppState = create<AppState>()(
   persist(
     (set) => ({
       role: "Farmer",
-      isAuthenticated: true,
-      name: "Aman Kumar",
+      isAuthenticated: false,
+      name: "Guest User",
       city: "Bengaluru",
       state: "Karnataka",
       profileImage: null,
@@ -83,8 +83,8 @@ export const useAppState = create<AppState>()(
       fleetActiveTab: "bookings",
       notifications: [],
       
-      login: (role) => set({ role, isAuthenticated: true }),
-      logout: () => set({ role: null, isAuthenticated: false }),
+      login: (role, name) => set({ role, name, isAuthenticated: true }),
+      logout: () => set({ role: null, isAuthenticated: false, name: "Guest User" }),
       setName: (name) => set({ name }),
       setCity: (city) => set({ city }),
       setState: (state) => set({ state }),
@@ -109,7 +109,7 @@ export const useAppState = create<AppState>()(
       })),
     }),
     {
-      name: "kisan-mitra-storage-v5",
+      name: "kisan-mitra-storage-v6",
     }
   )
 );

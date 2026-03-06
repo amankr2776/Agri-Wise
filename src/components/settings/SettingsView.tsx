@@ -13,7 +13,8 @@ import {
   Palette,
   Loader2,
   CheckCircle2,
-  Globe
+  Globe,
+  Fingerprint
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -26,6 +27,7 @@ import { useAppState, AppLanguage, AppTheme } from "@/lib/app-state";
 import { useToast } from "@/hooks/use-toast";
 import { useTranslation } from "@/hooks/use-translation";
 import { cn } from "@/lib/utils";
+import { useUser } from "@/firebase";
 
 const LANGUAGES: AppLanguage[] = [
   "English", "Hindi", "Bhojpuri", "Punjabi", "Haryanvi", 
@@ -42,8 +44,9 @@ const THEMES = [
 export function SettingsView() {
   const { t } = useTranslation();
   const { toast } = useToast();
+  const { user } = useUser();
   const { 
-    language, setLanguage, langCode, theme, setTheme, name, setName, city, setCity, profileImage, setProfileImage 
+    role, language, setLanguage, langCode, theme, setTheme, name, setName, city, setCity, profileImage, setProfileImage 
   } = useAppState();
   
   const [localName, setLocalName] = useState(name);
@@ -72,6 +75,8 @@ export function SettingsView() {
     }
   };
 
+  const gridId = user?.uid || "KM-UNASSIGNED-NODE";
+
   return (
     <div className="max-w-5xl mx-auto space-y-12 animate-in fade-in slide-in-from-bottom-4">
       <header className="flex items-center gap-6">
@@ -98,11 +103,11 @@ export function SettingsView() {
           </div>
           <div className="space-y-2">
             <h3 className="text-2xl font-black">{name}</h3>
-            <p className="text-xs font-black uppercase tracking-widest text-muted-foreground">{city} Sector</p>
+            <p className="text-xs font-black uppercase tracking-widest text-muted-foreground">{role} • {city} Sector</p>
           </div>
           <div className="pt-6 border-t w-full flex flex-col gap-3">
-            <Badge variant="outline" className="rounded-full px-6 py-2 border-primary/20 text-primary font-black uppercase tracking-widest text-[10px]">
-              Verified Agricultural ID
+            <Badge variant="outline" className="rounded-full px-6 py-2 border-primary/20 text-primary font-black uppercase tracking-widest text-[9px] flex items-center gap-2 justify-center">
+              <Fingerprint className="h-3 w-3" /> Grid ID: {gridId.substring(0, 12)}...
             </Badge>
             <div className="flex items-center justify-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest">
               <Globe className="h-3 w-3" /> Bhashini Node: {langCode}
@@ -124,6 +129,12 @@ export function SettingsView() {
                 <div className="space-y-2">
                   <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest ml-4">{t("city")}</Label>
                   <Input value={localCity} onChange={(e) => setLocalCity(e.target.value)} className="h-14 rounded-2xl bg-muted/30 border-none font-black text-lg px-6 focus-visible:ring-primary" />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest ml-4">National Agricultural ID</Label>
+                <div className="p-4 rounded-xl bg-muted/30 font-mono text-xs break-all border border-dashed text-muted-foreground">
+                  {gridId}
                 </div>
               </div>
             </div>

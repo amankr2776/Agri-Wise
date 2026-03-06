@@ -1,3 +1,4 @@
+
 'use client';
 
 import React from "react";
@@ -25,6 +26,7 @@ export default function LoginPage() {
     { 
       id: "Farmer" as UserRole, 
       label: "Kisan (Farmer)", 
+      defaultName: "Rajesh Kumar",
       desc: "Access crop diagnostics, Mandi prices, and community advice.", 
       icon: Leaf, 
       color: "bg-green-500",
@@ -33,6 +35,7 @@ export default function LoginPage() {
     { 
       id: "Expert" as UserRole, 
       label: "Agri-Scientist", 
+      defaultName: "Dr. Aman Kumar",
       desc: "Verify traditional remedies and professional protocols.", 
       icon: FlaskConical, 
       color: "bg-blue-500",
@@ -41,6 +44,7 @@ export default function LoginPage() {
     { 
       id: "Logistics" as UserRole, 
       label: "Logistics Provider", 
+      defaultName: "Simran Singh Transport",
       desc: "Manage your transport fleet and Mandi-Link deliveries.", 
       icon: Truck, 
       color: "bg-slate-700",
@@ -48,11 +52,11 @@ export default function LoginPage() {
     },
   ];
 
-  const handleRoleSelection = (roleId: UserRole) => {
+  const handleRoleSelection = (roleId: UserRole, defaultName: string) => {
     if (auth) {
       initiateAnonymousSignIn(auth);
     }
-    login(roleId);
+    login(roleId, defaultName);
     router.push("/");
   };
 
@@ -78,7 +82,7 @@ export default function LoginPage() {
           {roles.map((role) => (
             <Card 
               key={role.id}
-              onClick={() => handleRoleSelection(role.id)}
+              onClick={() => handleRoleSelection(role.id, role.defaultName)}
               className="group cursor-pointer border-none shadow-xl hover:shadow-2xl hover:scale-[1.02] transition-all duration-300 rounded-[2.5rem] bg-white overflow-hidden text-left"
             >
               <CardContent className="p-8 flex flex-col items-start gap-6">

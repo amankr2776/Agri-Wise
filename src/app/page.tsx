@@ -18,7 +18,8 @@ import {
   CheckCircle2,
   ShieldCheck,
   Zap,
-  Globe
+  Globe,
+  Fingerprint
 } from "lucide-react";
 import { 
   SidebarProvider, 
@@ -44,7 +45,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useAppState } from "@/lib/app-state";
 import { useTranslation } from "@/hooks/use-translation";
 import { cn } from "@/lib/utils";
-import { useFirestore, useUser, useCollection, useMemoFirebase } from "@/firebase";
+import { useFirestore, useUser, useCollection, useMemoFirebase, useAuth } from "@/firebase";
 import { doc, collection, query, orderBy, limit } from "firebase/firestore";
 import { setDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 import { initializeMessaging } from "@/firebase/messaging";
@@ -63,6 +64,7 @@ import { MinistryIntelligence } from "@/components/gov/MinistryIntelligence";
 
 export default function KisanMitraApp() {
   const router = useRouter();
+  const auth = useAuth();
   const { t } = useTranslation();
   const firestore = useFirestore();
   const { user } = useUser();
@@ -119,6 +121,12 @@ export default function KisanMitraApp() {
     }
   }, [remoteNotifications, setNotifications]);
 
+  const handleLogout = async () => {
+    if (auth) await auth.signOut();
+    logout();
+    router.push("/login");
+  };
+
   if (!isAuthenticated || !role) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="animate-spin text-primary" /></div>;
 
   const renderSection = () => {
@@ -160,6 +168,7 @@ export default function KisanMitraApp() {
   ];
 
   const unreadCount = notifications.filter(n => !n.isRead).length;
+  const shortUid = user?.uid?.substring(0, 8).toUpperCase() || "KM-NODE";
 
   return (
     <SidebarProvider>
@@ -170,7 +179,10 @@ export default function KisanMitraApp() {
               <div className="h-10 w-10 bg-primary rounded-xl flex items-center justify-center text-white shadow-lg shadow-primary/20">
                 <Leaf className="h-6 w-6" />
               </div>
-              <span className="font-black text-xl tracking-tight group-data-[collapsible=icon]:hidden">KisanMitra</span>
+              <div className="flex flex-col group-data-[collapsible=icon]:hidden">
+                <span className="font-black text-lg leading-none tracking-tight">KisanMitra</span>
+                <span className="text-[8px] font-bold text-muted-foreground uppercase tracking-widest mt-1">Grid Node: {shortUid}</span>
+              </div>
             </div>
           </SidebarHeader>
           <SidebarContent className="py-4">
@@ -194,7 +206,7 @@ export default function KisanMitraApp() {
             <SidebarMenuButton onClick={() => setActiveSection("settings")} className="h-12 rounded-xl">
               <Settings className="h-5 w-5" /> <span className="font-bold">{t("settings")}</span>
             </SidebarMenuButton>
-            <SidebarMenuButton onClick={() => logout()} className="h-12 text-destructive rounded-xl">
+            <SidebarMenuButton onClick={handleLogout} className="h-12 text-destructive rounded-xl">
               <LogOut className="h-5 w-5" /> <span className="font-bold">{t("logout")}</span>
             </SidebarMenuButton>
           </SidebarFooter>
@@ -205,8 +217,8 @@ export default function KisanMitraApp() {
             <div className="flex items-center gap-4">
               <SidebarTrigger className="md:hidden" />
               <div className="hidden md:flex items-center gap-3">
-                <ShieldCheck className="h-4 w-4 text-primary" />
-                <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">{role} Intelligence Hub</h2>
+                <Fingerprint className="h-4 w-4 text-primary" />
+                <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Profile: {name} | {role} HUB | ID: {shortUid}</h2>
               </div>
             </div>
             <div className="flex items-center gap-6">
