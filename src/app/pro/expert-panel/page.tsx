@@ -2,18 +2,18 @@
 
 import React from "react";
 import { ExpertVerificationPortal } from "@/components/experts/ExpertVerificationPortal";
-import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { LogOut, FlaskConical, ShieldCheck } from "lucide-react";
 import { handleProfessionalLogout } from "@/app/actions/auth";
 import { useRouter } from "next/navigation";
 import { useAppState } from "@/lib/app-state";
+import { withRoleAuth } from "@/lib/hoc/with-role-auth";
 
 /**
  * Locked Expert Panel Page
- * Only accessible via /pro gateway
+ * Uses withRoleAuth for strict component-level security.
  */
-export default function ProExpertPanel() {
+function ProExpertPanel() {
   const router = useRouter();
   const { logout } = useAppState();
 
@@ -54,3 +54,5 @@ export default function ProExpertPanel() {
     </div>
   );
 }
+
+export default withRoleAuth(ProExpertPanel, 'Expert');

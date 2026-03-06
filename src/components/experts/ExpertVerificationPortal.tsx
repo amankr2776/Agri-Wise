@@ -80,7 +80,6 @@ export function ExpertVerificationPortal() {
   // Modal States
   const [selectedReviewCrop, setSelectedReviewCrop] = useState<any>(null);
   const [isAddCropOpen, setIsAddCropOpen] = useState(false);
-  const [cropToDelete, setCropToDelete] = useState<string | null>(null);
 
   // Editable fields for expert modification
   const [editName, setEditName] = useState("");
@@ -110,7 +109,7 @@ export function ExpertVerificationPortal() {
     );
   }, [inventory, searchQuery]);
 
-  // Sync edit state
+  // Sync edit state when a crop is selected for detailed review
   useEffect(() => {
     if (selectedReviewCrop) {
       setEditName(selectedReviewCrop.name || "");
@@ -130,15 +129,20 @@ export function ExpertVerificationPortal() {
     }
   };
 
-  const handleSaveProtocol = async (isNew = false) => {
+  /**
+   * Refactored Certification Logic
+   * Handles both "Quick Certify" and "Detailed Audit" without race conditions.
+   */
+  const handleCertifyProtocol = async (cropData: any, isNew = false) => {
     if (!firestore || !user) return;
 
-    const data = {
-      name: editName,
-      diseaseName: editDisease,
-      chemicalCure: editChemicalCure,
-      desiNuskha: editDesiNuskha,
-      imageUrl: editImageUrl,
+    // Use current state for manual audits, or provided crop data for quick actions
+    const finalData = {
+      name: isNew || !selectedReviewCrop ? cropData.name : editName,
+      diseaseName: isNew || !selectedReviewCrop ? cropData.diseaseName : editDisease,
+      chemicalCure: isNew || !selectedReviewCrop ? cropData.chemicalCure : editChemicalCure,
+      desiNuskha: isNew || !selectedReviewCrop ? cropData.desiNuskha : editDesiNuskha,
+      imageUrl: isNew || !selectedReviewCrop ? cropData.imageUrl : editImageUrl,
       isCertified: true,
       verifiedBy: user.uid,
       verifiedByName: expertName,
@@ -148,18 +152,22 @@ export function ExpertVerificationPortal() {
     };
 
     if (isNew) {
-      addDocumentNonBlocking(collection(firestore, "crops"), { ...data, category: "Plant", createdAt: new Date().toISOString() });
+      addDocumentNonBlocking(collection(firestore, "crops"), { ...finalData, category: "Plant", createdAt: new Date().toISOString() });
       setIsAddCropOpen(false);
       toast({ title: "Protocol Added", description: "New crop cure published to the national library." });
     } else {
-      const docRef = doc(firestore, "crops", selectedReviewCrop.id);
-      updateDocumentNonBlocking(docRef, data);
+      const targetId = cropData?.id || selectedReviewCrop?.id;
+      if (!targetId) return;
+
+      const docRef = doc(firestore, "crops", targetId);
+      updateDocumentNonBlocking(docRef, finalData);
       
-      // Notify reporting farmer if this was an audit
-      if (selectedReviewCrop.reportedBy && !selectedReviewCrop.isCertified) {
-        dispatchGridNotification(firestore, selectedReviewCrop.reportedBy, {
+      // Notify reporting farmer if this was an audit request
+      const recipientId = cropData?.reportedBy || selectedReviewCrop?.reportedBy;
+      if (recipientId) {
+        dispatchGridNotification(firestore, recipientId, {
           title: "Scientific Protocol Verified",
-          message: `Expert ${expertName} has certified the cure for ${editName}. Check your library!`,
+          message: `Expert ${expertName} has certified the cure for ${finalData.name}. Check your library!`,
           type: 'update'
         });
       }
@@ -234,7 +242,7 @@ export function ExpertVerificationPortal() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {pendingCerts.map((cert) => (
-                <Card key={cert.id} className="border-none shadow-2xl bg-white rounded-[3rem] overflow-hidden flex flex-col hover:shadow-primary/10 transition-all group border-2 border-transparent hover:border-primary/20">
+                <Card key={cert.id} className="border-none shadow-2xl bg-white rounded-[3rem] overflow-hidden flex flex-col hover:shadow-primary/10 transition-all border-2 border-transparent hover:border-primary/20">
                   <div className="relative aspect-video">
                     <img src={cert.imageUrl || "https://picsum.photos/seed/agri/800/400"} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" alt={cert.name} />
                     <div className="absolute top-6 left-6">
@@ -256,7 +264,7 @@ export function ExpertVerificationPortal() {
                     <Button variant="outline" className="flex-1 h-14 rounded-2xl font-black gap-2 border-primary/20 text-primary hover:bg-primary/5" onClick={() => setSelectedReviewCrop(cert)}>
                       <Edit3 className="h-5 w-5" /> Audit
                     </Button>
-                    <Button className="flex-1 h-14 rounded-2xl font-black" onClick={() => { setSelectedReviewCrop(cert); handleSaveProtocol(); }}>Quick Certify</Button>
+                    <Button className="flex-1 h-14 rounded-2xl font-black" onClick={() => handleCertifyProtocol(cert)}>Quick Certify</Button>
                   </CardFooter>
                 </Card>
               ))}
@@ -314,7 +322,7 @@ export function ExpertVerificationPortal() {
                   </div>
 
                   <div className="flex-1 text-sm text-slate-500 font-medium italic border-l-2 pl-8 hidden lg:block">
-                    "{crop.chemicalCure.substring(0, 80)}..."
+                    "{crop.chemicalCure?.substring(0, 80)}..."
                   </div>
 
                   <div className="flex gap-3 shrink-0">
@@ -369,7 +377,6 @@ export function ExpertVerificationPortal() {
           
           <ScrollArea className="max-h-[70vh]">
             <div className="p-10 space-y-10">
-              {/* Image Replacement */}
               <div className="space-y-4">
                 <h4 className="text-[10px] font-black uppercase text-primary tracking-widest flex items-center gap-2">
                   <ImageIcon className="h-4 w-4" /> Botanical Evidence
@@ -384,7 +391,6 @@ export function ExpertVerificationPortal() {
                 </div>
               </div>
 
-              {/* Core Details */}
               <div className="grid grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <Label className="text-[10px] font-black uppercase text-muted-foreground ml-2">Crop Name</Label>
@@ -396,7 +402,6 @@ export function ExpertVerificationPortal() {
                 </div>
               </div>
 
-              {/* Remedies */}
               <div className="space-y-6">
                 <div className="space-y-2">
                   <Label className="text-[10px] font-black uppercase text-muted-foreground ml-2">Professional Neutralizer ($LaTeX$ supported)</Label>
@@ -408,7 +413,6 @@ export function ExpertVerificationPortal() {
                 </div>
               </div>
 
-              {/* AI Logic Trace (If available) */}
               {selectedReviewCrop?.aiReasoning && (
                 <div className="p-6 rounded-[2rem] bg-amber-50 border-2 border-amber-100 space-y-3">
                   <h4 className="text-[10px] font-black uppercase text-amber-600 tracking-widest flex items-center gap-2">
@@ -424,7 +428,7 @@ export function ExpertVerificationPortal() {
 
           <DialogFooter className="p-10 pt-0 flex gap-4">
             <Button variant="outline" className="flex-1 rounded-xl h-14 font-black" onClick={() => setSelectedReviewCrop(null)}>Discard</Button>
-            <Button className="flex-1 rounded-xl h-14 font-black gap-2 shadow-xl shadow-primary/20" onClick={() => handleSaveProtocol(false)}>
+            <Button className="flex-1 rounded-xl h-14 font-black gap-2 shadow-xl shadow-primary/20" onClick={() => handleCertifyProtocol(null)}>
               <Save className="h-5 w-5" /> Certify Protocol
             </Button>
           </DialogFooter>
@@ -458,7 +462,9 @@ export function ExpertVerificationPortal() {
               <Textarea value={editDesiNuskha} onChange={(e) => setEditDesiNuskha(e.target.value)} placeholder="Organic/Traditional alternative..." className="rounded-xl bg-muted/30 border-none font-medium" />
             </div>
             <DialogFooter>
-              <Button className="w-full h-14 rounded-2xl font-black text-lg" onClick={() => handleSaveProtocol(true)}>Publish to Grid</Button>
+              <Button className="w-full h-14 rounded-2xl font-black text-lg" onClick={() => handleCertifyProtocol({ 
+                name: editName, diseaseName: editDisease, chemicalCure: editChemicalCure, desiNuskha: editDesiNuskha, imageUrl: editImageUrl || "https://picsum.photos/seed/new/800/400"
+              }, true)}>Publish to Grid</Button>
             </DialogFooter>
           </div>
         </DialogContent>
