@@ -25,7 +25,8 @@ import {
   RefreshCw,
   ShieldCheck,
   Microscope,
-  Radio
+  Radio,
+  BookOpen
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -44,6 +45,7 @@ import { cn } from "@/lib/utils";
 import { motion, animate } from "framer-motion";
 import { useFirestore, useCollection, useMemoFirebase, useUser } from "@/firebase";
 import { collection, query, where } from "firebase/firestore";
+import { FarmerRulebook } from "./FarmerRulebook";
 
 interface DashboardHomeProps {
   onNavigate: (section: string) => void;
@@ -244,21 +246,29 @@ export function DashboardHome({ onNavigate }: DashboardHomeProps) {
         <div className="absolute top-0 right-0 p-10 opacity-10">
           {(role === 'Expert' || role === 'Authority') ? <Microscope className="h-64 w-64 rotate-12" /> : <Leaf className="h-64 w-64 rotate-12" />}
         </div>
-        <div className="relative z-10 space-y-6">
-          <div className="flex flex-wrap gap-3">
-            <Badge className="bg-white/20 text-white border-none px-4 py-1.5 font-bold uppercase tracking-widest text-[10px]">{currentDate || "Loading Date..."}</Badge>
-            <Badge className="bg-white/10 text-white border-none px-4 py-1.5 font-bold uppercase tracking-widest text-[10px] flex items-center gap-2">
-              <Clock className="h-3 w-3" /> {t("last_updated")}: {currentTime || "--:--"}
-            </Badge>
+        <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-end gap-8">
+          <div className="space-y-6">
+            <div className="flex flex-wrap gap-3">
+              <Badge className="bg-white/20 text-white border-none px-4 py-1.5 font-bold uppercase tracking-widest text-[10px]">{currentDate || "Loading Date..."}</Badge>
+              <Badge className="bg-white/10 text-white border-none px-4 py-1.5 font-bold uppercase tracking-widest text-[10px] flex items-center gap-2">
+                <Clock className="h-3 w-3" /> {t("last_updated")}: {currentTime || "--:--"}
+              </Badge>
+            </div>
+            <div className="space-y-2">
+              <h1 className="text-5xl md:text-7xl font-black tracking-tighter">
+                {role === 'Expert' ? 'Scientist' : role === 'Authority' ? 'Authority' : t("welcome")}, {name} Ji!
+              </h1>
+              <p className="text-xl md:text-2xl text-white/80 font-medium italic">
+                {role === 'Expert' ? 'Surveillance grid active. Monitoring regional pathogens.' : `Your professional agricultural grid in ${city} is active.`}
+              </p>
+            </div>
           </div>
-          <div className="space-y-2">
-            <h1 className="text-5xl md:text-7xl font-black tracking-tighter">
-              {role === 'Expert' ? 'Scientist' : role === 'Authority' ? 'Authority' : t("welcome")}, {name} Ji!
-            </h1>
-            <p className="text-xl md:text-2xl text-white/80 font-medium italic">
-              {role === 'Expert' ? 'Surveillance grid active. Monitoring regional pathogens.' : `Your professional agricultural grid in ${city} is active.`}
-            </p>
-          </div>
+          
+          {role === 'Farmer' && (
+            <div className="pb-4">
+              <FarmerRulebook />
+            </div>
+          )}
         </div>
       </motion.div>
 

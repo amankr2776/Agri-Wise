@@ -20,7 +20,8 @@ import {
   Zap,
   Globe,
   Fingerprint,
-  Lock
+  Lock,
+  ChevronDown
 } from "lucide-react";
 import { 
   SidebarProvider, 
@@ -42,8 +43,14 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { 
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { useAppState } from "@/lib/app-state";
+import { useAppState, AppLanguage } from "@/lib/app-state";
 import { useTranslation } from "@/hooks/use-translation";
 import { cn } from "@/lib/utils";
 import { useFirestore, useUser, useCollection, useMemoFirebase, useAuth } from "@/firebase";
@@ -64,6 +71,12 @@ import { FleetManagement } from "@/components/logistics/FleetManagement";
 import { SettingsView } from "@/components/settings/SettingsView";
 import { MinistryIntelligence } from "@/components/gov/MinistryIntelligence";
 
+const LANGUAGES: AppLanguage[] = [
+  "English", "Hindi", "Bhojpuri", "Punjabi", "Haryanvi", 
+  "Bengali", "Marathi", "Rajasthani", "Gujarati", "Pahadi", 
+  "Kannada", "Tamil", "Telugu", "Malayalam", "Oriya", "Magahi"
+];
+
 export default function KisanMitraApp() {
   const router = useRouter();
   const auth = useAuth();
@@ -80,7 +93,9 @@ export default function KisanMitraApp() {
     name,
     city,
     profileImage,
-    login
+    login,
+    language,
+    setLanguage
   } = useAppState();
   const [activeSection, setActiveSection] = useState("dashboard");
 
@@ -209,7 +224,37 @@ export default function KisanMitraApp() {
                 <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Profile: {name} | Public Node: {shortUid}</h2>
               </div>
             </div>
-            <div className="flex items-center gap-6">
+            <div className="flex items-center gap-4 md:gap-6">
+              {/* Language Switcher Dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" className="rounded-full h-10 px-4 gap-2 font-black text-[10px] uppercase bg-muted/30 hover:bg-muted border border-border/50">
+                    <Globe className="h-4 w-4 text-primary" />
+                    <span className="hidden sm:inline">{language}</span>
+                    <ChevronDown className="h-3 w-3 opacity-50" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-48 rounded-2xl p-2 shadow-2xl border-none">
+                  <div className="p-2 border-b mb-2">
+                    <p className="text-[8px] font-black uppercase text-muted-foreground tracking-widest">Select Grid Language</p>
+                  </div>
+                  <ScrollArea className="h-64">
+                    {LANGUAGES.map((lang) => (
+                      <DropdownMenuItem 
+                        key={lang} 
+                        onClick={() => setLanguage(lang)}
+                        className={cn(
+                          "rounded-xl font-bold text-xs p-3 my-1",
+                          language === lang ? "bg-primary text-white" : "hover:bg-muted"
+                        )}
+                      >
+                        {lang}
+                      </DropdownMenuItem>
+                    ))}
+                  </ScrollArea>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
               <Popover onOpenChange={(open) => open && markNotificationsAsRead()}>
                 <PopoverTrigger asChild>
                   <Button variant="ghost" size="icon" className="relative h-10 w-10 rounded-full bg-muted/50 hover:bg-muted">
