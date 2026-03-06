@@ -37,6 +37,7 @@ import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { useAppState } from "@/lib/app-state";
 import { motion, AnimatePresence } from "framer-motion";
+import { getRegistryMatch } from "@/lib/botanical-registry";
 
 const LANG_MAP: Record<string, string> = {
   "English": "en-IN",
@@ -141,7 +142,27 @@ export function DiagnosticTool() {
     setLoading(true);
     setIsSentToExpert(false);
     setResult(null);
+
+    // 1. Instant Registry Lookup (Offline Ready)
+    const match = getRegistryMatch(cropType, symptoms);
+    if (match) {
+      const registryResult: FarmerCropPestDiagnosisOutput = {
+        pathogenIdentification: match.disease,
+        diagnosis: `The National Grid detects ${match.disease} in your ${match.crop}. This identification is verified and accurate.`,
+        scientificReasoning: `Registry Match Found: Symptoms "${match.symptoms}" correspond exactly to verified biological markers for ${match.disease}.`,
+        suggestedChemicalRemedies: [match.chemicalCure],
+        suggestedTraditionalRemedies: [match.traditionalRemedy],
+        isBotanicallyValid: true,
+        confidenceScore: 1.0
+      };
+      
+      setResult(registryResult);
+      speakResult(registryResult);
+      setLoading(false);
+      return;
+    }
     
+    // 2. AI Multimodal Analysis (Network Dependent)
     try {
       const res = await diagnoseCropPest({
         cropType: cropType || "Unspecified Crop",
@@ -450,6 +471,9 @@ export function DiagnosticTool() {
                         <p className="leading-relaxed">Precision alert: The identification is currently based on broad-spectrum indicators. For a certified protocol, please request expert validation below.</p>
                       </div>
                     )}
+                    <div className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">
+                      {result.confidenceScore === 1.0 && <Badge className="bg-green-500/10 text-green-600 border-none px-3 py-1">Registry Verified</Badge>}
+                    </div>
                     <Button 
                       onClick={handleSendToExpert}
                       disabled={isSentToExpert}
