@@ -16,7 +16,8 @@ import {
   BrainCircuit,
   Info,
   Save,
-  Edit3
+  Edit3,
+  Bot
 } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -211,6 +212,7 @@ export function ExpertVerificationPortal() {
           
           <ScrollArea className="max-h-[60vh] pr-4">
             <div className="space-y-8 pt-6">
+              {/* AI Logic Trace */}
               <div className="p-6 rounded-3xl bg-muted/30 border space-y-4">
                 <h4 className="text-[10px] font-black uppercase text-primary tracking-widest flex items-center gap-2">
                   <Info className="h-4 w-4" /> AI Scientific Logic Trace
@@ -220,9 +222,27 @@ export function ExpertVerificationPortal() {
                 </p>
               </div>
 
+              {/* AI Initial Recommendations (Read-Only) */}
+              <div className="space-y-4">
+                <h4 className="text-[10px] font-black uppercase text-amber-600 tracking-widest flex items-center gap-2">
+                  <Bot className="h-4 w-4" /> AI Proposed Solutions (Original)
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="p-4 rounded-2xl bg-amber-50 border border-amber-100 space-y-1">
+                    <p className="text-[8px] font-black text-amber-600 uppercase">AI Neutralizer</p>
+                    <p className="text-xs font-bold text-slate-700">"{selectedReviewCrop?.chemicalCure || "None suggested"}"</p>
+                  </div>
+                  <div className="p-4 rounded-2xl bg-amber-50 border border-amber-100 space-y-1">
+                    <p className="text-[8px] font-black text-amber-600 uppercase">AI Heritage Wisdom</p>
+                    <p className="text-xs font-bold text-slate-700 italic">"{selectedReviewCrop?.desiNuskha || "None suggested"}"</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Expert Editable Fields */}
               <div className="space-y-6">
                 <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase text-muted-foreground ml-2">Professional Neutralizer (Editable)</Label>
+                  <Label className="text-[10px] font-black uppercase text-muted-foreground ml-2">Professional Neutralizer (Expert Override)</Label>
                   <Textarea 
                     value={editChemicalCure}
                     onChange={(e) => setEditChemicalCure(e.target.value)}
@@ -232,7 +252,7 @@ export function ExpertVerificationPortal() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase text-muted-foreground ml-2">Heritage Wisdom / Desi Nuskha (Editable)</Label>
+                  <Label className="text-[10px] font-black uppercase text-muted-foreground ml-2">Heritage Wisdom / Desi Nuskha (Expert Override)</Label>
                   <Textarea 
                     value={editDesiNuskha}
                     onChange={(e) => setEditDesiNuskha(e.target.value)}
