@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useEffect } from "react";
@@ -16,7 +15,8 @@ import {
   Globe,
   Fingerprint,
   Lock,
-  ChevronDown
+  ChevronDown,
+  LogOut
 } from "lucide-react";
 import { 
   SidebarProvider, 
@@ -74,6 +74,7 @@ export default function KisanMitraApp() {
   const auth = useAuth();
   const { 
     role, 
+    isAuthenticated,
     notifications, 
     setNotifications,
     setActiveAlert,
@@ -81,9 +82,17 @@ export default function KisanMitraApp() {
     name,
     language,
     setLanguage,
-    profileImage
+    profileImage,
+    logout
   } = useAppState();
   const [activeSection, setActiveSection] = useState("dashboard");
+
+  // Redirect to role selector if not authenticated
+  useEffect(() => {
+    if (!isAuthenticated) {
+      router.replace("/login");
+    }
+  }, [isAuthenticated, router]);
 
   // Initialize Grid Identity (Ensure auth.uid exists for security rules)
   useEffect(() => {
@@ -94,7 +103,7 @@ export default function KisanMitraApp() {
 
   // Listen for real-time notifications
   useEffect(() => {
-    if (!firestore || !auth.currentUser) return;
+    if (!firestore || !auth.currentUser || !isAuthenticated) return;
 
     const notifQuery = query(
       collection(firestore, "users", auth.currentUser.uid, "notifications"), 
@@ -120,7 +129,9 @@ export default function KisanMitraApp() {
     });
 
     return () => unsubscribe();
-  }, [firestore, auth.currentUser, setNotifications, setActiveAlert]);
+  }, [firestore, auth.currentUser, setNotifications, setActiveAlert, isAuthenticated]);
+
+  if (!isAuthenticated) return null;
 
   const renderSection = () => {
     switch (activeSection) {
@@ -179,8 +190,8 @@ export default function KisanMitraApp() {
             </SidebarMenu>
           </SidebarContent>
           <SidebarFooter className="border-t p-4 space-y-2">
-            <SidebarMenuButton onClick={() => router.push('/pro/login')} className="h-12 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-900 border border-slate-200">
-              <Lock className="h-5 w-5" /> <span className="font-bold">Pro Portal</span>
+            <SidebarMenuButton onClick={() => logout()} className="h-12 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-900 border border-slate-200">
+              <LogOut className="h-5 w-5" /> <span className="font-bold">Switch Role</span>
             </SidebarMenuButton>
             <SidebarMenuButton onClick={() => setActiveSection("settings")} className="h-12 rounded-xl">
               <Settings className="h-5 w-5" /> <span className="font-bold">{t("settings")}</span>

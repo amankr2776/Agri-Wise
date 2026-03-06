@@ -1,4 +1,3 @@
-
 "use client";
 
 import { create } from "zustand";
@@ -74,7 +73,7 @@ export const useAppState = create<AppState>()(
   persist(
     (set) => ({
       role: "Farmer",
-      isAuthenticated: true, // Default to true for Open Grid access
+      isAuthenticated: false, // Start unauthenticated to force role selection
       name: "Rajesh Kumar",
       city: "Bengaluru",
       state: "Karnataka",
@@ -87,7 +86,7 @@ export const useAppState = create<AppState>()(
       activeAlert: null,
       
       login: (role, name) => set({ role, name, isAuthenticated: true }),
-      logout: () => set({ role: "Farmer", isAuthenticated: true, name: "Rajesh Kumar" }), // Reset but stay "logged in"
+      logout: () => set({ isAuthenticated: false, role: "Farmer" }),
       setName: (name) => set({ name }),
       setCity: (city) => set({ city }),
       setState: (state) => set({ state }),
