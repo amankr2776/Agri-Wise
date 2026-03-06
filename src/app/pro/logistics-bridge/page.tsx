@@ -1,11 +1,10 @@
-
 'use client';
 
 import React from "react";
 import { FleetManagement } from "@/components/logistics/FleetManagement";
 import { Button } from "@/components/ui/button";
 import { LogOut, Truck, Globe } from "lucide-react";
-import { handleProLogout } from "@/app/actions/auth";
+import { handleProfessionalLogout } from "@/app/actions/auth";
 import { useRouter } from "next/navigation";
 import { useAppState } from "@/lib/app-state";
 
@@ -18,7 +17,7 @@ export default function ProLogisticsBridge() {
   const { logout } = useAppState();
 
   const handleLogout = async () => {
-    await handleProLogout();
+    await handleProfessionalLogout();
     logout();
     router.push('/pro/login');
   };

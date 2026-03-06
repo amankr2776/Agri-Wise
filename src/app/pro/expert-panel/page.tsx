@@ -1,4 +1,3 @@
-
 'use client';
 
 import React from "react";
@@ -6,7 +5,7 @@ import { ExpertVerificationPortal } from "@/components/experts/ExpertVerificatio
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { LogOut, FlaskConical, ShieldCheck } from "lucide-react";
-import { handleProLogout } from "@/app/actions/auth";
+import { handleProfessionalLogout } from "@/app/actions/auth";
 import { useRouter } from "next/navigation";
 import { useAppState } from "@/lib/app-state";
 
@@ -19,7 +18,7 @@ export default function ProExpertPanel() {
   const { logout } = useAppState();
 
   const handleLogout = async () => {
-    await handleProLogout();
+    await handleProfessionalLogout();
     logout();
     router.push('/pro/login');
   };
