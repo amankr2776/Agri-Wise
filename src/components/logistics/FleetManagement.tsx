@@ -86,6 +86,18 @@ export function FleetManagement() {
   const [isSeeding, setIsSeeding] = useState(false);
   const [viewingLogsFor, setViewingLogsFor] = useState<any>(null);
 
+  // Edit Vehicle State
+  const [selectedVehicleForEdit, setSelectedVehicleForEdit] = useState<any>(null);
+  const [editPrice, setEditPrice] = useState<number>(0);
+  const [editContact, setEditContact] = useState<string>("");
+
+  useEffect(() => {
+    if (selectedVehicleForEdit) {
+      setEditPrice(selectedVehicleForEdit.pricePerKm);
+      setEditContact(selectedVehicleForEdit.contact || "");
+    }
+  }, [selectedVehicleForEdit]);
+
   // Fetch Agency Profile
   const userRef = useMemoFirebase(() => {
     if (!firestore || !user) return null;
@@ -198,12 +210,22 @@ export function FleetManagement() {
       id: user.uid,
       phoneNumber: formData.get("contact"),
       basePrice: Number(formData.get("basePrice")),
-      // Locked fields for this specific demo requirement
       role: "Logistics"
     }, { merge: true });
 
     setIsUpdatingProfile(false);
     toast({ title: "Profile Updated", description: "Your price and contact details have been synchronized." });
+  };
+
+  const handleSaveVehicleEdit = () => {
+    if (!firestore || !selectedVehicleForEdit) return;
+    const docRef = doc(firestore, "vehicles", selectedVehicleForEdit.id);
+    updateDocumentNonBlocking(docRef, {
+      pricePerKm: Number(editPrice),
+      contact: editContact
+    });
+    setSelectedVehicleForEdit(null);
+    toast({ title: "Vehicle Updated", description: "Commercial intelligence synchronized with the grid." });
   };
 
   const getNextStatus = (current: string) => {
@@ -390,7 +412,11 @@ export function FleetManagement() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {myFleet.filter(v => v.status === "Ready").map((v) => (
-                <Card key={v.id} className="border-none shadow-xl rounded-[2.5rem] bg-white p-8 space-y-6 group hover:shadow-2xl transition-all">
+                <Card 
+                  key={v.id} 
+                  onClick={() => setSelectedVehicleForEdit(v)}
+                  className="border-none shadow-xl rounded-[2.5rem] bg-white p-8 space-y-6 group hover:shadow-2xl transition-all cursor-pointer hover:scale-[1.02] active:scale-95"
+                >
                   <div className="flex justify-between items-start">
                     <div className="h-14 w-14 bg-slate-100 rounded-2xl flex items-center justify-center text-slate-500 group-hover:bg-primary/10 group-hover:text-primary transition-colors">
                       <Truck className="h-8 w-8" />
@@ -403,13 +429,18 @@ export function FleetManagement() {
                     <p className="text-xs font-bold text-muted-foreground flex items-center gap-1 mt-2">
                       <MapPin className="h-3.5 w-3.5 text-primary" /> {v.city}, {v.state}
                     </p>
-                    <p className="text-[10px] font-black text-slate-400 mt-1">Contact: {v.contact}</p>
+                    <p className="text-[10px] font-black text-slate-400 mt-1 flex items-center gap-2">
+                      <Phone className="h-3 w-3" /> {v.contact}
+                    </p>
                   </div>
                   <div className="pt-4 border-t flex justify-between items-center">
                     <span className="text-[10px] font-black text-muted-foreground uppercase">Rate / KM</span>
                     <div className="h-10 px-4 rounded-xl flex items-center font-black text-primary bg-primary/5">
                       ₹{v.pricePerKm}/km
                     </div>
+                  </div>
+                  <div className="absolute top-2 right-8 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20 text-[8px] font-black uppercase">Click to Edit</Badge>
                   </div>
                 </Card>
               ))}
@@ -486,6 +517,63 @@ export function FleetManagement() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Edit Vehicle Intelligence Dialog */}
+      <Dialog open={!!selectedVehicleForEdit} onOpenChange={() => setSelectedVehicleForEdit(null)}>
+        <DialogContent className="rounded-[2.5rem] sm:max-w-md p-10 border-none shadow-2xl overflow-hidden">
+          <div className="absolute top-0 right-0 p-8 opacity-5">
+            <Zap className="h-32 w-32 rotate-12 text-primary" />
+          </div>
+          <DialogHeader className="relative z-10">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="h-12 w-12 bg-primary/10 rounded-2xl flex items-center justify-center text-primary">
+                <Truck className="h-6 w-6" />
+              </div>
+              <DialogTitle className="text-2xl font-black tracking-tight">Edit Vehicle Intelligence</DialogTitle>
+            </div>
+            <DialogDescription className="text-slate-500 font-medium italic">
+              Update commercial parameters for {selectedVehicleForEdit?.plateNumber}.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-6 pt-6 relative z-10">
+            <div className="space-y-2">
+              <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-2">Rate per Kilometer (₹)</Label>
+              <div className="relative">
+                <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-primary" />
+                <Input 
+                  type="number" 
+                  value={editPrice}
+                  onChange={(e) => setEditPrice(Number(e.target.value))}
+                  className="rounded-xl h-12 bg-muted/30 border-none pl-10 font-bold" 
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-2">Unit Contact Number</Label>
+              <div className="relative">
+                <Phone className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-primary" />
+                <Input 
+                  value={editContact}
+                  onChange={(e) => setEditContact(e.target.value)}
+                  className="rounded-xl h-12 bg-muted/30 border-none pl-10 font-bold" 
+                />
+              </div>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-primary/5 border border-primary/10">
+              <p className="text-[10px] font-black text-primary uppercase tracking-widest mb-1">Impact Analysis</p>
+              <p className="text-xs font-medium text-slate-600">This rate will be used for automated fare estimation in Mandi-Link.</p>
+            </div>
+          </div>
+
+          <DialogFooter className="mt-10 relative z-10 flex gap-3">
+            <Button variant="outline" className="flex-1 h-12 rounded-xl font-black" onClick={() => setSelectedVehicleForEdit(null)}>Discard</Button>
+            <Button className="flex-1 h-12 rounded-xl font-black" onClick={handleSaveVehicleEdit}>Sync Changes</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Maintenance Logs Dialog */}
       <Dialog open={!!viewingLogsFor} onOpenChange={() => setViewingLogsFor(null)}>
