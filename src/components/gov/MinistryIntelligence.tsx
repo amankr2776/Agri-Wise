@@ -51,6 +51,7 @@ import { addDocumentNonBlocking, updateDocumentNonBlocking } from "@/firebase/no
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAppState } from "@/lib/app-state";
 import { useToast } from "@/hooks/use-toast";
+import { motion, AnimatePresence } from "framer-motion";
 
 const STATES = [
   "Punjab", "Haryana", "Rajasthan", "Maharashtra", "Uttar Pradesh", "West Bengal", "Karnataka", "Madhya Pradesh"
@@ -76,10 +77,11 @@ export function MinistryIntelligence() {
   const { data: outbreaks, isLoading } = useCollection(outbreaksQuery);
 
   const stats = useMemo(() => {
-    if (!outbreaks) return { critical: 0, states: 0 };
+    if (!outbreaks) return { critical: 0, states: 0, totalArea: 0 };
     const critical = outbreaks.filter(o => o.severity === 'Critical').length;
     const states = new Set(outbreaks.map(o => o.state));
-    return { critical, states: states.size };
+    const totalArea = outbreaks.reduce((acc, curr) => acc + (Number(curr.areaHectares) || 0), 0);
+    return { critical, states: states.size, totalArea };
   }, [outbreaks]);
 
   const handleCreateReport = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -121,7 +123,6 @@ export function MinistryIntelligence() {
     toast({ title: "Alert Cleared", description: "Outbreak has been marked as contained and removed from surveillance." });
   };
 
-  // GRANT ACCESS TO EXPERTS AND AUTHORITIES
   if (role !== "Authority" && role !== "Expert") {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] text-center space-y-4">
@@ -160,19 +161,19 @@ export function MinistryIntelligence() {
         <Dialog open={isReportDialogOpen} onOpenChange={setIsReportDialogOpen}>
           <DialogTrigger asChild>
             <Button className="rounded-2xl h-14 px-8 font-black text-lg shadow-xl shadow-primary/20 bg-primary hover:bg-primary/90">
-              <Plus className="h-6 w-6 mr-2" /> New Bio-Security Alert
+              <Plus className="h-6 w-6 mr-2" /> Issue Crisis Alert
             </Button>
           </DialogTrigger>
           <DialogContent className="rounded-[2.5rem] sm:max-w-[600px] p-10">
             <DialogHeader>
-              <DialogTitle className="text-3xl font-black tracking-tight">Issue Crisis Alert</DialogTitle>
-              <DialogDescription className="text-muted-foreground font-medium italic">Deploy regional containment protocols for pest or disease outbreaks.</DialogDescription>
+              <DialogTitle className="text-3xl font-black tracking-tight">Deploy Containment Protocol</DialogTitle>
+              <DialogDescription className="text-muted-foreground font-medium italic">Broadcast official directives to regional hubs for vector containment.</DialogDescription>
             </DialogHeader>
             <form onSubmit={handleCreateReport} className="space-y-6 pt-6">
               <div className="grid grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <Label className="text-[10px] font-black uppercase text-muted-foreground ml-2">Pathogen / Pest Name</Label>
-                  <Input name="pestName" placeholder="e.g. Locust Swarm" required className="h-12 rounded-xl bg-muted/30 border-none font-bold" />
+                  <Input name="pestName" placeholder="e.g. Wheat Rust" required className="h-12 rounded-xl bg-muted/30 border-none font-bold" />
                 </div>
                 <div className="space-y-2">
                   <Label className="text-[10px] font-black uppercase text-muted-foreground ml-2">Affected State</Label>
@@ -202,18 +203,16 @@ export function MinistryIntelligence() {
                 </div>
                 <div className="space-y-2">
                   <Label className="text-[10px] font-black uppercase text-muted-foreground ml-2">Movement Vector</Label>
-                  <Input name="vector" placeholder="e.g. North-West towards HR" className="h-12 rounded-xl bg-muted/30 border-none font-bold" />
+                  <Input name="vector" placeholder="e.g. North-West" required className="h-12 rounded-xl bg-muted/30 border-none font-bold" />
                 </div>
               </div>
               <div className="space-y-2">
                 <Label className="text-[10px] font-black uppercase text-muted-foreground ml-2">Containment Strategy Directive</Label>
-                <Textarea name="strategy" placeholder="Enter official directive for regional hubs..." className="rounded-xl bg-muted/30 border-none min-h-[100px] font-medium" />
+                <Textarea name="strategy" placeholder="Action: Strategic district-wide fungicide application required..." required className="rounded-xl bg-muted/30 border-none min-h-[100px] font-medium" />
               </div>
-              <div className="grid grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase text-muted-foreground ml-2">Affected Area (Ha)</Label>
-                  <Input name="area" type="number" placeholder="Approx Hectares" className="h-12 rounded-xl bg-muted/30 border-none font-bold" />
-                </div>
+              <div className="space-y-2">
+                <Label className="text-[10px] font-black uppercase text-muted-foreground ml-2">Affected Area (Ha)</Label>
+                <Input name="area" type="number" placeholder="Approx Hectares" required className="h-12 rounded-xl bg-muted/30 border-none font-bold" />
               </div>
               <DialogFooter>
                 <Button type="submit" disabled={isSubmitting} className="w-full h-14 rounded-2xl font-black text-lg">
@@ -233,9 +232,9 @@ export function MinistryIntelligence() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-4xl font-black text-primary mb-2">58.4%</div>
-            <Progress value={58.4} className="h-2 bg-primary/20" />
-            <p className="text-[10px] text-muted-foreground mt-3 uppercase font-bold tracking-wider italic">12,450 Verified Clusters Pan-India</p>
+            <div className="text-4xl font-black text-primary mb-2">{(stats.totalArea / 1000).toFixed(1)}k Ha</div>
+            <Progress value={65} className="h-2 bg-primary/20" />
+            <p className="text-[10px] text-muted-foreground mt-3 uppercase font-bold tracking-wider italic">Verified Outbreak Mapping Active</p>
           </CardContent>
         </Card>
 
@@ -248,7 +247,7 @@ export function MinistryIntelligence() {
           <CardContent>
             <div className="text-4xl font-black text-destructive">{stats.critical} Regions</div>
             <div className="flex gap-1 mt-2">
-              {Array(stats.critical).fill(0).map((_, i) => (
+              {Array(Math.max(1, stats.critical)).fill(0).map((_, i) => (
                 <div key={i} className="h-1 flex-1 bg-destructive rounded-full" />
               ))}
             </div>
@@ -266,14 +265,14 @@ export function MinistryIntelligence() {
             <div className="text-4xl font-black text-amber-600 flex items-center gap-2">
               Live <Activity className="h-6 w-6 animate-pulse" />
             </div>
-            <p className="text-[10px] text-amber-600/60 mt-3 uppercase font-bold tracking-wider italic">Mandi Inflation Monitoring Active</p>
+            <p className="text-[10px] text-amber-600/60 mt-3 uppercase font-bold tracking-wider italic">Grid Analytics: Healthy Latency</p>
           </CardContent>
         </Card>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        {/* Map Visualization */}
-        <Card className="lg:col-span-8 border-none shadow-2xl rounded-[3rem] overflow-hidden bg-slate-900 text-white relative min-h-[600px]">
+        {/* Geospatial Visualization */}
+        <Card className="lg:col-span-8 border-none shadow-2xl rounded-[3rem] overflow-hidden bg-slate-900 text-white relative min-h-[650px]">
           <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1526778548025-fa2f459cd5ce?q=80&w=2000&auto=format&fit=crop')] bg-cover bg-center opacity-20" />
           <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-900/60 to-transparent" />
           
@@ -282,148 +281,167 @@ export function MinistryIntelligence() {
               <div className="space-y-1">
                 <CardTitle className="text-3xl font-black tracking-tight flex items-center gap-3">
                   <Globe className="h-8 w-8 text-primary" />
-                  Predictive Bio-Surveillance
+                  Pathogen Spread Geospatial Grid
                 </CardTitle>
-                <CardDescription className="text-slate-400 font-medium italic">Visualizing AI-predicted spread vectors across regional clusters</CardDescription>
+                <CardDescription className="text-slate-400 font-medium italic">Active clusters and predicted spread vectors based on real-time field diagnostics.</CardDescription>
               </div>
               <Badge className="bg-primary/20 text-primary border border-primary/30 px-4 py-1.5 font-black uppercase text-[10px] shadow-lg">
-                {role === 'Expert' ? 'Expert Node: 02' : 'Authority Node: 04'}
+                Verified Expert Node: 02
               </Badge>
             </div>
           </CardHeader>
 
-          <CardContent className="relative z-10 p-10 h-[450px]">
-            <div className="relative w-full h-full border border-white/5 rounded-[2.5rem] bg-black/20 backdrop-blur-sm overflow-hidden">
+          <CardContent className="relative z-10 p-10 h-[500px]">
+            <div className="relative w-full h-full border border-white/5 rounded-[2.5rem] bg-black/20 backdrop-blur-sm overflow-hidden flex items-center justify-center">
               {outbreaks?.map((outbreak, i) => (
-                <div 
+                <motion.div 
                   key={outbreak.id}
-                  className="absolute flex flex-col items-center group cursor-pointer transition-all hover:scale-110"
+                  initial={{ opacity: 0, scale: 0 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: i * 0.2 }}
+                  className="absolute flex flex-col items-center group cursor-pointer"
                   style={{ 
-                    top: `${20 + (i * 15) % 60}%`, 
-                    left: `${15 + (i * 20) % 70}%` 
+                    top: `${20 + (i * 18) % 65}%`, 
+                    left: `${15 + (i * 25) % 75}%` 
                   }}
                 >
                   <div className={cn(
-                    "relative h-16 w-14 rounded-full flex items-center justify-center shadow-2xl transition-all",
-                    outbreak.severity === 'Critical' ? 'bg-destructive animate-pulse shadow-destructive/50' : 'bg-amber-500 shadow-amber-500/50'
+                    "relative h-20 w-20 rounded-full flex items-center justify-center shadow-2xl transition-all group-hover:scale-110",
+                    outbreak.severity === 'Critical' ? 'bg-destructive animate-pulse-engagement shadow-destructive/50' : 'bg-amber-500 shadow-amber-500/50'
                   )}>
-                    <AlertTriangle className="h-7 w-7 text-white" />
+                    <AlertTriangle className="h-10 w-10 text-white" />
+                    
+                    {/* Animated Spread Vector */}
                     <div className="absolute -right-24 -top-16 text-primary flex flex-col items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
-                      <MoveUpRight className="h-10 w-10 animate-bounce" />
+                      <motion.div
+                        animate={{ x: [0, 40, 0], y: [0, -40, 0] }}
+                        transition={{ repeat: Infinity, duration: 2 }}
+                      >
+                        <MoveUpRight className="h-12 w-12" />
+                      </motion.div>
                       <span className="text-[9px] font-black uppercase whitespace-nowrap bg-black/80 px-2 py-1 rounded-md border border-primary/20">
-                        Vector: {outbreak.predictedMovementVector || 'Calculating...'}
+                        Vector: {outbreak.predictedMovementVector || 'North-West'}
                       </span>
                     </div>
                   </div>
-                  <div className="mt-4 bg-white/10 backdrop-blur-xl p-3 rounded-2xl border border-white/10 min-w-[140px] text-center shadow-2xl group-hover:bg-white/20 transition-all">
+                  <div className="mt-4 bg-white/10 backdrop-blur-xl p-4 rounded-2xl border border-white/10 min-w-[160px] text-center shadow-2xl group-hover:bg-white/20 transition-all">
                     <div className="text-[10px] font-black text-primary uppercase tracking-widest">{outbreak.pestName}</div>
                     <div className="text-xs font-black">{outbreak.state} Cluster</div>
                     <div className="text-[8px] font-bold text-slate-400 mt-1 uppercase">{outbreak.areaHectares} Ha Impacted</div>
                   </div>
-                </div>
+                </motion.div>
               ))}
+              
               {!outbreaks?.length && (
                 <div className="h-full w-full flex flex-col items-center justify-center space-y-4">
-                  <Activity className="h-12 w-12 text-slate-500 animate-pulse" />
-                  <p className="text-slate-500 font-black uppercase text-xs tracking-widest">Scanning Grid for Pathogens...</p>
+                  <Activity className="h-16 w-16 text-slate-500 animate-pulse" />
+                  <p className="text-slate-500 font-black uppercase text-sm tracking-[0.2em]">Scanning Grid for Bio-Security Threats...</p>
                 </div>
               )}
             </div>
           </CardContent>
         </Card>
 
-        {/* Intelligence Directives / List */}
+        {/* Intelligence Directives Panel */}
         <Card className="lg:col-span-4 border-none shadow-2xl rounded-[3rem] p-10 bg-white space-y-8 flex flex-col h-full">
           <div className="space-y-2">
             <CardTitle className="text-2xl font-black flex items-center gap-3">
               <Navigation className="h-7 w-7 text-primary" />
               Intelligence Directives
             </CardTitle>
-            <p className="text-xs text-muted-foreground font-medium italic">Active strategic containment protocols for district nodes.</p>
+            <p className="text-xs text-muted-foreground font-medium italic">Automated containment protocols for active grid sectors.</p>
           </div>
           
-          <div className="space-y-6 flex-1 overflow-y-auto pr-2 custom-scrollbar">
-            {outbreaks?.length === 0 ? (
-              <div className="text-center py-20 opacity-30 flex flex-col items-center gap-4">
-                <CheckCircle className="h-12 w-12" />
-                <p className="text-[10px] font-black uppercase tracking-widest">Grid Clear</p>
-              </div>
-            ) : outbreaks?.map((o) => (
-              <div key={o.id} className="p-6 rounded-3xl bg-muted/30 border border-border group hover:bg-muted/50 transition-all cursor-pointer relative">
-                <div className="flex justify-between items-start mb-4">
-                  <div className="space-y-1">
-                    <h4 className="text-xs font-black text-primary uppercase tracking-widest flex items-center gap-2">
-                      <MapPin className="h-3 w-3" /> {o.state} Sector
-                    </h4>
-                    <p className="text-lg font-black text-slate-900 tracking-tight">{o.pestName}</p>
-                  </div>
-                  <Badge variant={o.severity === 'Critical' ? 'destructive' : 'default'} className="text-[8px] font-black uppercase px-2">
-                    {o.severity}
-                  </Badge>
+          <ScrollArea className="flex-1 pr-2">
+            <div className="space-y-6">
+              {outbreaks?.length === 0 ? (
+                <div className="text-center py-20 opacity-30 flex flex-col items-center gap-4">
+                  <CheckCircle className="h-16 w-16 text-primary" />
+                  <p className="font-black uppercase tracking-widest text-xs">National Grid: Bio-Secure</p>
                 </div>
-
-                {editingOutbreakId === o.id ? (
-                  <div className="space-y-4 animate-in fade-in zoom-in-95 duration-200">
-                    <Textarea 
-                      value={editStrategy} 
-                      onChange={(e) => setEditStrategy(e.target.value)}
-                      className="text-xs font-medium bg-white rounded-xl"
-                    />
-                    <div className="flex gap-2">
-                      <Button onClick={() => handleUpdateStrategy(o.id)} size="sm" className="flex-1 h-9 rounded-lg font-black text-[10px] bg-primary">
-                        <Save className="h-3 w-3 mr-1" /> SAVE
-                      </Button>
-                      <Button variant="ghost" onClick={() => setEditingOutbreakId(null)} size="sm" className="h-9 w-9 p-0 rounded-lg">
-                        <X className="h-3 w-3" />
-                      </Button>
+              ) : outbreaks?.map((o) => (
+                <div key={o.id} className="p-6 rounded-3xl bg-muted/30 border border-border group hover:bg-muted/50 transition-all cursor-pointer relative overflow-hidden">
+                  {o.severity === 'Critical' && <div className="absolute left-0 top-0 bottom-0 w-2 bg-destructive" />}
+                  <div className="flex justify-between items-start mb-4">
+                    <div className="space-y-1">
+                      <h4 className="text-xs font-black text-primary uppercase tracking-widest flex items-center gap-2">
+                        <MapPin className="h-3.5 w-3.5" /> {o.state} Sector
+                      </h4>
+                      <p className="text-lg font-black text-slate-900 tracking-tight">{o.pestName}</p>
                     </div>
+                    <Badge variant={o.severity === 'Critical' ? 'destructive' : 'default'} className="text-[8px] font-black uppercase px-2">
+                      {o.severity}
+                    </Badge>
                   </div>
-                ) : (
-                  <>
-                    <p className="text-sm text-slate-700 italic font-medium leading-relaxed border-l-4 border-primary/20 pl-4">
-                      "{o.containmentStrategy}"
-                    </p>
-                    <div className="mt-6 flex items-center justify-between pt-4 border-t border-border/50">
+
+                  {editingOutbreakId === o.id ? (
+                    <div className="space-y-4 animate-in fade-in zoom-in-95 duration-200">
+                      <Textarea 
+                        value={editStrategy} 
+                        onChange={(e) => setEditStrategy(e.target.value)}
+                        className="text-xs font-medium bg-white rounded-xl min-h-[80px]"
+                      />
                       <div className="flex gap-2">
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          onClick={() => { setEditingOutbreakId(o.id); setEditStrategy(o.containmentStrategy); }}
-                          className="h-8 rounded-lg text-[10px] font-black uppercase tracking-widest text-primary hover:bg-primary/5 px-3"
-                        >
-                          <Edit3 className="h-3 w-3 mr-1" /> Edit Directive
+                        <Button onClick={() => handleUpdateStrategy(o.id)} size="sm" className="flex-1 h-9 rounded-lg font-black text-[10px] bg-primary">
+                          <Save className="h-3 w-3 mr-1" /> SAVE PROTOCOL
                         </Button>
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          onClick={() => handleDeleteOutbreak(o.id)}
-                          className="h-8 rounded-lg text-[10px] font-black uppercase tracking-widest text-destructive hover:bg-destructive/5 px-3"
-                        >
-                          Clear Alert
+                        <Button variant="ghost" onClick={() => setEditingOutbreakId(null)} size="sm" className="h-9 w-9 p-0 rounded-lg">
+                          <X className="h-3 w-3" />
                         </Button>
                       </div>
                     </div>
-                  </>
-                )}
-              </div>
-            ))}
-          </div>
+                  ) : (
+                    <>
+                      <p className="text-sm text-slate-700 italic font-medium leading-relaxed border-l-4 border-primary/20 pl-4 mb-6">
+                        "Action: {o.containmentStrategy}"
+                      </p>
+                      <div className="flex items-center justify-between pt-4 border-t border-border/50">
+                        <div className="flex gap-2">
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            onClick={() => { setEditingOutbreakId(o.id); setEditStrategy(o.containmentStrategy); }}
+                            className="h-8 rounded-lg text-[10px] font-black uppercase tracking-widest text-primary hover:bg-primary/10 px-3"
+                          >
+                            <Edit3 className="h-3 w-3 mr-1" /> Refine
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            onClick={() => handleDeleteOutbreak(o.id)}
+                            className="h-8 rounded-lg text-[10px] font-black uppercase tracking-widest text-destructive hover:bg-destructive/10 px-3"
+                          >
+                            Grid Clear
+                          </Button>
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+              ))}
+            </div>
+          </ScrollArea>
 
+          {/* Mandi Inflation Pulse widget */}
           <div className="pt-8 border-t space-y-6">
-            <h4 className="text-[10px] font-black text-muted-foreground uppercase tracking-widest flex items-center justify-between">
-              Mandi Inflation Pulse
-              <Badge variant="outline" className="text-[8px] border-amber-500 text-amber-600">LIVE SURVEILLANCE</Badge>
-            </h4>
+            <div className="flex items-center justify-between">
+              <h4 className="text-[10px] font-black text-muted-foreground uppercase tracking-widest flex items-center gap-2">
+                Mandi Inflation Pulse
+              </h4>
+              <Badge variant="outline" className="text-[8px] border-amber-500 text-amber-600 animate-pulse font-black uppercase">Live Surveillance</Badge>
+            </div>
             <div className="grid grid-cols-2 gap-4">
-              <div className="p-4 bg-slate-50 rounded-2xl border flex flex-col items-center justify-center text-center">
-                <TrendingUp className="h-5 w-5 text-destructive mb-2" />
+              <div className="p-5 bg-slate-50 rounded-[2rem] border border-slate-100 flex flex-col items-center justify-center text-center group hover:bg-destructive/5 transition-all">
+                <TrendingUp className="h-6 w-6 text-destructive mb-2 group-hover:scale-110 transition-transform" />
                 <p className="text-[10px] font-bold text-slate-500 uppercase">Onion Price</p>
-                <p className="text-lg font-black text-destructive">+42% spike</p>
+                <p className="text-xl font-black text-destructive">+42% spike</p>
+                <p className="text-[8px] font-medium text-slate-400 mt-1 italic">Due to regional rot spread</p>
               </div>
-              <div className="p-4 bg-slate-50 rounded-2xl border flex flex-col items-center justify-center text-center">
-                <TrendingUp className="h-5 w-5 text-primary mb-2" />
+              <div className="p-5 bg-slate-50 rounded-[2rem] border border-slate-100 flex flex-col items-center justify-center text-center group hover:bg-primary/5 transition-all">
+                <TrendingUp className="h-6 w-6 text-primary mb-2 group-hover:scale-110 transition-transform" />
                 <p className="text-[10px] font-bold text-slate-500 uppercase">Wheat Supply</p>
-                <p className="text-lg font-black text-primary">Stable</p>
+                <p className="text-xl font-black text-primary">Stable</p>
+                <p className="text-[8px] font-medium text-slate-400 mt-1 italic">Proactive containment</p>
               </div>
             </div>
           </div>
