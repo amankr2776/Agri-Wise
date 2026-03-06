@@ -72,13 +72,13 @@ export function CropDetailView({ crop, onClose }: CropDetailViewProps) {
     setIsAnalyzing(true);
     setResult(null);
 
-    // 1. Instant Registry Lookup (Grounding for accuracy)
+    // 1. Instant Registry Lookup (Strict Dataset Enforcement)
     const match = getRegistryMatch(crop.name, finalQuery);
     if (match) {
       const registryResult: FarmerCropPestDiagnosisOutput = {
         pathogenIdentification: match.disease,
-        diagnosis: `Identified ${match.disease} in your ${crop.name}. This is a verified professional protocol.`,
-        scientificReasoning: `Zero-latency match found in National Botanical Registry for symptoms: "${match.symptoms}".`,
+        diagnosis: `Identified ${match.disease} in your ${crop.name}. This is a verified professional protocol strictly from the National Registry.`,
+        scientificReasoning: `Verified Match: Symptoms "${match.symptoms}" correspond exactly to registry ID: ${match.disease}.`,
         suggestedChemicalRemedies: [match.chemicalCure],
         suggestedTraditionalRemedies: [match.traditionalRemedy],
         isBotanicallyValid: true,

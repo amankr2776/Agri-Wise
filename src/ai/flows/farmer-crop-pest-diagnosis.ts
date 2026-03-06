@@ -39,8 +39,10 @@ const diagnoseCropPestPrompt = ai.definePrompt({
   prompt: `You are a Senior Precision Agronomist for the KisanMitra National Grid. 
 
 CRITICAL SOURCE OF TRUTH:
-You have access to the National Botanical Registry. Always prioritize matching symptoms to these verified records:
-${JSON.stringify(BOTANICAL_REGISTRY.slice(0, 40))}
+You have access to the National Botanical Registry. ALWAYS prioritize matching symptoms to these verified records. If a match exists in this list, YOU MUST use its chemical cure and traditional remedy exactly.
+
+REGISTRY SAMPLES:
+${JSON.stringify(BOTANICAL_REGISTRY)}
 
 CROP: {{{cropType}}}
 SYMPTOMS: {{#if symptomsDescription}}{{{symptomsDescription}}}{{else}}Visual evidence only.{{/if}}
@@ -63,7 +65,7 @@ const farmerCropPestDiagnosisFlow = ai.defineFlow(
     outputSchema: FarmerCropPestDiagnosisOutputSchema,
   },
   async (input) => {
-    // Check Registry first for exact matches (Grounding)
+    // Check Registry first for exact matches (Offline Grounding)
     const localMatch = BOTANICAL_REGISTRY.find(r => 
       r.crop.toLowerCase() === input.cropType.toLowerCase() && 
       (input.symptomsDescription?.toLowerCase().includes(r.disease.toLowerCase()) || 
@@ -74,13 +76,17 @@ const farmerCropPestDiagnosisFlow = ai.defineFlow(
       const { output } = await diagnoseCropPestPrompt(input);
       if (!output) throw new Error('Failed to generate precision diagnosis.');
       
-      // If we have a local match, ensure the output uses the registry values
-      if (localMatch && output.pathogenIdentification !== localMatch.disease) {
-        output.pathogenIdentification = localMatch.disease;
-        output.suggestedChemicalRemedies = [localMatch.chemicalCure];
-        output.suggestedTraditionalRemedies = [localMatch.traditionalRemedy];
-        output.isBotanicallyValid = true;
-        output.confidenceScore = 1.0;
+      // If we have a local match, FORCE the output to use registry values to ensure 100% compliance
+      if (localMatch) {
+        return {
+          pathogenIdentification: localMatch.disease,
+          diagnosis: output.diagnosis, // Keep the AI's conversational explanation
+          scientificReasoning: `Verified Registry Match: ${localMatch.symptoms}. logic trace: ${output.scientificReasoning}`,
+          suggestedChemicalRemedies: [localMatch.chemicalCure],
+          suggestedTraditionalRemedies: [localMatch.traditionalRemedy],
+          isBotanicallyValid: true,
+          confidenceScore: 1.0
+        };
       }
 
       return output;

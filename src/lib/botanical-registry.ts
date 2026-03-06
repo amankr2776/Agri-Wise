@@ -28,7 +28,7 @@ export const BOTANICAL_REGISTRY: BotanicalRecord[] = [
   { crop: "Tomato", disease: "Leaf Curl", symptoms: "Yellowing & crinkling", chemicalCure: "Thiamethoxam (for whitefly)", traditionalRemedy: "Fermented Buttermilk spray" },
   { crop: "Potato", disease: "Late Blight", symptoms: "White fuzzy growth (underside)", chemicalCure: "Metalaxyl + Mancozeb", traditionalRemedy: "Bordeaux Mixture" },
   { crop: "Onion", disease: "Downy Mildew", symptoms: "White/Violet fluffy growth", chemicalCure: "Chlorothalonil", traditionalRemedy: "Crop rotation with non-alliums" },
-  { crop: "Chilli", disease: "Chilli Anthracnose", symptoms: "Yellow/White sunken spots", chemicalCure: "Carbendazim", traditionalRemedy: "Seed treatment with Trichoderma" },
+  { crop: "Chilli", disease: "Anthracnose", symptoms: "Yellow/White sunken spots", chemicalCure: "Carbendazim", traditionalRemedy: "Seed treatment with Trichoderma" },
   { crop: "Brinjal", disease: "Little Leaf", symptoms: "Yellowing & tiny leaves", chemicalCure: "Tetracycline injection", traditionalRemedy: "Removal of infected host weeds" },
   { crop: "Cabbage", disease: "Clubroot", symptoms: "Yellowing & wilting", chemicalCure: "Lime application to soil", traditionalRemedy: "Mustard oil cake application" },
   { crop: "Cucumber", disease: "Powdery Mildew", symptoms: "White floury coating", chemicalCure: "Carbendazim", traditionalRemedy: "Milk (10% solution) spray" },
@@ -53,7 +53,7 @@ export const BOTANICAL_REGISTRY: BotanicalRecord[] = [
   { crop: "Rice", disease: "Bacterial Blight", symptoms: "Yellowish-green wavy edges", chemicalCure: "Streptocycline", traditionalRemedy: "Spraying cow dung slurry (filtered)" },
   { crop: "Maize", disease: "Turcicum Blight", symptoms: "Long yellow/brown lesions", chemicalCure: "Zineb", traditionalRemedy: "Intercropping with legumes" },
   { crop: "Bajra", disease: "Ergot", symptoms: "Creamy white 'honey' drops", chemicalCure: "Seed treatment with Brine (10%)", traditionalRemedy: "Deep summer plowing" },
-  { crop: "Chickpea", disease: "Chickpea Wilt", symptoms: "Yellowing and drying", chemicalCure: "Carbendazim (seed treat)", traditionalRemedy: "Trichoderma viride in soil" },
+  { crop: "Chickpea", disease: "Wilt", symptoms: "Yellowing and drying", chemicalCure: "Carbendazim (seed treat)", traditionalRemedy: "Trichoderma viride in soil" },
   { crop: "Soybean", disease: "Yellow Mosaic", symptoms: "Bright yellow mottling", chemicalCure: "Dimethoate", traditionalRemedy: "Rogueing of infected plants" },
   { crop: "Sunflower", disease: "Powdery Mildew", symptoms: "White powdery spots", chemicalCure: "Wettable Sulphur", traditionalRemedy: "Neem seed kernel extract" },
   { crop: "Mustard", disease: "White Rust", symptoms: "White pustules on leaves", chemicalCure: "Metalaxyl", traditionalRemedy: "Balanced Potassium fertilizer" },
@@ -62,11 +62,12 @@ export const BOTANICAL_REGISTRY: BotanicalRecord[] = [
 ];
 
 export function getRegistryMatch(crop: string, query: string): BotanicalRecord | null {
+  if (!crop || !query) return null;
   const c = crop.toLowerCase();
   const q = query.toLowerCase();
   
   return BOTANICAL_REGISTRY.find(r => 
     r.crop.toLowerCase() === c && 
-    (q.includes(r.disease.toLowerCase()) || q.includes(r.symptoms.toLowerCase()) || q.length < 5)
+    (q.includes(r.disease.toLowerCase()) || q.includes(r.symptoms.toLowerCase()))
   ) || null;
 }

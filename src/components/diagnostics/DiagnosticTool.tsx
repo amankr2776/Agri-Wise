@@ -143,13 +143,13 @@ export function DiagnosticTool() {
     setIsSentToExpert(false);
     setResult(null);
 
-    // 1. Instant Registry Lookup (Offline Ready)
+    // 1. Instant Registry Lookup (Offline Ready & Strict Dataset Enforcement)
     const match = getRegistryMatch(cropType, symptoms);
     if (match) {
       const registryResult: FarmerCropPestDiagnosisOutput = {
         pathogenIdentification: match.disease,
-        diagnosis: `The National Grid detects ${match.disease} in your ${match.crop}. This identification is verified and accurate.`,
-        scientificReasoning: `Registry Match Found: Symptoms "${match.symptoms}" correspond exactly to verified biological markers for ${match.disease}.`,
+        diagnosis: `The National Grid detects ${match.disease} in your ${match.crop}. This identification is verified and strictly synchronized with the registry.`,
+        scientificReasoning: `Zero-Latency Registry Match: Symptoms "${match.symptoms}" correspond exactly to verified biological markers for ${match.disease}.`,
         suggestedChemicalRemedies: [match.chemicalCure],
         suggestedTraditionalRemedies: [match.traditionalRemedy],
         isBotanicallyValid: true,
@@ -162,7 +162,7 @@ export function DiagnosticTool() {
       return;
     }
     
-    // 2. AI Multimodal Analysis (Network Dependent)
+    // 2. AI Multimodal Analysis (Network Dependent - only if no registry match)
     try {
       const res = await diagnoseCropPest({
         cropType: cropType || "Unspecified Crop",
@@ -395,8 +395,8 @@ export function DiagnosticTool() {
                     <div className="space-y-3">
                       <div className="flex items-center gap-4">
                         <h3 className="text-4xl font-black tracking-tight text-slate-900">{result.pathogenIdentification}</h3>
-                        {result.isBotanicallyValid ? (
-                          <Badge className="bg-primary/10 text-primary border-none px-4 py-1.5 font-black text-[10px] uppercase tracking-widest shadow-sm">Verified Match</Badge>
+                        {result.confidenceScore === 1.0 ? (
+                          <Badge className="bg-green-500/10 text-green-600 border-none px-4 py-1.5 font-black text-[10px] uppercase tracking-widest shadow-sm">Verified Registry Match</Badge>
                         ) : (
                           <Badge variant="destructive" className="animate-pulse px-4 py-1.5 font-black text-[10px] uppercase tracking-widest gap-2">
                             <AlertTriangle className="h-3 w-3" /> Preliminary Analysis
@@ -471,19 +471,16 @@ export function DiagnosticTool() {
                         <p className="leading-relaxed">Precision alert: The identification is currently based on broad-spectrum indicators. For a certified protocol, please request expert validation below.</p>
                       </div>
                     )}
-                    <div className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">
-                      {result.confidenceScore === 1.0 && <Badge className="bg-green-500/10 text-green-600 border-none px-3 py-1">Registry Verified</Badge>}
-                    </div>
                     <Button 
                       onClick={handleSendToExpert}
-                      disabled={isSentToExpert}
+                      disabled={isSentToExpert || result.confidenceScore === 1.0}
                       className={cn(
                         "w-full max-w-md h-20 rounded-[2.5rem] font-black gap-4 transition-all text-xl shadow-2xl",
-                        isSentToExpert ? "bg-green-50 text-green-600 border-4 border-green-200" : "bg-slate-900 text-white hover:bg-slate-800"
+                        (isSentToExpert || result.confidenceScore === 1.0) ? "bg-green-50 text-green-600 border-4 border-green-200" : "bg-slate-900 text-white hover:bg-slate-800"
                       )}
                     >
-                      {isSentToExpert ? <CheckCircle2 className="h-8 w-8" /> : <UserCheck className="h-8 w-8" />}
-                      {isSentToExpert ? "Report Authenticated" : "Certify via Human Expert"}
+                      {(isSentToExpert || result.confidenceScore === 1.0) ? <CheckCircle2 className="h-8 w-8" /> : <UserCheck className="h-8 w-8" />}
+                      {(isSentToExpert || result.confidenceScore === 1.0) ? "Protocol Authenticated" : "Certify via Human Expert"}
                     </Button>
                   </div>
                 </div>
