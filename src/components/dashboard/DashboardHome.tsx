@@ -104,7 +104,7 @@ export function DashboardHome({ onNavigate }: DashboardHomeProps) {
     return () => clearInterval(interval);
   }, []);
 
-  // Real-Time Data Fetching for Farmer Shipments
+  // Real-Time Data Fetching for Farmer Shipments (No limit)
   const farmerShipmentsQuery = useMemoFirebase(() => {
     if (!firestore || !user || role !== "Farmer") return null;
     return query(
@@ -115,7 +115,7 @@ export function DashboardHome({ onNavigate }: DashboardHomeProps) {
   }, [firestore, user, role]);
   const { data: farmerShipments } = useCollection(farmerShipmentsQuery);
 
-  // Intelligence Directives Listener
+  // Intelligence Directives Listener (No limit)
   const directivesQuery = useMemoFirebase(() => {
     if (!firestore) return null;
     return query(

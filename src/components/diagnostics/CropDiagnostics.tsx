@@ -25,7 +25,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useFirestore, useCollection, useUser, useMemoFirebase } from "@/firebase";
-import { query, collection, limit } from "firebase/firestore";
+import { query, collection } from "firebase/firestore";
 import { addDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 import { useToast } from "@/hooks/use-toast";
 import { useTranslation } from "@/hooks/use-translation";
@@ -50,7 +50,7 @@ export function CropDiagnostics() {
   
   const cropsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
-    return query(collection(firestore, "crops"), limit(100));
+    return query(collection(firestore, "crops"));
   }, [firestore]);
 
   const { data: allCrops, isLoading } = useCollection(cropsQuery);

@@ -49,7 +49,7 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { useCollection, useFirestore, useMemoFirebase, useUser } from "@/firebase";
-import { collection, query, getDocs, writeBatch, serverTimestamp, where, orderBy, limit } from "firebase/firestore";
+import { collection, query, getDocs, writeBatch, serverTimestamp, where, orderBy } from "firebase/firestore";
 import { addDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 import { useAppState } from "@/lib/app-state";
 import { useToast } from "@/hooks/use-toast";
@@ -77,7 +77,7 @@ export function MinistryIntelligence() {
   
   const outbreaksQuery = useMemoFirebase(() => {
     if (!firestore) return null;
-    return query(collection(firestore, "pestOutbreaks"), limit(50));
+    return query(collection(firestore, "pestOutbreaks"));
   }, [firestore]);
   const { data: dbOutbreaks } = useCollection(outbreaksQuery);
 
@@ -86,8 +86,7 @@ export function MinistryIntelligence() {
     return query(
       collection(firestore, "intelligence_directives"), 
       where("status", "==", "active"),
-      orderBy("timestamp", "desc"),
-      limit(10)
+      orderBy("timestamp", "desc")
     );
   }, [firestore]);
   const { data: activeDirectives } = useCollection(directivesQuery);
@@ -119,8 +118,7 @@ export function MinistryIntelligence() {
 
     const existingQ = query(
       collection(firestore, "intelligence_directives"),
-      where("status", "==", "active"),
-      limit(20)
+      where("status", "==", "active")
     );
     
     try {
@@ -229,31 +227,31 @@ export function MinistryIntelligence() {
 
   return (
     <div className="flex h-full w-full bg-background">
-      <div className="flex-1 relative bg-slate-950 border-r border-border">
-        <div className="absolute inset-0 bg-[url('https://picsum.photos/seed/darkmap/1200/800')] bg-cover bg-center opacity-20 grayscale brightness-50" />
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-slate-950/50" />
+      <div className="flex-1 relative bg-background border-r border-border">
+        <div className="absolute inset-0 bg-[url('https://picsum.photos/seed/lightmap/1200/800')] bg-cover bg-center opacity-10 grayscale brightness-110" />
+        <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-background/50" />
 
         <div className="absolute top-8 left-10 right-10 z-20 flex justify-between items-start pointer-events-none">
           <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="space-y-1">
-            <h3 className="text-3xl font-black tracking-tighter text-white flex items-center gap-3">
+            <h3 className="text-3xl font-black tracking-tighter text-foreground flex items-center gap-3">
               <Globe className="h-8 w-8 text-primary" />
               Live Geospatial Grid
             </h3>
-            <p className="text-slate-400 font-bold uppercase text-[10px] tracking-[0.2em]">National Bio-Security Heatmap</p>
+            <p className="text-muted-foreground font-bold uppercase text-[10px] tracking-[0.2em]">National Bio-Security Heatmap</p>
           </motion.div>
 
           <div className="flex gap-3 pointer-events-auto">
             <Button 
               variant="outline"
               onClick={handleClearGrid}
-              className="rounded-xl h-11 px-6 font-black border-destructive/20 text-destructive bg-slate-900/80 backdrop-blur-md hover:bg-destructive/10"
+              className="rounded-xl h-11 px-6 font-black border-destructive/20 text-destructive bg-white/80 backdrop-blur-md hover:bg-destructive/10"
             >
               <Trash2 className="h-4 w-4 mr-2" /> Grid Reset
             </Button>
             <Button 
               onClick={handleRunAiPrediction}
               disabled={isAiLoading}
-              className="rounded-xl h-11 px-6 font-black bg-white text-slate-900 hover:bg-slate-100 gap-2 shadow-xl"
+              className="rounded-xl h-11 px-6 font-black bg-primary text-white hover:bg-primary/90 gap-2 shadow-xl"
             >
               {isAiLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <BrainCircuit className="h-4 w-4" />}
               AI Threat Forecast
@@ -275,7 +273,7 @@ export function MinistryIntelligence() {
                 node.density > 70 ? 'bg-destructive/20' : node.density > 40 ? 'bg-amber-500/15' : 'bg-primary/15'
               )}>
                 <div className={cn(
-                  "h-4 w-4 rounded-full shadow-[0_0_20px_rgba(255,255,255,0.4)]",
+                  "h-4 w-4 rounded-full shadow-[0_0_20px_rgba(0,0,0,0.1)]",
                   node.density > 70 ? 'bg-destructive' : node.density > 40 ? 'bg-amber-500' : 'bg-primary'
                 )} />
                 <div className={cn(

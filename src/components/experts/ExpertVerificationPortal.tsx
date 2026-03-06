@@ -68,7 +68,7 @@ import { Switch } from "@/components/ui/switch";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useFirestore, useCollection, useUser, useMemoFirebase } from "@/firebase";
-import { collection, query, where, doc, orderBy, limit } from "firebase/firestore";
+import { collection, query, where, doc, orderBy } from "firebase/firestore";
 import { updateDocumentNonBlocking, addDocumentNonBlocking, deleteDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 import { dispatchGridNotification } from "@/firebase/messaging";
 import { useAppState } from "@/lib/app-state";
@@ -96,13 +96,13 @@ export function ExpertVerificationPortal() {
 
   const pendingCertsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
-    return query(collection(firestore, "crops"), where("status", "==", "pending_expert_review"), limit(20));
+    return query(collection(firestore, "crops"), where("status", "==", "pending_expert_review"));
   }, [firestore]);
   const { data: pendingCerts, isLoading: loadingCerts } = useCollection(pendingCertsQuery);
 
   const inventoryQuery = useMemoFirebase(() => {
     if (!firestore) return null;
-    return query(collection(firestore, "crops"), where("isCertified", "==", true), limit(50));
+    return query(collection(firestore, "crops"), where("isCertified", "==", true));
   }, [firestore]);
   const { data: inventory } = useCollection(inventoryQuery);
 
