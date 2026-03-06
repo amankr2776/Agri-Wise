@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useEffect } from "react";
@@ -11,13 +10,8 @@ import {
   Users, 
   Bell, 
   Settings,
-  LogOut,
-  FlaskConical,
-  Loader2,
   Package,
   CheckCircle2,
-  ShieldCheck,
-  Zap,
   Globe,
   Fingerprint,
   Lock,
@@ -53,12 +47,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useAppState, AppLanguage, Notification } from "@/lib/app-state";
 import { useTranslation } from "@/hooks/use-translation";
 import { cn } from "@/lib/utils";
-import { useFirestore, useUser, useCollection, useMemoFirebase, useAuth } from "@/firebase";
-import { doc, collection, query, orderBy, limit, onSnapshot } from "firebase/firestore";
-import { setDocumentNonBlocking } from "@/firebase/non-blocking-updates";
-import { initializeMessaging } from "@/firebase/messaging";
-import { getMessaging } from "firebase/messaging";
-import { initiateAnonymousSignIn } from "@/firebase/non-blocking-login";
+import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
+import { collection, query, orderBy, limit, onSnapshot } from "firebase/firestore";
 
 // Section Components
 import { DashboardHome } from "@/components/dashboard/DashboardHome";
@@ -77,59 +67,31 @@ const LANGUAGES: AppLanguage[] = [
 
 export default function KisanMitraApp() {
   const router = useRouter();
-  const auth = useAuth();
   const { t } = useTranslation();
   const firestore = useFirestore();
-  const { user } = useUser();
   const { 
     role, 
-    isAuthenticated, 
     logout, 
     notifications, 
     setNotifications,
     setActiveAlert,
     markNotificationsAsRead,
     name,
-    city,
-    profileImage,
-    login,
     language,
-    setLanguage
+    setLanguage,
+    profileImage
   } = useAppState();
   const [activeSection, setActiveSection] = useState("dashboard");
 
-  // --- PUBLIC ACCESS LOGIC ---
+  // Open Mode: Listen for notifications without requiring a Firebase User UID
   useEffect(() => {
-    if (!isAuthenticated && auth) {
-      initiateAnonymousSignIn(auth);
-      login("Farmer", "Kisan Guest");
-    }
-  }, [isAuthenticated, auth, login]);
+    if (!firestore) return;
 
-  // Sync user profile and initialize FCM
-  useEffect(() => {
-    if (user && firestore && role) {
-      const userRef = doc(firestore, "users", user.uid);
-      setDocumentNonBlocking(userRef, {
-        id: user.uid,
-        role: role,
-        firstName: name,
-        city: city,
-        lastActive: new Date().toISOString()
-      }, { merge: true });
-
-      // Initialize Messaging
-      const messaging = typeof window !== 'undefined' ? getMessaging() : null;
-      initializeMessaging(messaging, firestore, user.uid);
-    }
-  }, [user, firestore, role, name, city]);
-
-  // Real-time Notification Listener & Slide-down Trigger
-  useEffect(() => {
-    if (!firestore || !user) return;
-
+    // Use a shared demo path for notifications in Open Mode, or use state-based mock
+    // For presentation fidelity, we listen to a specific demo node
+    const demoId = "demo-kisan-node";
     const notifQuery = query(
-      collection(firestore, "users", user.uid, "notifications"), 
+      collection(firestore, "users", demoId, "notifications"), 
       orderBy("createdAt", "desc"),
       limit(1)
     );
@@ -138,7 +100,6 @@ export default function KisanMitraApp() {
       snapshot.docChanges().forEach((change) => {
         if (change.type === "added") {
           const newNotif = { id: change.doc.id, ...change.doc.data() } as Notification;
-          // Only show slide-down for recent alerts (within last 30s)
           const isRecent = (Date.now() - new Date(newNotif.createdAt).getTime()) < 30000;
           if (isRecent) {
             setActiveAlert(newNotif);
@@ -148,28 +109,9 @@ export default function KisanMitraApp() {
     });
 
     return () => unsubscribe();
-  }, [firestore, user, setActiveAlert]);
+  }, [firestore, setActiveAlert]);
 
-  // Real-time Feed for the Bell Popover
-  const notificationsQuery = useMemoFirebase(() => {
-    if (!firestore || !user) return null;
-    return query(
-      collection(firestore, "users", user.uid, "notifications"), 
-      orderBy("createdAt", "desc"),
-      limit(20)
-    );
-  }, [firestore, user]);
-  
-  const { data: remoteNotifications } = useCollection(notificationsQuery);
-
-  useEffect(() => {
-    if (remoteNotifications) {
-      setNotifications(remoteNotifications);
-    }
-  }, [remoteNotifications, setNotifications]);
-
-  const handleLogout = async () => {
-    if (auth) await auth.signOut();
+  const handleLogout = () => {
     logout();
     router.push("/login");
   };
@@ -195,7 +137,6 @@ export default function KisanMitraApp() {
   ];
 
   const unreadCount = notifications.filter(n => !n.isRead).length;
-  const shortUid = user?.uid?.substring(0, 8).toUpperCase() || "KM-NODE";
 
   return (
     <SidebarProvider>
@@ -210,7 +151,7 @@ export default function KisanMitraApp() {
               </div>
               <div className="flex flex-col group-data-[collapsible=icon]:hidden">
                 <span className="font-black text-lg leading-none tracking-tight">KisanMitra</span>
-                <span className="text-[8px] font-bold text-muted-foreground uppercase tracking-widest mt-1">Grid Node: {shortUid}</span>
+                <span className="text-[8px] font-bold text-muted-foreground uppercase tracking-widest mt-1">Grid Mode: Open Access</span>
               </div>
             </div>
           </SidebarHeader>
@@ -247,7 +188,7 @@ export default function KisanMitraApp() {
               <SidebarTrigger className="md:hidden" />
               <div className="hidden md:flex items-center gap-3">
                 <Fingerprint className="h-4 w-4 text-primary" />
-                <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Profile: {name} | Public Node: {shortUid}</h2>
+                <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Active Node: {name} | Identity Grid Open</h2>
               </div>
             </div>
             <div className="flex items-center gap-4 md:gap-6">
@@ -333,7 +274,7 @@ export default function KisanMitraApp() {
                 </Avatar>
                 <div className="flex flex-col -space-y-1">
                   <span className="text-[10px] font-black text-slate-900 leading-tight">{name}</span>
-                  <span className="text-[8px] font-bold text-muted-foreground uppercase tracking-widest">Farmer Hub</span>
+                  <span className="text-[8px] font-bold text-muted-foreground uppercase tracking-widest">{role} Perspective</span>
                 </div>
               </div>
             </div>

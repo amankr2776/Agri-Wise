@@ -1,4 +1,3 @@
-
 'use client';
 
 import React from "react";
@@ -14,12 +13,9 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useAppState, UserRole } from "@/lib/app-state";
-import { useAuth } from "@/firebase";
-import { initiateAnonymousSignIn } from "@/firebase/non-blocking-login";
 
 export default function LoginPage() {
   const router = useRouter();
-  const auth = useAuth();
   const { login } = useAppState();
 
   const roles = [
@@ -53,9 +49,7 @@ export default function LoginPage() {
   ];
 
   const handleRoleSelection = (roleId: UserRole, defaultName: string) => {
-    if (auth) {
-      initiateAnonymousSignIn(auth);
-    }
+    // Open Mode: No actual Firebase Auth needed
     login(roleId, defaultName);
     router.push("/");
   };
@@ -71,10 +65,10 @@ export default function LoginPage() {
             <Leaf className="h-10 w-10" />
           </div>
           <h1 className="text-4xl md:text-6xl font-black tracking-tighter text-slate-900">
-            Identify Your Role
+            Select Your Perspective
           </h1>
           <p className="text-lg text-muted-foreground font-medium max-w-xl mx-auto">
-            Welcome to <span className="text-primary font-bold text-xl">KisanMitra</span>. Please select your professional profile to access the agricultural grid.
+            Welcome to <span className="text-primary font-bold text-xl">KisanMitra</span>. The National Grid is in Open Access Mode. Choose a profile to begin.
           </p>
         </div>
 
@@ -103,10 +97,10 @@ export default function LoginPage() {
 
         <div className="pt-8 border-t flex flex-col md:flex-row items-center justify-center gap-8 opacity-60">
           <div className="flex items-center gap-2 text-xs font-black uppercase tracking-widest">
-            <ShieldCheck className="h-4 w-4 text-primary" /> Verified Agricultural Intelligence
+            <ShieldCheck className="h-4 w-4 text-primary" /> Open Access Grid
           </div>
           <div className="flex items-center gap-2 text-xs font-black uppercase tracking-widest">
-            <Users className="h-4 w-4 text-primary" /> Collaborative Farmer Network
+            <Users className="h-4 w-4 text-primary" /> Collaborative Hub
           </div>
         </div>
       </div>

@@ -1,4 +1,3 @@
-
 "use client";
 
 import { create } from "zustand";
@@ -42,7 +41,7 @@ export interface Notification {
 }
 
 interface AppState {
-  role: UserRole | null;
+  role: UserRole;
   isAuthenticated: boolean;
   name: string;
   city: string;
@@ -74,8 +73,8 @@ export const useAppState = create<AppState>()(
   persist(
     (set) => ({
       role: "Farmer",
-      isAuthenticated: false,
-      name: "Guest User",
+      isAuthenticated: true, // Always true in Open Mode
+      name: "Guest Farmer",
       city: "Bengaluru",
       state: "Karnataka",
       profileImage: null,
@@ -87,7 +86,7 @@ export const useAppState = create<AppState>()(
       activeAlert: null,
       
       login: (role, name) => set({ role, name, isAuthenticated: true }),
-      logout: () => set({ role: null, isAuthenticated: false, name: "Guest User" }),
+      logout: () => set({ role: "Farmer", isAuthenticated: true, name: "Guest Farmer" }),
       setName: (name) => set({ name }),
       setCity: (city) => set({ city }),
       setState: (state) => set({ state }),
@@ -113,7 +112,7 @@ export const useAppState = create<AppState>()(
       })),
     }),
     {
-      name: "kisan-mitra-storage-v7",
+      name: "kisan-mitra-storage-v8", // Bump version for open mode
     }
   )
 );
