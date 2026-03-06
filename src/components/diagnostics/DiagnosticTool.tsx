@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
@@ -142,12 +141,21 @@ export function DiagnosticTool() {
     setResult(null);
     
     try {
+      // Improve specificity by feeding the AI previously certified protocols for this crop
       let knowledgeBaseContext = "";
       if (firestore && cropType) {
-        const q = query(collection(firestore, "crops"), where("name", "==", cropType), where("isCertified", "==", true), limit(3));
+        const q = query(
+          collection(firestore, "crops"), 
+          where("name", "==", cropType), 
+          where("isCertified", "==", true), 
+          limit(5)
+        );
         const snap = await getDocs(q);
         if (!snap.empty) {
-          knowledgeBaseContext = snap.docs.map(d => `${d.data().diseaseName}: ${d.data().chemicalCure}`).join("; ");
+          knowledgeBaseContext = snap.docs.map(d => {
+            const data = d.data();
+            return `Disease: ${data.diseaseName}, Cure: ${data.chemicalCure}, Desi: ${data.desiNuskha}`;
+          }).join(" | ");
         }
       }
 
@@ -158,6 +166,7 @@ export function DiagnosticTool() {
         language: language,
         knowledgeBaseContext: knowledgeBaseContext || undefined
       });
+      
       setResult(res);
       speakResult(res);
     } catch (err) {
@@ -187,7 +196,7 @@ export function DiagnosticTool() {
   };
 
   const speakResult = async (resData: FarmerCropPestDiagnosisOutput) => {
-    const text = `${resData.pathogenIdentification}. ${resData.diagnosis}. ${resData.suggestedChemicalRemedies[0]}`;
+    const text = `${resData.pathogenIdentification}. ${resData.diagnosis}. Suggested treatment: ${resData.suggestedChemicalRemedies[0]}`;
     setIsSpeaking(true);
     try {
       const response = await fetch('/api/bhashini', {
@@ -245,16 +254,16 @@ export function DiagnosticTool() {
           </div>
           <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
             <div className="space-y-2">
-              <Badge className="bg-primary/20 text-primary border-none font-black text-[10px] uppercase tracking-widest px-4 py-1">Agronomist Agent v4.0</Badge>
+              <Badge className="bg-primary/20 text-primary border-none font-black text-[10px] uppercase tracking-widest px-4 py-1">Agronomist Agent v4.2</Badge>
               <CardTitle className="text-4xl font-black tracking-tight flex items-center gap-4">
                 <Sparkles className="h-10 w-10 text-primary" />
                 Senior AI Agronomist
               </CardTitle>
-              <CardDescription className="text-slate-400 font-medium italic text-lg">"Namaste! Share your crop symptoms via text, voice, or photo."</CardDescription>
+              <CardDescription className="text-slate-400 font-medium italic text-lg">"Namaste! Share your crop symptoms for a precision diagnosis."</CardDescription>
             </div>
             <div className="flex items-center gap-3">
               <span className="h-3 w-3 bg-green-500 rounded-full animate-pulse shadow-[0_0_10px_rgba(34,197,94,0.5)]" />
-              <p className="text-xs font-black uppercase tracking-widest text-slate-400">National Grid Sync: Active</p>
+              <p className="text-xs font-black uppercase tracking-widest text-slate-400">Precision Engine: Active</p>
             </div>
           </div>
         </CardHeader>
@@ -360,7 +369,7 @@ export function DiagnosticTool() {
                     </div>
                     <div className="space-y-2">
                       <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">Field Evidence Intake</p>
-                      <p className="text-sm font-medium text-slate-400 italic">Capture a clear photo of the leaf or root symptoms.</p>
+                      <p className="text-sm font-medium text-slate-400 italic">Capture a clear photo of the symptoms.</p>
                     </div>
                   </div>
                 )}
@@ -455,7 +464,7 @@ export function DiagnosticTool() {
                     {!result.isBotanicallyValid && (
                       <div className="flex items-center gap-6 text-sm text-amber-700 bg-amber-50 p-8 rounded-[2.5rem] border border-amber-200 font-bold shadow-sm max-w-3xl">
                         <AlertTriangle className="h-10 w-10 shrink-0 text-amber-500 animate-pulse" />
-                        <p className="leading-relaxed">Botanical precision alert: The identification is currently based on broad-spectrum indicators. For a certified protocol, please request expert validation below.</p>
+                        <p className="leading-relaxed">Precision alert: The identification is currently based on broad-spectrum indicators. For a certified protocol, please request expert validation below.</p>
                       </div>
                     )}
                     <Button 
