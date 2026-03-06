@@ -45,7 +45,7 @@ import { cn } from "@/lib/utils";
 import { motion, animate } from "framer-motion";
 import { useFirestore, useCollection, useMemoFirebase, useUser } from "@/firebase";
 import { collection, query, where } from "firebase/firestore";
-import { FarmerRulebook } from "./FarmerRulebook";
+import { FarmerOnboarding } from "./FarmerOnboarding";
 
 interface DashboardHomeProps {
   onNavigate: (section: string) => void;
@@ -266,7 +266,7 @@ export function DashboardHome({ onNavigate }: DashboardHomeProps) {
           
           {role === 'Farmer' && (
             <div className="pb-4">
-              <FarmerRulebook />
+              <FarmerOnboarding />
             </div>
           )}
         </div>
