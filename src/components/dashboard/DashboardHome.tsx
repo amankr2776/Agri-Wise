@@ -1,7 +1,6 @@
-
 'use client';
 
-import React, { useMemo, useState, useEffect } from "react";
+import React, { useMemo, useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { 
   AlertTriangle, 
@@ -25,7 +24,9 @@ import {
   ShieldCheck,
   Microscope,
   Radio,
-  MessageCircle
+  MessageCircle,
+  Volume2,
+  UserCheck
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -41,29 +42,13 @@ import {
 import { useAppState } from "@/lib/app-state";
 import { useTranslation } from "@/hooks/use-translation";
 import { cn } from "@/lib/utils";
-import { motion, animate } from "framer-motion";
+import { motion, animate, AnimatePresence } from "framer-motion";
 import { useFirestore, useCollection, useMemoFirebase, useUser } from "@/firebase";
-import { collection, query, where } from "firebase/firestore";
+import { collection, query, where, orderBy } from "firebase/firestore";
 import { FarmerOnboarding } from "./FarmerOnboarding";
 
 interface DashboardHomeProps {
   onNavigate: (section: string) => void;
-}
-
-interface AlertDetail {
-  id: string;
-  type: "Critical" | "Warning" | "Info";
-  title: string;
-  details: string;
-  impact: string;
-  region: string;
-  time: string;
-  actionPlan: string[];
-  traditionalRemedy: string;
-  volatility: string;
-  icon: any;
-  areaAffected: string;
-  predictedPath: string;
 }
 
 function Counter({ value }: { value: number }) {
@@ -84,13 +69,21 @@ function Counter({ value }: { value: number }) {
 
 export function DashboardHome({ onNavigate }: DashboardHomeProps) {
   const router = useRouter();
-  const { name, city, role, setFleetActiveTab } = useAppState();
+  const { name, city, role, setFleetActiveTab, langCode } = useAppState();
   const { t } = useTranslation();
   const firestore = useFirestore();
   const { user } = useUser();
-  const [selectedAlert, setSelectedAlert] = useState<AlertDetail | null>(null);
+  const [selectedAlert, setSelectedAlert] = useState<any>(null);
   const [currentTime, setCurrentTime] = useState<string>("");
   const [currentDate, setCurrentDate] = useState<string>("");
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && !audioRef.current) {
+      audioRef.current = new Audio();
+    }
+  }, []);
 
   useEffect(() => {
     const updateTime = () => {
@@ -117,7 +110,8 @@ export function DashboardHome({ onNavigate }: DashboardHomeProps) {
 
   const globalAlertsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
-    return query(collection(firestore, "pestOutbreaks"));
+    // Order by createdAt to show newest first, requires index in production but works for demo
+    return query(collection(firestore, "pestOutbreaks"), orderBy("createdAt", "desc"));
   }, [firestore]);
   const { data: globalAlerts, isLoading: loadingAlerts } = useCollection(globalAlertsQuery);
 
@@ -146,6 +140,35 @@ export function DashboardHome({ onNavigate }: DashboardHomeProps) {
     }
     if (item.tab) setFleetActiveTab(item.tab);
     onNavigate(item.id);
+  };
+
+  const handlePlayAlert = async (e: React.MouseEvent, alert: any) => {
+    e.stopPropagation();
+    if (isSpeaking) return;
+    
+    const text = `${alert.pestName} directive for ${alert.state}. Severity is ${alert.severity}. Expert advice: ${alert.containmentStrategy}`;
+    setIsSpeaking(true);
+    
+    try {
+      const response = await fetch('/api/bhashini', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text, langCode })
+      });
+      const data = await response.json();
+      if (data.audioContent && audioRef.current) {
+        audioRef.current.src = `data:audio/wav;base64,${data.audioContent}`;
+        audioRef.current.onended = () => setIsSpeaking(false);
+        await audioRef.current.play();
+      } else {
+        const ut = new SpeechSynthesisUtterance(text);
+        ut.lang = langCode === 'hi' ? 'hi-IN' : 'en-IN';
+        ut.onend = () => setIsSpeaking(false);
+        window.speechSynthesis.speak(ut);
+      }
+    } catch (err) {
+      setIsSpeaking(false);
+    }
   };
 
   const stats = useMemo(() => {
@@ -198,24 +221,6 @@ export function DashboardHome({ onNavigate }: DashboardHomeProps) {
     }
     return [];
   }, [role, t]);
-
-  const alerts: AlertDetail[] = [
-    { 
-      id: "alert-1",
-      type: "Critical", 
-      title: "Locust Swarm Detected", 
-      details: "Schistocerca gregaria observed in high density clusters near the border.",
-      impact: "High risk to pulses and wheat crops.",
-      region: "Rajasthan Border Hub", 
-      time: "2h ago", 
-      icon: AlertTriangle,
-      volatility: "+18% price hike forecast",
-      areaAffected: "12,000 Hectares",
-      predictedPath: "North-West towards Punjab",
-      actionPlan: ["Aerial pesticide spray", "Deep trenching"],
-      traditionalRemedy: "Burning neem leaves and loud drumming."
-    }
-  ];
 
   return (
     <div className="space-y-10">
@@ -301,52 +306,142 @@ export function DashboardHome({ onNavigate }: DashboardHomeProps) {
           <h2 className="text-2xl font-black flex items-center gap-3">
             <ShieldAlert className="h-7 w-7 text-destructive" /> Intelligence Alerts
           </h2>
-          {alerts.map((alert) => (
-            <Card key={alert.id} onClick={() => setSelectedAlert(alert)} className="glass-card border-none cursor-pointer group hover:bg-muted/50 transition-all rounded-[2.5rem] border-l-8 border-destructive">
-              <CardContent className="p-8 space-y-4">
-                <div className="flex justify-between items-start">
-                  <Badge variant="destructive" className="font-black uppercase tracking-widest text-[9px] animate-pulse-engagement">Critical</Badge>
-                  <span className="text-[10px] font-bold text-muted-foreground">{alert.time}</span>
+          <ScrollArea className="h-[600px] pr-4">
+            <div className="space-y-6">
+              {loadingAlerts ? (
+                [1, 2, 3].map(i => <div key={i} className="h-40 rounded-[2.5rem] bg-muted/20 animate-pulse" />)
+              ) : !globalAlerts?.length ? (
+                <div className="p-10 text-center opacity-40 border-2 border-dashed rounded-[3rem]">
+                  <ShieldCheck className="h-12 w-12 mx-auto mb-4" />
+                  <p className="text-sm font-bold">No active pathogen alerts in your sector.</p>
                 </div>
-                <h3 className="text-xl font-black tracking-tight">{alert.title}</h3>
-                <p className="text-sm text-muted-foreground line-clamp-2 leading-relaxed">{alert.details}</p>
-                <div className="pt-4 border-t flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-[10px] font-black uppercase text-primary">
-                    <MapPin className="h-3 w-3" /> {alert.region}
-                  </div>
-                  <ArrowRight className="h-4 w-4 opacity-40 group-hover:translate-x-1 transition-transform" />
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+              ) : (
+                <AnimatePresence mode="popLayout">
+                  {globalAlerts.map((alert) => (
+                    <motion.div
+                      key={alert.id}
+                      initial={{ opacity: 0, x: 20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, scale: 0.95 }}
+                    >
+                      <Card 
+                        onClick={() => setSelectedAlert(alert)} 
+                        className={cn(
+                          "glass-card border-none cursor-pointer group hover:bg-muted/50 transition-all rounded-[2.5rem] border-l-8 overflow-hidden",
+                          alert.severity === 'Critical' ? "border-destructive shadow-lg shadow-destructive/5" : "border-amber-500"
+                        )}
+                      >
+                        <CardContent className="p-8 space-y-4">
+                          <div className="flex justify-between items-start">
+                            <div className="flex gap-2">
+                              {alert.severity === 'Critical' && (
+                                <Badge variant="destructive" className="font-black uppercase tracking-widest text-[9px] animate-pulse-engagement">Critical</Badge>
+                              )}
+                              <Badge className="bg-primary/10 text-primary border-none font-black text-[9px] uppercase tracking-widest">
+                                <UserCheck className="h-3 w-3 mr-1" /> Expert Verified
+                              </Badge>
+                            </div>
+                            <span className="text-[10px] font-bold text-muted-foreground">
+                              {alert.createdAt ? new Date(alert.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Just now'}
+                            </span>
+                          </div>
+                          <div className="space-y-1">
+                            <h3 className="text-xl font-black tracking-tight">{alert.pestName}</h3>
+                            <p className="text-sm text-muted-foreground line-clamp-2 leading-relaxed italic">"{alert.containmentStrategy}"</p>
+                          </div>
+                          <div className="pt-4 border-t flex items-center justify-between">
+                            <div className="flex items-center gap-2 text-[10px] font-black uppercase text-primary">
+                              <MapPin className="h-3 w-3" /> {alert.state} Hub
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                onClick={(e) => handlePlayAlert(e, alert)}
+                                className={cn(
+                                  "h-10 w-10 rounded-full bg-primary/5 text-primary hover:bg-primary hover:text-white transition-all",
+                                  isSpeaking && "animate-pulse"
+                                )}
+                              >
+                                <Volume2 className="h-5 w-5" />
+                              </Button>
+                              <ArrowRight className="h-4 w-4 opacity-40 group-hover:translate-x-1 transition-transform" />
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
+              )}
+            </div>
+          </ScrollArea>
         </div>
       </div>
 
       <Dialog open={!!selectedAlert} onOpenChange={() => setSelectedAlert(null)}>
-        <DialogContent className="rounded-[3rem] sm:max-w-2xl p-10 overflow-hidden border-none shadow-2xl">
-          <DialogHeader className="sr-only"><DialogTitle>{selectedAlert?.title}</DialogTitle></DialogHeader>
-          <div className="space-y-8">
-            <div className="flex justify-between items-center">
-              <div className="h-16 w-16 bg-destructive/10 rounded-2xl flex items-center justify-center text-destructive"><AlertTriangle className="h-10 w-10" /></div>
-              <Badge variant="destructive" className="h-8 px-6 font-black uppercase tracking-widest text-xs animate-pulse">Critical Priority</Badge>
-            </div>
-            <h2 className="text-4xl font-black tracking-tighter">{selectedAlert?.title}</h2>
-            <div className="grid grid-cols-2 gap-6">
-              <div className="p-6 bg-slate-50 rounded-3xl border space-y-2">
-                <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Region</p>
-                <p className="text-lg font-black">{selectedAlert?.region}</p>
+        <DialogContent className="rounded-[3rem] sm:max-w-2xl p-0 overflow-hidden border-none shadow-2xl bg-white">
+          <div className="bg-slate-900 p-10 text-white relative">
+            <div className="absolute top-0 right-0 p-8 opacity-10"><Microscope className="h-32 w-32 rotate-12" /></div>
+            <DialogHeader className="relative z-10">
+              <div className="flex items-center gap-4 mb-4">
+                <div className={cn(
+                  "h-16 w-16 rounded-2xl flex items-center justify-center shadow-lg",
+                  selectedAlert?.severity === 'Critical' ? "bg-destructive" : "bg-amber-500"
+                )}>
+                  <AlertTriangle className="h-10 w-10 text-white" />
+                </div>
+                <div>
+                  <DialogTitle className="text-4xl font-black tracking-tighter">{selectedAlert?.pestName}</DialogTitle>
+                  <DialogDescription className="text-slate-400 font-bold uppercase tracking-widest text-[10px]">
+                    National Grid Directive | Verified by Dr. Aman Kumar
+                  </DialogDescription>
+                </div>
               </div>
-              <div className="p-6 bg-slate-50 rounded-3xl border space-y-2">
-                <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Impact</p>
-                <p className="text-lg font-black text-destructive">{selectedAlert?.volatility}</p>
+            </DialogHeader>
+          </div>
+
+          <div className="p-10 space-y-8">
+            <div className="grid grid-cols-2 gap-6">
+              <div className="p-6 bg-slate-50 rounded-[2rem] border space-y-2">
+                <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Region Affected</p>
+                <p className="text-lg font-black">{selectedAlert?.state}</p>
+              </div>
+              <div className="p-6 bg-slate-50 rounded-[2rem] border space-y-2">
+                <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Area Assessment</p>
+                <p className="text-lg font-black text-destructive">{selectedAlert?.areaHectares || '12,000'} Hectares</p>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <h4 className="text-[10px] font-black text-primary uppercase tracking-widest flex items-center gap-2">
+                <ShieldCheck className="h-4 w-4" /> Professional Containment Strategy
+              </h4>
+              <div className="p-8 rounded-[2.5rem] bg-primary/5 border border-primary/10 relative overflow-hidden">
+                <div className="absolute top-0 right-0 p-4 opacity-5"><Zap className="h-20 w-20" /></div>
+                <p className="text-xl font-bold text-slate-800 leading-relaxed italic relative z-10">
+                  "{selectedAlert?.containmentStrategy}"
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-4 p-6 bg-muted/30 rounded-2xl border border-dashed">
+              <UserCheck className="h-6 w-6 text-primary" />
+              <div className="text-[10px] font-bold text-muted-foreground leading-tight">
+                This directive was issued by the <span className="text-primary">Scientist Node AMAN_EXP_01</span>. 
+                Follow all protocols to minimize regional pathogen spread.
               </div>
             </div>
           </div>
-          <DialogFooter className="mt-8">
-            <Button onClick={() => setSelectedAlert(null)} className="w-full h-14 rounded-2xl font-black text-lg">Acknowledge Alert</Button>
+
+          <DialogFooter className="p-10 pt-0">
+            <Button onClick={() => setSelectedAlert(null)} className="w-full h-16 rounded-[2rem] font-black text-xl shadow-xl shadow-primary/20">
+              Acknowledge Directive
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      <audio ref={audioRef} className="hidden" aria-hidden="true" />
     </div>
   );
 }
