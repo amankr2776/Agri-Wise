@@ -10,7 +10,6 @@ import {
   Library,
   ShieldCheck,
   Search,
-  Bot,
   X,
   ArrowLeft
 } from "lucide-react";
@@ -18,7 +17,6 @@ import Image from "next/image";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -31,7 +29,6 @@ import { useTranslation } from "@/hooks/use-translation";
 import { useAppState } from "@/lib/app-state";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { DiagnosticTool } from "./DiagnosticTool";
 import { CropDetailView } from "./CropDetailView";
 
 const CATEGORIES = ["Plant", "Seed", "Vegetable", "Fruit", "Grain"];
@@ -84,7 +81,7 @@ export function CropDiagnostics() {
             <FlaskConical className="h-10 w-10 text-primary" />
             Precision Diagnostic Lab
           </h2>
-          <p className="text-muted-foreground font-medium mt-1 uppercase text-[10px] tracking-[0.2em]">National Agricultural AI & Pathogen Surveillance</p>
+          <p className="text-muted-foreground font-medium mt-1 uppercase text-[10px] tracking-[0.2em]">National Agricultural & Pathogen Surveillance</p>
         </div>
         <Button 
           onClick={() => setIsReportOpen(true)}
@@ -94,90 +91,82 @@ export function CropDiagnostics() {
         </Button>
       </div>
 
-      <Tabs defaultValue="diagnose" className="w-full">
-        <TabsList className="bg-muted/50 rounded-full p-1.5 h-14 mb-10 w-fit inline-flex">
-          <TabsTrigger value="diagnose" className="rounded-full px-10 h-11 data-[state=active]:bg-primary data-[state=active]:text-white font-black text-xs uppercase tracking-widest gap-2">
-            <Bot className="h-4 w-4" /> AI Diagnostic Lab
-          </TabsTrigger>
-          <TabsTrigger value="library" className="rounded-full px-10 h-11 data-[state=active]:bg-primary data-[state=active]:text-white font-black text-xs uppercase tracking-widest gap-2">
-            <Library className="h-4 w-4" /> Solution Library
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="diagnose" className="m-0 focus-visible:ring-0">
-          <DiagnosticTool />
-        </TabsContent>
-
-        <TabsContent value="library" className="m-0 focus-visible:ring-0">
-          <div className="space-y-8">
-            <div className="flex flex-wrap gap-2 p-1.5 bg-muted/50 rounded-2xl w-fit">
-              {CATEGORIES.map(cat => (
-                <Button
-                  key={cat}
-                  onClick={() => setSelectedCategory(cat)}
-                  variant={selectedCategory === cat ? "default" : "ghost"}
-                  className={cn(
-                    "rounded-xl font-black text-xs uppercase tracking-widest px-6 h-11 transition-all",
-                    selectedCategory === cat ? "bg-primary text-white shadow-lg" : "text-muted-foreground hover:bg-primary/5 hover:text-primary"
-                  )}
-                >
-                  {cat}s
-                </Button>
-              ))}
+      <div className="space-y-8">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 bg-primary/10 rounded-xl flex items-center justify-center text-primary">
+              <Library className="h-6 w-6" />
             </div>
-
-            {isLoading ? (
-              <div className="py-20 text-center"><Loader2 className="animate-spin mx-auto text-primary" /></div>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-                <AnimatePresence mode="popLayout">
-                  {filteredCrops.map((crop) => (
-                    <motion.div
-                      key={crop.id}
-                      layout
-                      initial={{ opacity: 0, scale: 0.9 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      whileHover={{ scale: 1.05 }}
-                      onClick={() => setSelectedCropForDetail(crop)}
-                      className="group cursor-pointer"
-                    >
-                      <Card className="glass-card rounded-[2.5rem] overflow-hidden border-none shadow-xl h-[350px] relative">
-                        <Image 
-                          src={crop.imageUrl || `https://picsum.photos/seed/${crop.id}/800/600`} 
-                          fill
-                          className="object-cover transition-transform duration-700 group-hover:scale-110" 
-                          alt={crop.name} 
-                          data-ai-hint="crop plant"
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-                        <div className="absolute top-6 right-6">
-                          {crop.isCertified ? (
-                            <Badge className="bg-amber-500 text-white border-none font-black text-[8px] uppercase tracking-widest px-2 shadow-lg">Verified</Badge>
-                          ) : (
-                            <Badge className="bg-white/20 backdrop-blur-md text-white border-white/20 font-black text-[8px] uppercase tracking-widest px-2">AI Draft</Badge>
-                          )}
-                        </div>
-                        <div className="absolute bottom-10 left-10 right-10 flex justify-between items-end">
-                          <div className="space-y-1">
-                            <Badge className="bg-primary/20 text-primary border-none font-black text-[9px] uppercase tracking-widest mb-2">
-                              {crop.category}
-                            </Badge>
-                            <h3 className="text-3xl font-black text-white tracking-tighter">{crop.name}</h3>
-                            <p className="text-white/60 text-xs font-bold uppercase tracking-widest">{crop.diseaseName || 'Certified Profile'}</p>
-                          </div>
-                          <div className="h-10 w-10 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center text-white group-hover:bg-primary group-hover:text-white transition-all">
-                            <ChevronRight className="h-5 w-5" />
-                          </div>
-                        </div>
-                      </Card>
-                    </motion.div>
-                  ))}
-                </AnimatePresence>
-              </div>
-            )}
+            <h3 className="text-2xl font-black tracking-tight">Solution Library</h3>
           </div>
-        </TabsContent>
-      </Tabs>
+          
+          <div className="flex flex-wrap gap-2 p-1.5 bg-muted/50 rounded-2xl w-fit">
+            {CATEGORIES.map(cat => (
+              <Button
+                key={cat}
+                onClick={() => setSelectedCategory(cat)}
+                variant={selectedCategory === cat ? "default" : "ghost"}
+                className={cn(
+                  "rounded-xl font-black text-xs uppercase tracking-widest px-6 h-11 transition-all",
+                  selectedCategory === cat ? "bg-primary text-white shadow-lg" : "text-muted-foreground hover:bg-primary/5 hover:text-primary"
+                )}
+              >
+                {cat}s
+              </Button>
+            ))}
+          </div>
+        </div>
+
+        {isLoading ? (
+          <div className="py-20 text-center"><Loader2 className="animate-spin mx-auto text-primary" /></div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+            <AnimatePresence mode="popLayout">
+              {filteredCrops.map((crop) => (
+                <motion.div
+                  key={crop.id}
+                  layout
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  whileHover={{ scale: 1.05 }}
+                  onClick={() => setSelectedCropForDetail(crop)}
+                  className="group cursor-pointer"
+                >
+                  <Card className="glass-card rounded-[2.5rem] overflow-hidden border-none shadow-xl h-[350px] relative">
+                    <Image 
+                      src={crop.imageUrl || `https://picsum.photos/seed/${crop.id}/800/600`} 
+                      fill
+                      className="object-cover transition-transform duration-700 group-hover:scale-110" 
+                      alt={crop.name} 
+                      data-ai-hint="crop plant"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                    <div className="absolute top-6 right-6">
+                      {crop.isCertified ? (
+                        <Badge className="bg-amber-500 text-white border-none font-black text-[8px] uppercase tracking-widest px-2 shadow-lg">Verified</Badge>
+                      ) : (
+                        <Badge className="bg-white/20 backdrop-blur-md text-white border-white/20 font-black text-[8px] uppercase tracking-widest px-2">AI Draft</Badge>
+                      )}
+                    </div>
+                    <div className="absolute bottom-10 left-10 right-10 flex justify-between items-end">
+                      <div className="space-y-1">
+                        <Badge className="bg-primary/20 text-primary border-none font-black text-[9px] uppercase tracking-widest mb-2">
+                          {crop.category}
+                        </Badge>
+                        <h3 className="text-3xl font-black text-white tracking-tighter">{crop.name}</h3>
+                        <p className="text-white/60 text-xs font-bold uppercase tracking-widest">{crop.diseaseName || 'Certified Profile'}</p>
+                      </div>
+                      <div className="h-10 w-10 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center text-white group-hover:bg-primary group-hover:text-white transition-all">
+                        <ChevronRight className="h-5 w-5" />
+                      </div>
+                    </div>
+                  </Card>
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          </div>
+        )}
+      </div>
 
       {/* Crop Detail Modal */}
       <Dialog open={!!selectedCropForDetail} onOpenChange={() => setSelectedCropForDetail(null)}>
