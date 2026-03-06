@@ -17,7 +17,11 @@ import {
   Info,
   Save,
   Edit3,
-  Bot
+  Bot,
+  Camera,
+  Upload,
+  X,
+  ImageIcon
 } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -54,12 +58,14 @@ export function ExpertVerificationPortal() {
   // Editable fields for expert modification
   const [editChemicalCure, setEditChemicalCure] = useState("");
   const [editDesiNuskha, setEditDesiNuskha] = useState("");
+  const [editImageUrl, setEditImageUrl] = useState("");
 
   // Initialize editable fields when a crop is selected
   useEffect(() => {
     if (selectedReviewCrop) {
       setEditChemicalCure(selectedReviewCrop.chemicalCure || "");
       setEditDesiNuskha(selectedReviewCrop.desiNuskha || "");
+      setEditImageUrl(selectedReviewCrop.imageUrl || "");
     }
   }, [selectedReviewCrop]);
 
@@ -75,6 +81,15 @@ export function ExpertVerificationPortal() {
   }, [firestore]);
   const { data: tickets, isLoading: loadingTickets } = useCollection(ticketsQuery);
 
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => setEditImageUrl(reader.result as string);
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleVerify = async (cert: any) => {
     if (!firestore || !cert.id) return;
     const docRef = doc(firestore, "crops", cert.id);
@@ -86,6 +101,7 @@ export function ExpertVerificationPortal() {
       verifiedBy: user?.uid,
       chemicalCure: editChemicalCure || cert.chemicalCure,
       desiNuskha: editDesiNuskha || cert.desiNuskha,
+      imageUrl: editImageUrl || cert.imageUrl,
       expertNotes: `Certified and modified by Scientist ${expertName} based on regional botanical norms.`
     });
 
@@ -207,11 +223,43 @@ export function ExpertVerificationPortal() {
               </div>
               <DialogTitle className="text-2xl font-black tracking-tight">Protocol Refinement Audit</DialogTitle>
             </div>
-            <DialogDescription className="italic font-medium">Verify AI reasoning and modify suggested protocols for {selectedReviewCrop?.name}.</DialogDescription>
+            <DialogDescription className="italic font-medium">Verify AI reasoning, modify suggested protocols, and audit field evidence for {selectedReviewCrop?.name}.</DialogDescription>
           </DialogHeader>
           
           <ScrollArea className="max-h-[60vh] pr-4">
             <div className="space-y-8 pt-6">
+              {/* Field Evidence / Image Audit Section */}
+              <div className="space-y-4">
+                <h4 className="text-[10px] font-black uppercase text-primary tracking-widest flex items-center gap-2">
+                  <ImageIcon className="h-4 w-4" /> Field Evidence Audit
+                </h4>
+                <div className="relative group rounded-3xl overflow-hidden border-4 border-muted/30 shadow-xl aspect-video bg-muted/50">
+                  {editImageUrl ? (
+                    <img src={editImageUrl} className="w-full h-full object-cover" alt="Audit Evidence" />
+                  ) : (
+                    <div className="w-full h-full flex flex-col items-center justify-center opacity-30">
+                      <Camera className="h-12 w-12 mb-2" />
+                      <p className="text-xs font-bold">No evidence attached</p>
+                    </div>
+                  )}
+                  <label className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center cursor-pointer text-white">
+                    <Upload className="h-10 w-10 mb-2" />
+                    <span className="font-black text-xs uppercase">Replace with High-Res Reference</span>
+                    <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
+                  </label>
+                  {editImageUrl !== selectedReviewCrop?.imageUrl && (
+                    <button 
+                      onClick={() => setEditImageUrl(selectedReviewCrop?.imageUrl)}
+                      className="absolute top-4 right-4 bg-destructive text-white p-2 rounded-full shadow-lg"
+                      title="Revert to Original"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
+                <p className="text-[10px] text-muted-foreground italic text-center">Experts can replace farmer photos with certified botanical reference images for the library.</p>
+              </div>
+
               {/* AI Logic Trace */}
               <div className="p-6 rounded-3xl bg-muted/30 border space-y-4">
                 <h4 className="text-[10px] font-black uppercase text-primary tracking-widest flex items-center gap-2">
