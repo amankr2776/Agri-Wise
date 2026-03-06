@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useMemo } from "react";
@@ -26,7 +25,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useFirestore, useCollection, useUser, useMemoFirebase } from "@/firebase";
-import { query, collection } from "firebase/firestore";
+import { query, collection, limit } from "firebase/firestore";
 import { addDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 import { useToast } from "@/hooks/use-toast";
 import { useTranslation } from "@/hooks/use-translation";
@@ -51,7 +50,7 @@ export function CropDiagnostics() {
   
   const cropsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
-    return query(collection(firestore, "crops"));
+    return query(collection(firestore, "crops"), limit(100));
   }, [firestore]);
 
   const { data: allCrops, isLoading } = useCollection(cropsQuery);
@@ -159,6 +158,7 @@ export function CropDiagnostics() {
                       className="object-cover transition-transform duration-700 group-hover:scale-110" 
                       alt={crop.name} 
                       data-ai-hint="crop plant"
+                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
                     <div className="absolute top-6 right-6">

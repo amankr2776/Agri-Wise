@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState } from "react";
@@ -46,7 +45,7 @@ import {
 } from "@/components/ui/select";
 import { useTranslation } from "@/hooks/use-translation";
 import { useFirestore, useCollection, useUser, useMemoFirebase } from "@/firebase";
-import { collection, query, orderBy, doc, increment } from "firebase/firestore";
+import { collection, query, orderBy, doc, increment, limit } from "firebase/firestore";
 import { addDocumentNonBlocking, updateDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 import { useToast } from "@/hooks/use-toast";
 import { useAppState } from "@/lib/app-state";
@@ -67,7 +66,11 @@ export function KisanNetwork() {
 
   const postsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
-    return query(collection(firestore, "posts"), orderBy("createdAt", "desc"));
+    return query(
+      collection(firestore, "posts"), 
+      orderBy("createdAt", "desc"),
+      limit(20)
+    );
   }, [firestore]);
 
   const { data: posts, isLoading } = useCollection(postsQuery);
@@ -342,7 +345,11 @@ function CommentDrawer({ postId, postAuthor }: { postId: string, postAuthor: str
   
   const commentsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
-    return query(collection(firestore, "posts", postId, "comments"), orderBy("createdAt", "asc"));
+    return query(
+      collection(firestore, "posts", postId, "comments"), 
+      orderBy("createdAt", "asc"),
+      limit(50)
+    );
   }, [firestore, postId]);
 
   const { data: comments } = useCollection(commentsQuery);
@@ -421,7 +428,11 @@ function FeedbackSection() {
 
   const feedbackQuery = useMemoFirebase(() => {
     if (!firestore) return null;
-    return query(collection(firestore, "feedback"), orderBy("createdAt", "desc"));
+    return query(
+      collection(firestore, "feedback"), 
+      orderBy("createdAt", "desc"),
+      limit(10)
+    );
   }, [firestore]);
 
   const { data: feedbacks } = useCollection(feedbackQuery);

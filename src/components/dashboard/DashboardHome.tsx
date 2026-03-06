@@ -103,39 +103,54 @@ export function DashboardHome({ onNavigate }: DashboardHomeProps) {
     return () => clearInterval(interval);
   }, []);
 
-  // Real-Time Data Fetching for Farmer Shipments
+  // Real-Time Data Fetching for Farmer Shipments - Limited to recent 10
   const farmerShipmentsQuery = useMemoFirebase(() => {
     if (!firestore || !user || role !== "Farmer") return null;
-    return query(collection(firestore, "bookings"), where("farmerId", "==", user.uid));
+    return query(
+      collection(firestore, "bookings"), 
+      where("farmerId", "==", user.uid),
+      orderBy("createdAt", "desc"),
+      limit(10)
+    );
   }, [firestore, user, role]);
   const { data: farmerShipments } = useCollection(farmerShipmentsQuery);
 
-  // REAL-TIME LISTENER: Intelligence Directives from Experts
+  // REAL-TIME LISTENER: Intelligence Directives from Experts - Limited to top 5
   const directivesQuery = useMemoFirebase(() => {
     if (!firestore) return null;
     return query(
       collection(firestore, "intelligence_directives"),
       where("status", "==", "active"),
-      orderBy("timestamp", "desc")
+      orderBy("timestamp", "desc"),
+      limit(5)
     );
   }, [firestore]);
   const { data: globalAlerts, isLoading: loadingAlerts } = useCollection(directivesQuery);
 
+  // Limited count for performance
   const globalPostsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
-    return query(collection(firestore, "posts"));
+    return query(collection(firestore, "posts"), limit(20));
   }, [firestore]);
   const { data: globalPosts, isLoading: loadingPosts } = useCollection(globalPostsQuery);
 
   const pendingPostsQuery = useMemoFirebase(() => {
     if (!firestore || (role !== "Expert" && role !== "Authority")) return null;
-    return query(collection(firestore, "crops"), where("status", "==", "pending_expert_review"));
+    return query(
+      collection(firestore, "crops"), 
+      where("status", "==", "pending_expert_review"),
+      limit(15)
+    );
   }, [firestore, role]);
   const { data: pendingPosts, isLoading: loadingPending } = useCollection(pendingPostsQuery);
 
   const myVehiclesQuery = useMemoFirebase(() => {
     if (!firestore || !user || role !== "Logistics") return null;
-    return query(collection(firestore, "vehicles"), where("ownerId", "==", user.uid));
+    return query(
+      collection(firestore, "vehicles"), 
+      where("ownerId", "==", user.uid),
+      limit(20)
+    );
   }, [firestore, user, role]);
   const { data: myVehicles, isLoading: loadingVehicles } = useCollection(myVehiclesQuery);
 

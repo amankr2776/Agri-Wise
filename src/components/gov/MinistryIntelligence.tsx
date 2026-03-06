@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState, useEffect } from "react";
+import React, { useMemo, useState, useEffect, useCallback } from "react";
 import { 
   AlertTriangle, 
   Globe, 
@@ -78,7 +78,7 @@ export function MinistryIntelligence() {
   // Real-time listener for physical pathogen clusters (Map)
   const outbreaksQuery = useMemoFirebase(() => {
     if (!firestore) return null;
-    return query(collection(firestore, "pestOutbreaks"));
+    return query(collection(firestore, "pestOutbreaks"), limit(50));
   }, [firestore]);
   const { data: dbOutbreaks } = useCollection(outbreaksQuery);
 
@@ -113,43 +113,48 @@ export function MinistryIntelligence() {
     return { densityAvg };
   }, [allNodes]);
 
-  // Automated Directive Logic: Sync high-density clusters to intelligence_directives
-  useEffect(() => {
+  // OPTIMIZED Automated Directive Logic: Only run when specifically requested or on significant changes
+  const syncDirectives = useCallback(async () => {
     if (!firestore || role !== 'Expert' || !allNodes.length) return;
 
-    const autoSyncDirectives = async () => {
-      const validNodes = allNodes.filter(n => n.pathogen !== 'None');
-      
+    const validNodes = allNodes.filter(n => n.pathogen !== 'None' && n.density > 70);
+    if (validNodes.length === 0) return;
+
+    // Fetch existing active directives to avoid duplicates in one go
+    const existingQ = query(
+      collection(firestore, "intelligence_directives"),
+      where("status", "==", "active"),
+      limit(20)
+    );
+    
+    try {
+      const snap = await getDocs(existingQ);
+      const existingHubs = new Set(snap.docs.map(d => d.data().locationNode));
+
       for (const node of validNodes) {
         const hubName = `${node.name} Hub`;
-        const existingQ = query(
-          collection(firestore, "intelligence_directives"),
-          where("locationNode", "==", hubName),
-          where("status", "==", "active"),
-          limit(1)
-        );
-        
-        try {
-          const snap = await getDocs(existingQ);
-          if (snap.empty) {
-            addDocumentNonBlocking(collection(firestore, "intelligence_directives"), {
-              title: `Pathogen Outbreak: ${node.pathogen}`,
-              severity: node.density > 70 ? 'CRITICAL' : 'ADVISORY',
-              description: `A high-density cluster (${node.density}%) has been detected. Immediate containment required.`,
-              locationNode: hubName,
-              expertId: 'AMAN_EXP_01',
-              status: 'active',
-              timestamp: serverTimestamp()
-            });
-          }
-        } catch (e) {
-          console.warn("Auto-sync failed for node:", node.name, e);
+        if (!existingHubs.has(hubName)) {
+          addDocumentNonBlocking(collection(firestore, "intelligence_directives"), {
+            title: `Pathogen Outbreak: ${node.pathogen}`,
+            severity: 'CRITICAL',
+            description: `A high-density cluster (${node.density}%) has been detected. Immediate containment required.`,
+            locationNode: hubName,
+            expertId: 'AMAN_EXP_01',
+            status: 'active',
+            timestamp: serverTimestamp()
+          });
         }
       }
-    };
-
-    autoSyncDirectives();
+    } catch (e) {
+      console.warn("Directive sync error:", e);
+    }
   }, [allNodes, firestore, role]);
+
+  useEffect(() => {
+    // Run sync occasionally or based on significant node changes
+    const timer = setTimeout(syncDirectives, 5000);
+    return () => clearTimeout(timer);
+  }, [syncDirectives]);
 
   const handleRunAiPrediction = async () => {
     setIsAiLoading(true);
