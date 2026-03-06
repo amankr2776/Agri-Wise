@@ -91,6 +91,18 @@ export function useCollection<T = any>(
             ? (memoizedTargetRefOrQuery as CollectionReference).path
             : (memoizedTargetRefOrQuery as unknown as InternalQuery)._query.path.canonicalString()
 
+        // GUEST MODE FALLBACK: For reference data reads, log a warning but don't emit a fatal error.
+        const publicPaths = ['crops', 'pests', 'diseases', 'marketPrices', 'mandiPrices', 'posts', 'pestOutbreaks'];
+        const isPublicPath = publicPaths.some(p => path.includes(p));
+
+        if (isPublicPath) {
+          console.warn(`Grid Guest Mode: Read access denied for path [${path}]. Using empty fallback.`);
+          setError(error);
+          setData([]);
+          setIsLoading(false);
+          return;
+        }
+
         const contextualError = new FirestorePermissionError({
           operation: 'list',
           path,

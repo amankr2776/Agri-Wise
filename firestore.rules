@@ -3,11 +3,11 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * AgriWise Security Rules
+     * KisanMitra National Grid Security Rules
      * 
      * CORE PHILOSOPHY:
-     * This ruleset implements a robust, role-based and ownership-based authorization model.
-     * It prioritizes Authorization Independence and Query-Able Paths (QAPs).
+     * Reference data is publicly readable to support "Guest Mode".
+     * User data and system roles require strict ownership/authorization.
      */
 
     // --- GLOBAL HELPER FUNCTIONS ---
@@ -44,25 +44,25 @@ service cloud.firestore {
 
     /**
      * @description Reference Data (Crops, Pests, Diseases).
-     * Publicly readable by all authenticated users.
+     * Publicly readable by EVERYONE to enable unauthenticated dashboard access.
      */
     match /crops/{cropId} {
-      allow read: if isSignedIn();
+      allow read: if true;
       allow write: if isAdmin() || isExpert();
     }
 
     match /pests/{pestId} {
-      allow read: if isSignedIn();
+      allow read: if true;
       allow write: if isAdmin() || isExpert();
     }
 
     match /diseases/{diseaseId} {
-      allow read: if isSignedIn();
+      allow read: if true;
       allow write: if isAdmin() || isExpert();
     }
 
     /**
-     * @description User profiles containing contact and role info.
+     * @description User profiles and role markers.
      */
     match /userProfiles/{userId} {
       allow get, list: if isSignedIn();
@@ -71,111 +71,68 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
-    /**
-     * @description Role markers (DBAC).
-     */
     match /roles_admins/{userId} { allow read: if isSignedIn(); allow write: if isAdmin(); }
     match /roles_experts/{userId} { allow read: if isSignedIn(); allow write: if isAdmin(); }
     match /roles_governmentOfficials/{userId} { allow read: if isSignedIn(); allow write: if isAdmin(); }
     match /roles_logisticsProviders/{userId} { allow read: if isSignedIn(); allow write: if isAdmin(); }
 
     /**
-     * @description Remedy information and social voting.
-     */
-    match /remedies/{remedyId} {
-      allow read: if isSignedIn();
-      allow create, update: if isAdmin() || isExpert();
-      allow delete: if isAdmin();
-
-      match /nuskhaVotes/{voteId} {
-        allow read: if isSignedIn();
-        allow create: if isSignedIn() && request.resource.data.voterId == request.auth.uid;
-        allow update, delete: if isExistingOwner('voterId');
-      }
-    }
-
-    /**
-     * @description Farmer diagnostic sessions.
-     */
-    match /diagnosticSessions/{sessionId} {
-      allow get, list: if isExistingOwner('farmerId') || isExpert() || isAdmin();
-      allow create: if isSignedIn() && request.resource.data.farmerId == request.auth.uid;
-      allow update: if (isExistingOwner('farmerId') || isExpert());
-      allow delete: if isAdmin();
-    }
-
-    /**
-     * @description Expert verifications.
-     */
-    match /verifications/{verificationId} {
-      allow get, list: if isExpert() || isExistingOwner('expertId') || (isSignedIn() && resource.data.farmerId == request.auth.uid);
-      allow create: if isExpert() && request.resource.data.expertId == request.auth.uid;
-      allow update: if isExistingOwner('expertId');
-      allow delete: if isAdmin();
-    }
-
-    /**
-     * @description Market intelligence and state info.
+     * @description Market intelligence.
      */
     match /marketPrices/{marketPriceId} {
-      allow read: if isSignedIn();
+      allow read: if true;
       allow create, update, delete: if isAdmin() || isGovOfficial();
     }
 
     match /mandiPrices/{priceId} {
-      allow read: if isSignedIn();
+      allow read: if true;
       allow create, update, delete: if isAdmin() || isGovOfficial();
     }
 
     match /states/{stateId} {
-      allow read: if isSignedIn();
+      allow read: if true;
       allow write: if isAdmin();
     }
 
     /**
      * @description Logistics and transport.
+     * Public visibility for vehicles, but bookings require auth.
      */
-    match /logisticsProviders/{logisticsProviderId} {
-      allow get, list: if isSignedIn();
-      allow create, update: if isAdmin() || (isSignedIn() && request.resource.data.userId == request.auth.uid);
-      allow delete: if isAdmin();
-    }
-
     match /vehicles/{vehicleId} {
-      allow read: if isSignedIn();
+      allow read: if true;
       allow write: if isAdmin() || (isSignedIn() && request.resource.data.ownerId == request.auth.uid);
     }
 
     match /bookings/{bookingId} {
-      allow read: if isSignedIn();
+      allow read: if isSignedIn() && (resource.data.farmerId == request.auth.uid || hasRole('roles_logisticsProviders'));
       allow create: if isSignedIn();
       allow update: if isSignedIn();
       allow delete: if isAdmin();
     }
 
     /**
-     * @description Social network and maps.
+     * @description Social network.
      */
     match /posts/{postId} {
-      allow read: if isSignedIn();
+      allow read: if true;
       allow create: if isSignedIn() && request.resource.data.authorId == request.auth.uid;
       allow update: if isExistingOwner('authorId') || isExpert();
       allow delete: if isExistingOwner('authorId') || isAdmin();
 
       match /comments/{commentId} {
-        allow read: if isSignedIn();
+        allow read: if true;
         allow create: if isSignedIn() && request.resource.data.authorId == request.auth.uid;
         allow update, delete: if isExistingOwner('authorId') || isAdmin();
       }
     }
 
     match /pestOutbreaks/{outbreakId} {
-      allow read: if isSignedIn();
+      allow read: if true;
       allow write: if isAdmin() || isExpert() || isGovOfficial();
     }
 
     /**
-     * @description Notifications.
+     * @description Private user data.
      */
     match /users/{userId}/notifications/{notifId} {
       allow read, write: if isOwner(userId) || isExpert() || isAdmin();
@@ -185,11 +142,8 @@ service cloud.firestore {
       allow read, write: if isOwner(userId);
     }
 
-    /**
-     * @description Media.
-     */
     match /media_public/{mediaId} {
-      allow read: if isSignedIn();
+      allow read: if true;
       allow write: if isSignedIn();
     }
 
