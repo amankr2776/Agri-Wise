@@ -31,7 +31,7 @@ import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { diagnoseCropPest, FarmerCropPestDiagnosisOutput } from "@/ai/flows/farmer-crop-pest-diagnosis";
 import { useFirestore } from "@/firebase";
-import { collection, query, where, getDocs, limit } from "firebase/firestore";
+import { collection } from "firebase/firestore";
 import { addDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -87,7 +87,9 @@ export function DiagnosticTool() {
           if (videoRef.current) {
             videoRef.current.srcObject = stream;
             videoRef.current.onloadedmetadata = () => {
-              videoRef.current?.play().catch(e => console.warn("Camera video play failed", e));
+              try {
+                videoRef.current?.play().catch(e => console.warn("Camera video play failed", e));
+              } catch (e) {}
             };
           }
         } catch (error) {
@@ -141,30 +143,11 @@ export function DiagnosticTool() {
     setResult(null);
     
     try {
-      // Improve specificity by feeding the AI previously certified protocols for this crop
-      let knowledgeBaseContext = "";
-      if (firestore && cropType) {
-        const q = query(
-          collection(firestore, "crops"), 
-          where("name", "==", cropType), 
-          where("isCertified", "==", true), 
-          limit(5)
-        );
-        const snap = await getDocs(q);
-        if (!snap.empty) {
-          knowledgeBaseContext = snap.docs.map(d => {
-            const data = d.data();
-            return `Disease: ${data.diseaseName}, Cure: ${data.chemicalCure}, Desi: ${data.desiNuskha}`;
-          }).join(" | ");
-        }
-      }
-
       const res = await diagnoseCropPest({
         cropType: cropType || "Unspecified Crop",
         symptomsDescription: symptoms || "Visual analysis requested.",
         photoDataUri: photo || undefined,
         language: language,
-        knowledgeBaseContext: knowledgeBaseContext || undefined
       });
       
       setResult(res);

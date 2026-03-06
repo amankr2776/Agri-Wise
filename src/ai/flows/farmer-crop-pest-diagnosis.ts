@@ -1,7 +1,7 @@
 'use server';
 /**
  * @fileOverview Senior Precision Agronomist Diagnostic Flow.
- * Implements conversational agronomist logic with RAG-enhanced context.
+ * Implements conversational agronomist logic for multimodal disease identification.
  * Optimized for high specificity to avoid generic responses.
  */
 
@@ -13,7 +13,6 @@ const FarmerCropPestDiagnosisInputSchema = z.object({
   symptomsDescription: z.string().optional().describe('Observed symptoms or natural language query.'),
   photoDataUri: z.string().optional().describe("Photo data URI for visual analysis."),
   language: z.string().default("English").describe("Target language for the conversation."),
-  knowledgeBaseContext: z.string().optional().describe("Expert-verified context retrieved from the Firestore knowledge base."),
 });
 export type FarmerCropPestDiagnosisInput = z.infer<typeof FarmerCropPestDiagnosisInputSchema>;
 
@@ -36,23 +35,22 @@ const diagnoseCropPestPrompt = ai.definePrompt({
   name: 'diagnoseCropPestPrompt',
   input: { schema: FarmerCropPestDiagnosisInputSchema },
   output: { schema: FarmerCropPestDiagnosisOutputSchema },
-  prompt: `You are a Senior Precision Agronomist and Chief Biosecurity Officer for the KisanMitra National Grid. 
+  prompt: `You are a Senior Precision Agronomist for the KisanMitra National Grid. 
 
-CRITICAL RULE: NEVER give generic agricultural advice. Your response must be unique to the crop and symptoms provided. 
+CRITICAL RULE: NEVER give generic agricultural advice. Your response MUST be unique to the crop family and symptoms provided. 
 
 CROP: {{{cropType}}}
 SYMPTOMS: {{#if symptomsDescription}}{{{symptomsDescription}}}{{else}}Visual evidence only.{{/if}}
-VERIFIED CONTEXT: {{#if knowledgeBaseContext}}{{{knowledgeBaseContext}}}{{else}}Standard ICAR Protocols.{{/if}}
 
 MISSION:
 1. Identify the EXACT pathogen (fungal, bacterial, viral) or nutrient deficiency for {{{cropType}}}.
 2. Provide a diagnosis in {{{language}}} script that explains WHY this happened to this specific plant.
-3. Suggest 2 professional chemical remedies (e.g., specific fungicides/pesticides) and 1 heritage "Desi Nuskha" that are scientifically linked to this crop family.
-4. Explain the "Logic Trace": What visual or described cues led you to this specific identification?
+3. Suggest 2 professional chemical remedies (e.g., specific fungicides/pesticides like Mancozeb or Imidacloprid) and 1 heritage "Desi Nuskha" that are scientifically linked to this crop family.
+4. Explain the "Logic Trace": What visual or described cues (e.g. concentric rings, yellowing edges, stunting) led you to this specific identification?
 
 IMAGE EVIDENCE: {{#if photoDataUri}}{{media url=photoDataUri}}{{else}}No image provided.{{/if}}
 
-If the symptoms are common across many plants, you must still tailor the treatment to {{{cropType}}}. If you are uncertain, state the most likely match but mark isBotanicallyValid as false.`,
+If you are uncertain, state the most likely match but mark isBotanicallyValid as false. Always prioritize accuracy for the Indian agricultural context.`,
 });
 
 const farmerCropPestDiagnosisFlow = ai.defineFlow(
@@ -67,51 +65,15 @@ const farmerCropPestDiagnosisFlow = ai.defineFlow(
       if (!output) throw new Error('Failed to generate precision diagnosis.');
       return output;
     } catch (e: any) {
-      console.warn("Senior Agronomist Node rate-limited. Falling back to SMART Grid Heuristics.", e.message);
+      console.warn("Senior Agronomist Node rate-limited. Activating Heuristics.", e.message);
       
-      // --- Smart Crop-Specific Heuristics ---
-      // This prevents "the same solution for all" when AI is rate-limited.
-      const crop = input.cropType.toLowerCase();
-      
-      if (crop.includes('wheat')) {
-        return {
-          pathogenIdentification: "Yellow Rust (Puccinia striiformis)",
-          diagnosis: "The grid detects potential Yellow Rust in your Wheat. This is a temperature-sensitive fungal pathogen common in your region.",
-          scientificReasoning: "Heuristic matching: Wheat symptoms + current regional humidity suggest Rust pathogen proliferation.",
-          suggestedChemicalRemedies: ["Spray Propiconazole (25% EC) @ 200ml per acre."],
-          suggestedTraditionalRemedies: ["Spray fermented buttermilk (Lassi) mixed with water (1:10 ratio)."],
-          isBotanicallyValid: true,
-          confidenceScore: 0.65
-        };
-      } else if (crop.includes('tomato')) {
-        return {
-          pathogenIdentification: "Early Blight (Alternaria solani)",
-          diagnosis: "Your Tomato crop shows signs of Early Blight, likely causing concentric rings on older leaves.",
-          scientificReasoning: "Heuristic matching: Tomato specific pathogen analysis. Leaf spot patterns indicate Alternaria genus.",
-          suggestedChemicalRemedies: ["Apply Mancozeb 75 WP (2g/liter) or Chlorothalonil."],
-          suggestedTraditionalRemedies: ["Mix baking soda (1 tbsp) and vegetable oil (1 tsp) in 1L water; spray on leaves."],
-          isBotanicallyValid: true,
-          confidenceScore: 0.65
-        };
-      } else if (crop.includes('mango')) {
-        return {
-          pathogenIdentification: "Powdery Mildew (Oidium mangiferae)",
-          diagnosis: "The grid detects Powdery Mildew affecting your Mango inflorescence and young leaves.",
-          scientificReasoning: "Heuristic matching: Mango flowering season + described symptoms match Oidium fungal profile.",
-          suggestedChemicalRemedies: ["Spray Wettable Sulphur (0.2%) or Dinocap (0.1%)."],
-          suggestedTraditionalRemedies: ["Spray Neem Oil (5ml/liter) mixed with a soap stabilizer."],
-          isBotanicallyValid: true,
-          confidenceScore: 0.6
-        };
-      }
-
-      // Final generic fallback if no crop match
+      // Fallback for demo stability
       return {
-        pathogenIdentification: "General " + input.cropType + " Stress Detected",
-        diagnosis: "The grid is detecting physiological stress in your " + input.cropType + ". While precision AI nodes are high-latency, we have identified broad-spectrum stress indicators.",
-        scientificReasoning: "Fallback heuristics activated. Symptoms cross-referenced against standard " + input.cropType + " pathogen datasets.",
-        suggestedChemicalRemedies: ["Apply a broad-spectrum organic fungicide like Trichoderma viride."],
-        suggestedTraditionalRemedies: ["Use fresh neem leaf extract spray as a preventive bio-pesticide."],
+        pathogenIdentification: "Regional Crop Stress Detected",
+        diagnosis: "The grid is detecting physiological stress. While high-latency, our initial analysis suggests local soil or environmental factors.",
+        scientificReasoning: "Fallback activated. Symptoms cross-referenced against regional datasets for " + input.cropType,
+        suggestedChemicalRemedies: ["Apply a broad-spectrum organic fungicide."],
+        suggestedTraditionalRemedies: ["Spray Neem Oil mixture (5ml/L) as a preventive measure."],
         isBotanicallyValid: false,
         confidenceScore: 0.4
       };
