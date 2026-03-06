@@ -27,7 +27,8 @@ import {
   MessageCircle,
   Volume2,
   UserCheck,
-  Building2
+  Building2,
+  CheckCircle2
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -103,7 +104,7 @@ export function DashboardHome({ onNavigate }: DashboardHomeProps) {
     return () => clearInterval(interval);
   }, []);
 
-  // Real-Time Data Fetching for Farmer Shipments - Limited to recent 10
+  // Real-Time Data Fetching for Farmer Shipments
   const farmerShipmentsQuery = useMemoFirebase(() => {
     if (!firestore || !user || role !== "Farmer") return null;
     return query(
@@ -115,7 +116,7 @@ export function DashboardHome({ onNavigate }: DashboardHomeProps) {
   }, [firestore, user, role]);
   const { data: farmerShipments } = useCollection(farmerShipmentsQuery);
 
-  // REAL-TIME LISTENER: Intelligence Directives from Experts - Limited to top 5
+  // Intelligence Directives Listener
   const directivesQuery = useMemoFirebase(() => {
     if (!firestore) return null;
     return query(
@@ -127,7 +128,6 @@ export function DashboardHome({ onNavigate }: DashboardHomeProps) {
   }, [firestore]);
   const { data: globalAlerts, isLoading: loadingAlerts } = useCollection(directivesQuery);
 
-  // Limited count for performance
   const globalPostsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
     return query(collection(firestore, "posts"), limit(20));
@@ -167,7 +167,7 @@ export function DashboardHome({ onNavigate }: DashboardHomeProps) {
     e.stopPropagation();
     if (isSpeaking) return;
     
-    const text = `${alert.title} directive for ${alert.locationNode}. Severity is ${alert.severity}. Expert advice: ${alert.description}`;
+    const text = `${alert.title} directive for ${alert.locationNode}. Expert advice: ${alert.description}`;
     setIsSpeaking(true);
     
     try {
@@ -356,7 +356,7 @@ export function DashboardHome({ onNavigate }: DashboardHomeProps) {
                           <div className="flex justify-between items-start">
                             <div className="flex gap-2">
                               {alert.severity === 'CRITICAL' && (
-                                <Badge variant="destructive" className="font-black uppercase tracking-widest text-[9px] animate-pulse-engagement">Critical</Badge>
+                                <Badge variant="destructive" className="font-black uppercase tracking-widest text-[9px]">Critical</Badge>
                               )}
                               <Badge className="bg-primary/10 text-primary border-none font-black text-[9px] uppercase tracking-widest">
                                 <UserCheck className="h-3 w-3 mr-1" /> Expert Verified
@@ -415,7 +415,7 @@ export function DashboardHome({ onNavigate }: DashboardHomeProps) {
                 <div>
                   <DialogTitle className="text-4xl font-black tracking-tighter">{selectedAlert?.title}</DialogTitle>
                   <DialogDescription className="text-slate-400 font-bold uppercase tracking-widest text-[10px]">
-                    National Grid Directive | Verified by Dr. Aman Kumar
+                    National Grid Directive | Verified Hub
                   </DialogDescription>
                 </div>
               </div>
@@ -449,7 +449,7 @@ export function DashboardHome({ onNavigate }: DashboardHomeProps) {
             <div className="flex items-center gap-4 p-6 bg-muted/30 rounded-2xl border border-dashed">
               <UserCheck className="h-6 w-6 text-primary" />
               <div className="text-[10px] font-bold text-muted-foreground leading-tight">
-                This directive was issued by the <span className="text-primary">Scientist Node AMAN_EXP_01</span>. 
+                This directive was issued by a <span className="text-primary">Scientist Node</span>. 
                 Follow all protocols to minimize regional pathogen spread.
               </div>
             </div>

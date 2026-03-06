@@ -75,14 +75,12 @@ export function MinistryIntelligence() {
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [spreadPrediction, setSpreadPrediction] = useState<SpreadPredictionOutput | null>(null);
   
-  // Real-time listener for physical pathogen clusters (Map)
   const outbreaksQuery = useMemoFirebase(() => {
     if (!firestore) return null;
     return query(collection(firestore, "pestOutbreaks"), limit(50));
   }, [firestore]);
   const { data: dbOutbreaks } = useCollection(outbreaksQuery);
 
-  // Real-time listener for textual intelligence directives (Sidebar)
   const directivesQuery = useMemoFirebase(() => {
     if (!firestore) return null;
     return query(
@@ -113,14 +111,12 @@ export function MinistryIntelligence() {
     return { densityAvg };
   }, [allNodes]);
 
-  // OPTIMIZED Automated Directive Logic: Only run when specifically requested or on significant changes
   const syncDirectives = useCallback(async () => {
     if (!firestore || role !== 'Expert' || !allNodes.length) return;
 
     const validNodes = allNodes.filter(n => n.pathogen !== 'None' && n.density > 70);
     if (validNodes.length === 0) return;
 
-    // Fetch existing active directives to avoid duplicates in one go
     const existingQ = query(
       collection(firestore, "intelligence_directives"),
       where("status", "==", "active"),
@@ -151,7 +147,6 @@ export function MinistryIntelligence() {
   }, [allNodes, firestore, role]);
 
   useEffect(() => {
-    // Run sync occasionally or based on significant node changes
     const timer = setTimeout(syncDirectives, 5000);
     return () => clearTimeout(timer);
   }, [syncDirectives]);
@@ -169,7 +164,6 @@ export function MinistryIntelligence() {
       });
       setSpreadPrediction(result);
 
-      // Broadcast AI Forecast to the National Grid
       addDocumentNonBlocking(collection(firestore!, "intelligence_directives"), {
         title: `AI Spread Forecast: ${topNode.pathogen}`,
         severity: result.predictedVector.riskLevel === 'Critical' ? 'CRITICAL' : 'ADVISORY',
@@ -192,11 +186,9 @@ export function MinistryIntelligence() {
     if (!firestore) return;
     const batch = writeBatch(firestore);
     
-    // Clear Physical Outbreaks
     const snapOutbreaks = await getDocs(collection(firestore, "pestOutbreaks"));
     snapOutbreaks.forEach(d => batch.delete(d.ref));
 
-    // Clear Intelligence Directives
     const snapDirectives = await getDocs(collection(firestore, "intelligence_directives"));
     snapDirectives.forEach(d => batch.delete(d.ref));
 
@@ -237,12 +229,10 @@ export function MinistryIntelligence() {
 
   return (
     <div className="flex h-full w-full bg-background">
-      {/* COLUMN 2: CENTER COMMAND PANEL (THE MAP) */}
       <div className="flex-1 relative bg-slate-950 border-r border-border">
         <div className="absolute inset-0 bg-[url('https://picsum.photos/seed/darkmap/1200/800')] bg-cover bg-center opacity-20 grayscale brightness-50" />
         <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-slate-950/50" />
 
-        {/* Top Control Overlay */}
         <div className="absolute top-8 left-10 right-10 z-20 flex justify-between items-start pointer-events-none">
           <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="space-y-1">
             <h3 className="text-3xl font-black tracking-tighter text-white flex items-center gap-3">
@@ -271,7 +261,6 @@ export function MinistryIntelligence() {
           </div>
         </div>
 
-        {/* Map Interactive Area */}
         <div className="absolute inset-0 flex items-center justify-center">
           {allNodes.map((node) => (
             <motion.div 
@@ -331,7 +320,6 @@ export function MinistryIntelligence() {
           )}
         </div>
 
-        {/* Floating Add Alert */}
         <div className="absolute bottom-10 right-10 z-20">
           <Dialog open={isReportDialogOpen} onOpenChange={setIsReportDialogOpen}>
             <DialogTrigger asChild>
@@ -382,7 +370,6 @@ export function MinistryIntelligence() {
         </div>
       </div>
 
-      {/* COLUMN 3: INTELLIGENCE SIDEBAR */}
       <aside className="w-[450px] bg-background flex flex-col p-10 space-y-10">
         <Card className="border-none shadow-2xl rounded-[3rem] bg-white text-slate-900 p-8 flex flex-col space-y-6 h-[500px]">
           <div className="flex items-center justify-between">

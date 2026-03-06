@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useEffect, useMemo, useCallback } from "react";
@@ -67,11 +66,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useFirestore, useCollection, useUser, useMemoFirebase } from "@/firebase";
 import { collection, query, where, doc, orderBy, limit } from "firebase/firestore";
 import { updateDocumentNonBlocking, addDocumentNonBlocking, deleteDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 import { dispatchGridNotification } from "@/firebase/messaging";
-import { Skeleton } from "@/components/ui/skeleton";
 import { useAppState } from "@/lib/app-state";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -94,17 +93,16 @@ export function ExpertVerificationPortal() {
   const [editDesiNuskha, setEditDesiNuskha] = useState("");
   const [editExpertPov, setEditExpertPov] = useState("");
   const [isCertifiedToggle, setIsCertifiedToggle] = useState(false);
-  const [isSyncing, setIsSyncing] = useState(false);
 
   const pendingCertsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
-    return query(collection(firestore, "crops"), where("status", "==", "pending_expert_review"));
+    return query(collection(firestore, "crops"), where("status", "==", "pending_expert_review"), limit(20));
   }, [firestore]);
   const { data: pendingCerts, isLoading: loadingCerts } = useCollection(pendingCertsQuery);
 
   const inventoryQuery = useMemoFirebase(() => {
     if (!firestore) return null;
-    return query(collection(firestore, "crops"), where("isCertified", "==", true));
+    return query(collection(firestore, "crops"), where("isCertified", "==", true), limit(50));
   }, [firestore]);
   const { data: inventory } = useCollection(inventoryQuery);
 
@@ -220,7 +218,7 @@ export function ExpertVerificationPortal() {
                 <div className="h-12 w-12 bg-primary rounded-2xl flex items-center justify-center text-white shadow-lg"><BrainCircuit className="h-7 w-7" /></div>
                 <div>
                   <DialogTitle className="text-3xl font-black tracking-tight">Professional Pin Mode</DialogTitle>
-                  <DialogDescription className="text-slate-400 font-bold uppercase tracking-widest text-[10px]">Scientist Node: Dr. {expertName}</DialogDescription>
+                  <DialogDescription className="text-slate-400 font-bold uppercase tracking-widest text-[10px]">Scientist Node: {expertName}</DialogDescription>
                 </div>
               </div>
             </DialogHeader>

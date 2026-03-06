@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
+import dynamic from "next/dynamic";
 import { 
   LayoutDashboard, 
   Leaf, 
@@ -52,14 +53,33 @@ import { useFirestore, useAuth } from "@/firebase";
 import { collection, query, orderBy, limit, onSnapshot, doc, setDoc } from "firebase/firestore";
 import { signInAnonymously } from "firebase/auth";
 
-// Section Components
-import { DashboardHome } from "@/components/dashboard/DashboardHome";
-import { CropDiagnostics } from "@/components/diagnostics/CropDiagnostics";
-import { MarketIntelligence } from "@/components/market/MarketIntelligence";
-import { MandiLink } from "@/components/logistics/MandiLink";
-import { KisanNetwork } from "@/components/social/KisanNetwork";
-import { SettingsView } from "@/components/settings/SettingsView";
-import { NotificationBar } from "@/components/notifications/NotificationBar";
+// Dynamic Section Components to optimize chunk loading
+const DashboardHome = dynamic(() => import("@/components/dashboard/DashboardHome").then(mod => mod.DashboardHome), { 
+  ssr: false,
+  loading: () => <div className="p-10 text-center animate-pulse font-black uppercase text-xs">Syncing Home Node...</div>
+});
+const CropDiagnostics = dynamic(() => import("@/components/diagnostics/CropDiagnostics").then(mod => mod.CropDiagnostics), { 
+  ssr: false,
+  loading: () => <div className="p-10 text-center animate-pulse font-black uppercase text-xs">Loading Diagnostic Lab...</div>
+});
+const MarketIntelligence = dynamic(() => import("@/components/market/MarketIntelligence").then(mod => mod.MarketIntelligence), { 
+  ssr: false,
+  loading: () => <div className="p-10 text-center animate-pulse font-black uppercase text-xs">Syncing Mandi Rates...</div>
+});
+const MandiLink = dynamic(() => import("@/components/logistics/MandiLink").then(mod => mod.MandiLink), { 
+  ssr: false,
+  loading: () => <div className="p-10 text-center animate-pulse font-black uppercase text-xs">Connecting Logistics Bridge...</div>
+});
+const KisanNetwork = dynamic(() => import("@/components/social/KisanNetwork").then(mod => mod.KisanNetwork), { 
+  ssr: false,
+  loading: () => <div className="p-10 text-center animate-pulse font-black uppercase text-xs">Entering Social Grid...</div>
+});
+const SettingsView = dynamic(() => import("@/components/settings/SettingsView").then(mod => mod.SettingsView), { 
+  ssr: false 
+});
+const NotificationBar = dynamic(() => import("@/components/notifications/NotificationBar").then(mod => mod.NotificationBar), { 
+  ssr: false 
+});
 
 const LANGUAGES: AppLanguage[] = [
   "English", "Hindi", "Bhojpuri", "Punjabi", "Haryanvi", 
@@ -114,7 +134,6 @@ export default function KisanMitraApp() {
   useEffect(() => {
     if (!firestore || !auth.currentUser || !isAuthenticated) return;
 
-    // Listen to users/{uid}/notifications for verified alerts from experts
     const notifQuery = query(
       collection(firestore, "users", auth.currentUser.uid, "notifications"), 
       orderBy("createdAt", "desc"),
@@ -128,7 +147,6 @@ export default function KisanMitraApp() {
       });
       setNotifications(newNotifs);
 
-      // Pop up the top bar alert if it's a very recent unread notification
       const latest = newNotifs[0];
       if (latest && !latest.isRead) {
         const isRecent = (Date.now() - new Date(latest.createdAt).getTime()) < 60000;
