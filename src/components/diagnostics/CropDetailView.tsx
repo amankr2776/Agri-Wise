@@ -256,7 +256,7 @@ export function CropDetailView({ crop: initialCrop, onClose }: CropDetailViewPro
               ))}
             </div>
 
-            {/* expert Insight Section (Real-time Audit Handshake) */}
+            {/* Expert Insight Section (Real-time Audit Handshake) */}
             <div className="space-y-6">
               <h4 className="text-2xl font-black tracking-tight flex items-center gap-3 text-slate-900">
                 <ShieldCheck className="h-7 w-7 text-primary" />
