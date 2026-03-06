@@ -10,7 +10,9 @@ import {
   Library,
   ShieldCheck,
   Search,
-  Bot
+  Bot,
+  X,
+  ArrowLeft
 } from "lucide-react";
 import Image from "next/image";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -30,6 +32,7 @@ import { useAppState } from "@/lib/app-state";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { DiagnosticTool } from "./DiagnosticTool";
+import { CropDetailView } from "./CropDetailView";
 
 const CATEGORIES = ["Plant", "Seed", "Vegetable", "Fruit", "Grain"];
 
@@ -41,6 +44,7 @@ export function CropDiagnostics() {
   
   const [selectedCategory, setSelectedCategory] = useState<string>("Grain");
   const [isReportOpen, setIsReportOpen] = useState(false);
+  const [selectedCropForDetail, setSelectedCropForDetail] = useState<any>(null);
   
   const cropsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
@@ -134,6 +138,7 @@ export function CropDiagnostics() {
                       initial={{ opacity: 0, scale: 0.9 }}
                       animate={{ opacity: 1, scale: 1 }}
                       whileHover={{ scale: 1.05 }}
+                      onClick={() => setSelectedCropForDetail(crop)}
                       className="group cursor-pointer"
                     >
                       <Card className="glass-card rounded-[2.5rem] overflow-hidden border-none shadow-xl h-[350px] relative">
@@ -158,7 +163,7 @@ export function CropDiagnostics() {
                               {crop.category}
                             </Badge>
                             <h3 className="text-3xl font-black text-white tracking-tighter">{crop.name}</h3>
-                            <p className="text-white/60 text-xs font-bold uppercase tracking-widest">{crop.diseaseName}</p>
+                            <p className="text-white/60 text-xs font-bold uppercase tracking-widest">{crop.diseaseName || 'Certified Profile'}</p>
                           </div>
                           <div className="h-10 w-10 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center text-white group-hover:bg-primary group-hover:text-white transition-all">
                             <ChevronRight className="h-5 w-5" />
@@ -173,6 +178,18 @@ export function CropDiagnostics() {
           </div>
         </TabsContent>
       </Tabs>
+
+      {/* Crop Detail Modal */}
+      <Dialog open={!!selectedCropForDetail} onOpenChange={() => setSelectedCropForDetail(null)}>
+        <DialogContent className="rounded-[3rem] sm:max-w-4xl p-0 overflow-hidden border-none shadow-2xl">
+          {selectedCropForDetail && (
+            <CropDetailView 
+              crop={selectedCropForDetail} 
+              onClose={() => setSelectedCropForDetail(null)} 
+            />
+          )}
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={isReportOpen} onOpenChange={setIsReportOpen}>
         <DialogContent className="rounded-[3rem] sm:max-w-[600px] p-10">
