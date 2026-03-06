@@ -21,7 +21,8 @@ import {
   Info,
   CheckCircle2,
   Volume2,
-  History
+  History,
+  Building2
 } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -112,6 +113,44 @@ export function MinistryIntelligence() {
     return { densityAvg };
   }, [allNodes]);
 
+  // Automated Directive Logic: Sync high-density clusters to intelligence_directives
+  useEffect(() => {
+    if (!firestore || role !== 'Expert' || !allNodes.length) return;
+
+    const autoSyncDirectives = async () => {
+      const validNodes = allNodes.filter(n => n.pathogen !== 'None');
+      
+      for (const node of validNodes) {
+        const hubName = `${node.name} Hub`;
+        const existingQ = query(
+          collection(firestore, "intelligence_directives"),
+          where("locationNode", "==", hubName),
+          where("status", "==", "active"),
+          limit(1)
+        );
+        
+        try {
+          const snap = await getDocs(existingQ);
+          if (snap.empty) {
+            addDocumentNonBlocking(collection(firestore, "intelligence_directives"), {
+              title: `Pathogen Outbreak: ${node.pathogen}`,
+              severity: node.density > 70 ? 'CRITICAL' : 'ADVISORY',
+              description: `A high-density cluster (${node.density}%) has been detected. Immediate containment required.`,
+              locationNode: hubName,
+              expertId: 'AMAN_EXP_01',
+              status: 'active',
+              timestamp: serverTimestamp()
+            });
+          }
+        } catch (e) {
+          console.warn("Auto-sync failed for node:", node.name, e);
+        }
+      }
+    };
+
+    autoSyncDirectives();
+  }, [allNodes, firestore, role]);
+
   const handleRunAiPrediction = async () => {
     setIsAiLoading(true);
     try {
@@ -124,7 +163,19 @@ export function MinistryIntelligence() {
         humidity: 78
       });
       setSpreadPrediction(result);
-      toast({ title: "AI Prediction Ready", description: "48-hour spread vector synthesized by Gemini." });
+
+      // Broadcast AI Forecast to the National Grid
+      addDocumentNonBlocking(collection(firestore!, "intelligence_directives"), {
+        title: `AI Spread Forecast: ${topNode.pathogen}`,
+        severity: result.predictedVector.riskLevel === 'Critical' ? 'CRITICAL' : 'ADVISORY',
+        description: `AI Analysis: Predicted spread ${result.predictedVector.distanceKm}km towards ${result.predictedVector.direction}. Instructions: ${result.strategicAdvice}`,
+        locationNode: `Regional Sector: ${topNode.name}`,
+        expertId: 'AMAN_EXP_01',
+        status: 'active',
+        timestamp: serverTimestamp()
+      });
+
+      toast({ title: "AI Prediction Ready", description: "48-hour spread vector synthesized and broadcasted to grid." });
     } catch (e) {
       toast({ variant: "destructive", title: "AI Error", description: "Spread engine connection unstable." });
     } finally {
@@ -135,10 +186,17 @@ export function MinistryIntelligence() {
   const handleClearGrid = async () => {
     if (!firestore) return;
     const batch = writeBatch(firestore);
-    const snap = await getDocs(collection(firestore, "pestOutbreaks"));
-    snap.forEach(d => batch.delete(d.ref));
+    
+    // Clear Physical Outbreaks
+    const snapOutbreaks = await getDocs(collection(firestore, "pestOutbreaks"));
+    snapOutbreaks.forEach(d => batch.delete(d.ref));
+
+    // Clear Intelligence Directives
+    const snapDirectives = await getDocs(collection(firestore, "intelligence_directives"));
+    snapDirectives.forEach(d => batch.delete(d.ref));
+
     await batch.commit();
-    toast({ title: "Grid Reset", description: "All active pathogen clusters have been cleared." });
+    toast({ title: "Grid Reset", description: "All active pathogen clusters and directives have been cleared." });
   };
 
   const handleCreateDirective = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -157,8 +215,6 @@ export function MinistryIntelligence() {
       timestamp: serverTimestamp()
     };
 
-    // This document creation triggers a Fan-out logic prime for a Firebase Cloud Function
-    // to send push notifications to all users in the specified Location Node.
     addDocumentNonBlocking(collection(firestore, "intelligence_directives"), data);
     setIsReportDialogOpen(false);
     setIsSubmitting(false);
@@ -197,7 +253,7 @@ export function MinistryIntelligence() {
               onClick={handleClearGrid}
               className="rounded-xl h-11 px-6 font-black border-destructive/20 text-destructive bg-slate-900/80 backdrop-blur-md hover:bg-destructive/10"
             >
-              <Trash2 className="h-4 w-4 mr-2" /> Cluster Reset
+              <Trash2 className="h-4 w-4 mr-2" /> Grid Reset
             </Button>
             <Button 
               onClick={handleRunAiPrediction}
