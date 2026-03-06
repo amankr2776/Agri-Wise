@@ -16,7 +16,8 @@ import {
   Fingerprint,
   Lock,
   ChevronDown,
-  LogOut
+  LogOut,
+  ShieldAlert
 } from "lucide-react";
 import { 
   SidebarProvider, 
@@ -49,7 +50,7 @@ import { useAppState, AppLanguage, Notification } from "@/lib/app-state";
 import { useTranslation } from "@/hooks/use-translation";
 import { cn } from "@/lib/utils";
 import { useFirestore, useUser, useAuth } from "@/firebase";
-import { collection, query, orderBy, limit, onSnapshot } from "firebase/firestore";
+import { collection, query, orderBy, limit, onSnapshot, doc, setDoc } from "firebase/firestore";
 import { signInAnonymously } from "firebase/auth";
 
 // Section Components
@@ -100,6 +101,15 @@ export default function KisanMitraApp() {
       signInAnonymously(auth).catch(err => console.error("Grid Identity Failure:", err));
     }
   }, [auth]);
+
+  // Register Role Marker in Firestore once authenticated
+  useEffect(() => {
+    if (auth?.currentUser && firestore && role) {
+      const collectionName = role === 'Expert' ? 'roles_experts' : role === 'Logistics' ? 'roles_logisticsProviders' : 'roles_farmers';
+      const roleRef = doc(firestore, collectionName, auth.currentUser.uid);
+      setDoc(roleRef, { userId: auth.currentUser.uid, role, name, updatedAt: new Date().toISOString() }, { merge: true });
+    }
+  }, [auth?.currentUser, firestore, role, name]);
 
   // Listen for real-time notifications
   useEffect(() => {

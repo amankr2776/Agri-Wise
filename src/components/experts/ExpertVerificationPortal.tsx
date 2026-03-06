@@ -95,20 +95,19 @@ export function ExpertVerificationPortal() {
   const [editExpertPov, setEditExpertPov] = useState("");
   const [isCertifiedToggle, setIsCertifiedToggle] = useState(false);
 
-  // Queries
+  // Queries - Simple query first to ensure visibility without complex indexing
   const pendingCertsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
     return query(
       collection(firestore, "crops"), 
-      where("status", "==", "pending_expert_review"), 
-      orderBy("createdAt", "desc")
+      where("status", "==", "pending_expert_review")
     );
   }, [firestore]);
   const { data: pendingCerts, isLoading: loadingCerts } = useCollection(pendingCertsQuery);
 
   const inventoryQuery = useMemoFirebase(() => {
     if (!firestore) return null;
-    return query(collection(firestore, "crops"), where("isCertified", "==", true), orderBy("name", "asc"));
+    return query(collection(firestore, "crops"), where("isCertified", "==", true));
   }, [firestore]);
   const { data: inventory, isLoading: loadingInventory } = useCollection(inventoryQuery);
 
@@ -116,7 +115,7 @@ export function ExpertVerificationPortal() {
     if (!inventory) return [];
     return inventory.filter(c => 
       c.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-      c.diseaseName.toLowerCase().includes(searchQuery.toLowerCase())
+      (c.diseaseName || "").toLowerCase().includes(searchQuery.toLowerCase())
     );
   }, [inventory, searchQuery]);
 
