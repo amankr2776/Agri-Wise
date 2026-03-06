@@ -182,6 +182,10 @@ export function CropDiagnostics() {
       {/* Crop Detail Modal */}
       <Dialog open={!!selectedCropForDetail} onOpenChange={() => setSelectedCropForDetail(null)}>
         <DialogContent className="rounded-[3rem] sm:max-w-4xl p-0 overflow-hidden border-none shadow-2xl">
+          <DialogHeader className="sr-only">
+            <DialogTitle>{selectedCropForDetail?.name || "Crop Details"}</DialogTitle>
+            <DialogDescription>Detailed scientific profile and AI diagnostic tools for {selectedCropForDetail?.name}</DialogDescription>
+          </DialogHeader>
           {selectedCropForDetail && (
             <CropDetailView 
               crop={selectedCropForDetail} 
