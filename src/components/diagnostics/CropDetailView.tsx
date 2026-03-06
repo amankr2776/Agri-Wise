@@ -23,7 +23,8 @@ import {
   Activity,
   Award,
   Info,
-  History
+  History,
+  UserCheck
 } from "lucide-react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
@@ -62,7 +63,7 @@ export function CropDetailView({ crop: initialCrop, onClose }: CropDetailViewPro
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // Real-time listener for this specific crop record (Handles Live Expert Edits)
+  // Real-time listener for this specific crop record (Handshake with Expert Portal)
   const cropRef = useMemoFirebase(() => {
     if (!firestore || !initialCrop.id) return null;
     return doc(firestore, "crops", initialCrop.id);
@@ -85,7 +86,7 @@ export function CropDetailView({ crop: initialCrop, onClose }: CropDetailViewPro
     setIsAnalyzing(true);
     setAiResult(null);
 
-    // 1. Instant Registry Lookup (Strict Dataset Enforcement)
+    // 1. Instant Registry Lookup
     const match = getRegistryMatch(crop.name, finalQuery);
     if (match) {
       const registryResult: FarmerCropPestDiagnosisOutput = {
@@ -105,7 +106,7 @@ export function CropDetailView({ crop: initialCrop, onClose }: CropDetailViewPro
       return;
     }
 
-    // 2. Multimodal AI Analysis (If no exact registry match)
+    // 2. Multimodal AI Analysis
     try {
       const res = await diagnoseCropPest({
         cropType: crop.name,
@@ -131,12 +132,12 @@ export function CropDetailView({ crop: initialCrop, onClose }: CropDetailViewPro
           assignedExpertId: "AMAN_EXP_01",
           reportedBy: user.uid,
           reportedByName: userName,
-          imageUrl: crop.imageUrl,
+          imageUrl: crop.imageUrl || `https://picsum.photos/seed/${crop.id}/800/600`,
           createdAt: new Date().toISOString()
         });
       }
     } catch (err) {
-      toast({ variant: "destructive", title: "AI Node High-Latency", description: "Re-attempting sync with grid..." });
+      toast({ variant: "destructive", title: "AI Node Offline", description: "Grid connection unstable." });
     } finally {
       setIsAnalyzing(false);
       setQuery("");
@@ -163,10 +164,12 @@ export function CropDetailView({ crop: initialCrop, onClose }: CropDetailViewPro
     else recognition.start();
   };
 
-  const speakResult = async (resData: FarmerCropPestDiagnosisOutput | any) => {
-    const text = resData.pathogenIdentification 
-      ? `${resData.pathogenIdentification}. ${resData.diagnosis}`
-      : `${resData.diseaseName}. Expert advice: ${resData.expertNotes || resData.chemicalCure}`;
+  const speakResult = async (resData: any) => {
+    const text = resData.expertNotes 
+      ? `Expert Advice: ${resData.expertNotes}. Treatment: ${resData.chemicalCure}`
+      : resData.diagnosis 
+        ? `${resData.pathogenIdentification}. ${resData.diagnosis}`
+        : `${resData.diseaseName}. ${resData.chemicalCure}`;
     
     setIsSpeaking(true);
     try {
@@ -225,7 +228,7 @@ export function CropDetailView({ crop: initialCrop, onClose }: CropDetailViewPro
             <h2 className="text-5xl font-black tracking-tighter">{crop.name}</h2>
             {crop.isCertified && (
               <Badge className="bg-amber-500 text-white border-none font-black text-[10px] uppercase tracking-widest gap-1 shadow-lg animate-in zoom-in">
-                <ShieldCheck className="h-3 w-3" /> Expert Verified POV
+                <UserCheck className="h-3 w-3" /> Certified by Expert
               </Badge>
             )}
           </div>
@@ -234,7 +237,7 @@ export function CropDetailView({ crop: initialCrop, onClose }: CropDetailViewPro
 
       <ScrollArea className="flex-1 px-10 py-10">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
-          {/* Encyclopedia Section */}
+          {/* Main Content */}
           <div className="lg:col-span-7 space-y-10">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
               {[
@@ -253,59 +256,61 @@ export function CropDetailView({ crop: initialCrop, onClose }: CropDetailViewPro
               ))}
             </div>
 
-            {/* expert Insight Section (Real-time updates) */}
+            {/* expert Insight Section (Real-time Audit Handshake) */}
             <div className="space-y-6">
-              <h4 className="text-2xl font-black tracking-tight flex items-center gap-3">
+              <h4 className="text-2xl font-black tracking-tight flex items-center gap-3 text-slate-900">
                 <ShieldCheck className="h-7 w-7 text-primary" />
                 Scientific Command Hub
               </h4>
               
-              {crop.isCertified ? (
-                <motion.div 
-                  initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-                  className="p-10 rounded-[3rem] bg-amber-50 border-4 border-amber-200 shadow-2xl space-y-6 relative overflow-hidden"
-                >
-                  <div className="absolute top-0 right-0 p-8 opacity-10"><Award className="h-48 w-48 rotate-12" /></div>
-                  <div className="flex items-center justify-between relative z-10">
-                    <div className="flex items-center gap-3 text-amber-700 font-black uppercase text-xs tracking-[0.2em]">
-                      <ShieldCheck className="h-5 w-5" /> Professional Expert POV
+              <AnimatePresence mode="wait">
+                {crop.isCertified ? (
+                  <motion.div 
+                    initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+                    className="p-10 rounded-[3rem] bg-amber-50 border-4 border-amber-200 shadow-2xl space-y-6 relative overflow-hidden"
+                  >
+                    <div className="absolute top-0 right-0 p-8 opacity-10"><Award className="h-48 w-48 rotate-12" /></div>
+                    <div className="flex items-center justify-between relative z-10">
+                      <div className="flex items-center gap-3 text-amber-700 font-black uppercase text-xs tracking-[0.2em]">
+                        <UserCheck className="h-5 w-5" /> Professional Expert Verified
+                      </div>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => speakResult(crop)}
+                        className="rounded-full h-10 px-4 gap-2 bg-white/50 border-amber-200 text-amber-700 font-black text-[10px] uppercase"
+                      >
+                        <Volume2 className="h-4 w-4" /> Listen to POV
+                      </Button>
                     </div>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      onClick={() => speakResult(crop)}
-                      className="rounded-full h-10 px-4 gap-2 bg-white/50 border-amber-200 text-amber-700 font-black text-[10px] uppercase"
-                    >
-                      <Volume2 className="h-4 w-4" /> Listen to POV
-                    </Button>
-                  </div>
-                  <p className="text-2xl font-bold text-amber-900 leading-relaxed italic relative z-10 pr-12">
-                    "{crop.expertNotes || `This protocol has been certified by Expert Dr. ${crop.verifiedByName || 'Aman Kumar'}. Follow strictly.`}"
-                  </p>
-                  <div className="flex items-center gap-4 pt-4 border-t border-amber-200/50">
-                    <div className="flex items-center gap-2">
-                      <History className="h-3 w-3 text-amber-600" />
-                      <p className="text-[10px] font-black text-amber-600 uppercase">Verified: {new Date(crop.verifiedAt).toLocaleDateString()}</p>
+                    <p className="text-2xl font-bold text-amber-900 leading-relaxed italic relative z-10">
+                      "{crop.expertNotes || `Protocol certified by Dr. ${crop.verifiedByName}. Apply suggested neutralizers immediately.`}"
+                    </p>
+                    <div className="flex items-center gap-4 pt-4 border-t border-amber-200/50">
+                      <div className="flex items-center gap-2">
+                        <History className="h-3 w-3 text-amber-600" />
+                        <p className="text-[10px] font-black text-amber-600 uppercase">Verified: {new Date(crop.verifiedAt).toLocaleDateString()}</p>
+                      </div>
+                      <Badge className="bg-amber-600 text-white border-none font-black text-[8px] uppercase">Node KM-CERTIFIED</Badge>
                     </div>
-                    <Badge className="bg-amber-600 text-white border-none font-black text-[8px] uppercase">Node KM-AUDIT-ACTIVE</Badge>
+                  </motion.div>
+                ) : crop.status === "pending_expert_review" ? (
+                  <div className="p-8 rounded-[2.5rem] bg-blue-50 border-2 border-blue-200 flex flex-col gap-4 animate-pulse">
+                    <div className="flex items-center gap-4">
+                      <Activity className="h-6 w-6 text-blue-500" />
+                      <p className="text-sm font-black text-blue-700 uppercase tracking-widest italic">Scientist Audit in Progress...</p>
+                    </div>
+                    <p className="text-xs text-blue-600 font-medium ml-10">Dr. Aman Kumar is refining your scientific protocol in real-time. Updates will appear below.</p>
                   </div>
-                </motion.div>
-              ) : crop.status === "pending_expert_review" ? (
-                <div className="p-8 rounded-[2.5rem] bg-blue-50 border-2 border-blue-200 flex flex-col gap-4">
-                  <div className="flex items-center gap-4">
-                    <Loader2 className="h-6 w-6 animate-spin text-blue-500" />
-                    <p className="text-sm font-black text-blue-700 uppercase tracking-widest italic">Awaiting Expert Audit (AMAN_EXP_01)...</p>
+                ) : (
+                  <div className="p-8 rounded-[2.5rem] bg-slate-50 border border-slate-200 flex items-start gap-4">
+                    <Info className="h-6 w-6 text-slate-400 mt-1 shrink-0" />
+                    <p className="text-sm text-slate-500 font-medium italic leading-relaxed">
+                      This profile is AI-generated. For a manually certified protocol from a human agronomist, please describe symptoms in the assistant.
+                    </p>
                   </div>
-                  <p className="text-xs text-blue-600 font-medium ml-10">Dr. Aman Kumar is reviewing your field evidence. Real-time updates will appear here.</p>
-                </div>
-              ) : (
-                <div className="p-8 rounded-[2.5rem] bg-slate-50 border border-slate-200 flex items-start gap-4">
-                  <Info className="h-6 w-6 text-slate-400 mt-1 shrink-0" />
-                  <p className="text-sm text-slate-500 font-medium italic leading-relaxed">
-                    This profile is currently managed by the Grid AI. For a manually certified protocol from a human expert, please describe symptoms in the AI assistant.
-                  </p>
-                </div>
-              )}
+                )}
+              </AnimatePresence>
             </div>
 
             <div className="p-8 rounded-[2.5rem] bg-primary/5 border border-primary/10 space-y-6">
@@ -324,7 +329,7 @@ export function CropDetailView({ crop: initialCrop, onClose }: CropDetailViewPro
             </div>
           </div>
 
-          {/* AI Assistant & Real-time Cures Section */}
+          {/* Solution Workbench */}
           <div className="lg:col-span-5 space-y-8">
             <Card className="border-none shadow-2xl rounded-[3rem] overflow-hidden bg-slate-900 text-white">
               <CardHeader className="p-8 bg-slate-800/50">
@@ -335,18 +340,17 @@ export function CropDetailView({ crop: initialCrop, onClose }: CropDetailViewPro
                     </div>
                     <div>
                       <CardTitle className="text-lg font-black tracking-tight">Cure Workbench</CardTitle>
-                      <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Protocol v4.5 Synchronized</p>
+                      <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Scientific Grid Sync Ready</p>
                     </div>
                   </div>
                   {crop.isCertified ? (
-                    <Badge className="bg-amber-500 text-white border-none text-[8px] font-black uppercase">Expert Refined</Badge>
+                    <Badge className="bg-amber-500 text-white border-none text-[8px] font-black uppercase">Verified Solution</Badge>
                   ) : (
                     <Badge variant="outline" className="text-[8px] border-primary/30 text-primary font-black uppercase">AI Synthesis</Badge>
                   )}
                 </div>
               </CardHeader>
               <CardContent className="p-8 space-y-8">
-                {/* Live Solutions Area */}
                 <div className="grid grid-cols-1 gap-6">
                   <div className="space-y-3">
                     <h5 className="text-[10px] font-black text-destructive uppercase tracking-[0.2em] flex items-center gap-2">
@@ -367,53 +371,50 @@ export function CropDetailView({ crop: initialCrop, onClose }: CropDetailViewPro
                   </div>
                 </div>
 
-                <div className="pt-8 border-t border-white/10 space-y-6">
-                  <div className="relative">
-                    <Input 
-                      placeholder={`Ask Grid Assistant in ${language}...`}
-                      value={query}
-                      onChange={(e) => setQuery(e.target.value)}
-                      onKeyPress={(e) => e.key === 'Enter' && handleAskAI()}
-                      className="h-14 rounded-2xl bg-white/5 border-white/10 pl-6 pr-24 font-bold text-lg focus-visible:ring-primary"
-                    />
-                    <div className="absolute right-2 top-1/2 -translate-y-1/2 flex gap-1">
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        onClick={toggleListening}
-                        className={cn("h-10 w-10 rounded-xl", isListening ? "text-destructive animate-pulse" : "text-slate-400")}
-                      >
-                        {isListening ? <MicOff className="h-5 w-5" /> : <Mic className="h-5 w-5" />}
-                      </Button>
-                      <Button 
-                        size="icon" 
-                        onClick={() => handleAskAI()}
-                        disabled={isAnalyzing || !query.trim()}
-                        className="h-10 w-10 rounded-xl shadow-lg"
-                      >
-                        <Send className="h-5 w-5" />
-                      </Button>
+                {!crop.isCertified && (
+                  <div className="pt-8 border-t border-white/10 space-y-6">
+                    <div className="relative">
+                      <Input 
+                        placeholder={`Ask Grid in ${language}...`}
+                        value={query}
+                        onChange={(e) => setQuery(e.target.value)}
+                        onKeyPress={(e) => e.key === 'Enter' && handleAskAI()}
+                        className="h-14 rounded-2xl bg-white/5 border-white/10 pl-6 pr-24 font-bold text-lg"
+                      />
+                      <div className="absolute right-2 top-1/2 -translate-y-1/2 flex gap-1">
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          onClick={toggleListening}
+                          className={cn("h-10 w-10 rounded-xl", isListening ? "text-destructive animate-pulse" : "text-slate-400")}
+                        >
+                          {isListening ? <MicOff className="h-5 w-5" /> : <Mic className="h-5 w-5" />}
+                        </Button>
+                        <Button 
+                          size="icon" 
+                          onClick={() => handleAskAI()}
+                          disabled={isAnalyzing || !query.trim()}
+                          className="h-10 w-10 rounded-xl shadow-lg"
+                        >
+                          <Send className="h-5 w-5" />
+                        </Button>
+                      </div>
                     </div>
-                  </div>
 
-                  <AnimatePresence mode="wait">
                     {isAnalyzing && (
-                      <motion.div 
-                        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                        className="py-10 text-center space-y-4"
-                      >
-                        <Loader2 className="h-10 w-10 animate-spin text-primary mx-auto" />
-                        <p className="text-xs font-bold text-slate-400 italic">Consulting Senior Agronomist Node...</p>
-                      </motion.div>
+                      <div className="py-6 text-center space-y-4">
+                        <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
+                        <p className="text-xs font-bold text-slate-400 italic">Consulting Senior Agronomist...</p>
+                      </div>
                     )}
-                  </AnimatePresence>
-                </div>
+                  </div>
+                )}
               </CardContent>
               <CardFooter className="p-6 bg-black/20 flex justify-between items-center">
                 <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-1">
                   <Sparkles className="h-2.5 w-2.5 text-primary" /> Powered by Gemini 2.5 Flash
                 </p>
-                <span className="text-[8px] font-bold text-slate-500">Registry Sync v2.4 Active</span>
+                <span className="text-[8px] font-bold text-slate-500">Certified Dataset v4.5</span>
               </CardFooter>
             </Card>
           </div>
