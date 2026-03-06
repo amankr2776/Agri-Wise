@@ -25,7 +25,8 @@ import {
   RefreshCw,
   ShieldCheck,
   Microscope,
-  Radio
+  Radio,
+  Sparkles
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -44,6 +45,7 @@ import { cn } from "@/lib/utils";
 import { motion, animate } from "framer-motion";
 import { useFirestore, useCollection, useMemoFirebase, useUser } from "@/firebase";
 import { collection, query, where } from "firebase/firestore";
+import { AIAssistant } from "@/components/ai/AIAssistant";
 
 interface DashboardHomeProps {
   onNavigate: (section: string) => void;
@@ -296,35 +298,48 @@ export function DashboardHome({ onNavigate }: DashboardHomeProps) {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
-        <div className="lg:col-span-8 space-y-8">
-          <h2 className="text-2xl font-black flex items-center gap-3">
-            <Zap className={cn("h-7 w-7", (role === 'Expert' || role === 'Authority') ? "text-blue-500" : "text-primary")} /> 
-            Professional Command Tools
-          </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-            {quickActions.map((action, i) => (
-              <motion.button 
-                key={`action-${role}-${i}`} 
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: i * 0.1 }}
-                onClick={() => handleDeepNavigate(action.id, (action as any).tab)} 
-                className={cn(
-                  "flex items-center gap-8 p-10 glass-card rounded-[3rem] group transition-all text-left hover:scale-105 active:scale-95",
-                  (role === 'Expert' || role === 'Authority') ? "hover:bg-slate-900" : "hover:bg-primary"
-                )}
-              >
-                <div className={cn("two-tone-icon shrink-0 group-hover:bg-white/20", action.bg)}>
-                  <action.icon className={cn("h-8 w-8 group-hover:text-white group-hover:rotate-12 transition-all", action.color)} />
-                </div>
-                <div>
-                  <p className="font-black text-2xl group-hover:text-white tracking-tight">{action.label}</p>
-                  <p className="text-[10px] font-black uppercase opacity-60 group-hover:text-white tracking-widest">{action.desc}</p>
-                </div>
-                <ChevronRight className="h-6 w-6 ml-auto opacity-20 group-hover:opacity-100 group-hover:text-white transition-all" />
-              </motion.button>
-            ))}
+        <div className="lg:col-span-8 space-y-10">
+          <div className="space-y-8">
+            <h2 className="text-2xl font-black flex items-center gap-3">
+              <Zap className={cn("h-7 w-7", (role === 'Expert' || role === 'Authority') ? "text-blue-500" : "text-primary")} /> 
+              Professional Command Tools
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              {quickActions.map((action, i) => (
+                <motion.button 
+                  key={`action-${role}-${i}`} 
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: i * 0.1 }}
+                  onClick={() => handleDeepNavigate(action.id, (action as any).tab)} 
+                  className={cn(
+                    "flex items-center gap-8 p-10 glass-card rounded-[3rem] group transition-all text-left hover:scale-105 active:scale-95",
+                    (role === 'Expert' || role === 'Authority') ? "hover:bg-slate-900" : "hover:bg-primary"
+                  )}
+                >
+                  <div className={cn("two-tone-icon shrink-0 group-hover:bg-white/20", action.bg)}>
+                    <action.icon className={cn("h-8 w-8 group-hover:text-white group-hover:rotate-12 transition-all", action.color)} />
+                  </div>
+                  <div>
+                    <p className="font-black text-2xl group-hover:text-white tracking-tight">{action.label}</p>
+                    <p className="text-[10px] font-black uppercase opacity-60 group-hover:text-white tracking-widest">{action.desc}</p>
+                  </div>
+                  <ChevronRight className="h-6 w-6 ml-auto opacity-20 group-hover:opacity-100 group-hover:text-white transition-all" />
+                </motion.button>
+              ))}
+            </div>
           </div>
+
+          {/* Farmer Dedicated AI Assistant Section */}
+          {role === 'Farmer' && (
+            <div className="space-y-8">
+              <h2 className="text-2xl font-black flex items-center gap-3">
+                <Sparkles className="h-7 w-7 text-primary" /> 
+                Specialized AI Guidance
+              </h2>
+              <AIAssistant />
+            </div>
+          )}
         </div>
 
         <div className="lg:col-span-4 space-y-8">
