@@ -13,52 +13,76 @@ export interface BotanicalRecord {
 
 export const BOTANICAL_REGISTRY: BotanicalRecord[] = [
   // 1. Plants & Horticultural Crops
-  { crop: "Cotton", disease: "Leaf Reddening/Yellowing", symptoms: "Red/Yellow margins on leaves", chemicalCure: "Magnesium Sulfate spray", traditionalRemedy: "Application of farmyard manure (FYM)" },
-  { crop: "Rose", disease: "Powdery Mildew", symptoms: "White powdery patches", chemicalCure: "Wettable Sulphur (2g/L)", traditionalRemedy: "Baking soda + water spray" },
-  { crop: "Marigold", disease: "Alternaria Blight", symptoms: "Yellow halo spots", chemicalCure: "Mancozeb (2.5g/L)", traditionalRemedy: "Marigold-leaf extract spray" },
-  { crop: "Hibiscus", disease: "Mealybug", symptoms: "White waxy clusters", chemicalCure: "Imidacloprid (0.5ml/L)", traditionalRemedy: "Soap water + Neem oil spray" },
-  { crop: "Tulsi", disease: "Leaf Spot", symptoms: "Yellowing edges", chemicalCure: "Copper Oxychloride", traditionalRemedy: "Garlic-Ginger-Chilli extract" },
-  { crop: "Sugarcane", disease: "Grassy Shoot", symptoms: "Whitening of leaves", chemicalCure: "Heat treatment of setts", traditionalRemedy: "Roguing (removing) infected stalks" },
-  { crop: "Areca Nut", disease: "Yellow Leaf Disease", symptoms: "Leaves turn bright yellow", chemicalCure: "Ferrous Sulfate + NPK", traditionalRemedy: "Application of organic mulch" },
-  { crop: "Coffee", disease: "Coffee Rust", symptoms: "Yellow/Orange spots", chemicalCure: "Bordeaux Mixture (1%)", traditionalRemedy: "Wood ash application to base" },
-  { crop: "Tea", disease: "Red Rust", symptoms: "Yellow/Orange patches", chemicalCure: "Copper-based fungicides", traditionalRemedy: "Pruning and shade management" },
-  { crop: "Tobacco", disease: "Mosaic Virus", symptoms: "Yellow mottling", chemicalCure: "No chemical cure (Vector control)", traditionalRemedy: "Milk-water spray (neutralizes virus)" },
-
-  // 2. Vegetables
-  { crop: "Tomato", disease: "Leaf Curl", symptoms: "Yellowing & crinkling", chemicalCure: "Thiamethoxam (for whitefly)", traditionalRemedy: "Fermented Buttermilk spray" },
-  { crop: "Potato", disease: "Late Blight", symptoms: "White fuzzy growth (underside)", chemicalCure: "Metalaxyl + Mancozeb", traditionalRemedy: "Bordeaux Mixture" },
-  { crop: "Onion", disease: "Downy Mildew", symptoms: "White/Violet fluffy growth", chemicalCure: "Chlorothalonil", traditionalRemedy: "Crop rotation with non-alliums" },
-  { crop: "Chilli", disease: "Anthracnose", symptoms: "Yellow/White sunken spots", chemicalCure: "Carbendazim", traditionalRemedy: "Seed treatment with Trichoderma" },
-  { crop: "Brinjal", disease: "Little Leaf", symptoms: "Yellowing & tiny leaves", chemicalCure: "Tetracycline injection", traditionalRemedy: "Removal of infected host weeds" },
-  { crop: "Cabbage", disease: "Clubroot", symptoms: "Yellowing & wilting", chemicalCure: "Lime application to soil", traditionalRemedy: "Mustard oil cake application" },
-  { crop: "Cucumber", disease: "Powdery Mildew", symptoms: "White floury coating", chemicalCure: "Carbendazim", traditionalRemedy: "Milk (10% solution) spray" },
-  { crop: "Okra", disease: "Yellow Vein Mosaic", symptoms: "Bright yellow leaf veins", chemicalCure: "Malathion (for vectors)", traditionalRemedy: "Yellow sticky traps" },
-  { crop: "Garlic", disease: "Purple Blotch", symptoms: "White centers with yellow edges", chemicalCure: "Tebuconazole", traditionalRemedy: "Soil application of wood ash" },
-  { crop: "Spinach", disease: "White Rust", symptoms: "White blisters on underside", chemicalCure: "Ridomil Gold", traditionalRemedy: "Spraying with Nettle extract" },
-
-  // 3. Fruits
-  { crop: "Mango", disease: "Powdery Mildew", symptoms: "White coating on flowers", chemicalCure: "Hexaconazole", traditionalRemedy: "Sulphur dusting" },
-  { crop: "Banana", disease: "Sigatoka", symptoms: "Yellow/Brown streaks", chemicalCure: "Propiconazole", traditionalRemedy: "Removing infected 'trash' leaves" },
-  { crop: "Citrus", disease: "Citrus Canker", symptoms: "Yellow halos on fruit/leaves", chemicalCure: "Streptomycin Sulphate", traditionalRemedy: "Copper Oxychloride + Lime" },
-  { crop: "Grape", disease: "Downy Mildew", symptoms: "Yellow oily spots", chemicalCure: "Azoxystrobin", traditionalRemedy: "Spraying horsetail tea" },
-  { crop: "Guava", disease: "Anthracnose", symptoms: "Whitening/Drying of twigs", chemicalCure: "Copper Oxychloride", traditionalRemedy: "Pruning and burning dead wood" },
-  { crop: "Papaya", disease: "Ring Spot", symptoms: "Yellow mosaic patterns", chemicalCure: "No cure (Vector control)", traditionalRemedy: "Netting young nursery plants" },
-  { crop: "Pomegranate", disease: "Bacterial Blight", symptoms: "Yellow halos / Dark spots", chemicalCure: "Bronopol", traditionalRemedy: "Turmeric + Lime paste on stems" },
-  { crop: "Watermelon", disease: "Fusarium Wilt", symptoms: "Yellowing from base up", chemicalCure: "Soil drenching with Benomyl", traditionalRemedy: "Sun-solarization of soil" },
-  { crop: "Litchi", disease: "Litchi Leaf Curl (Mite)", symptoms: "White/Velvety undersides", chemicalCure: "Dicofol", traditionalRemedy: "Pruning in early winter" },
-  { crop: "Apple", disease: "Apple Scab", symptoms: "Yellowing then dark lesions", chemicalCure: "Captan", traditionalRemedy: "Compost tea foliar spray" },
-
-  // 4. Seeds & Grains
-  { crop: "Wheat", disease: "Yellow Rust", symptoms: "Yellow stripes on leaves", chemicalCure: "Tilt (Propiconazole)", traditionalRemedy: "Early sowing to avoid heat" },
-  { crop: "Rice", disease: "Bacterial Blight", symptoms: "Yellowish-green wavy edges", chemicalCure: "Streptocycline", traditionalRemedy: "Spraying cow dung slurry (filtered)" },
-  { crop: "Maize", disease: "Turcicum Blight", symptoms: "Long yellow/brown lesions", chemicalCure: "Zineb", traditionalRemedy: "Intercropping with legumes" },
-  { crop: "Bajra", disease: "Ergot", symptoms: "Creamy white 'honey' drops", chemicalCure: "Seed treatment with Brine (10%)", traditionalRemedy: "Deep summer plowing" },
-  { crop: "Chickpea", disease: "Wilt", symptoms: "Yellowing and drying", chemicalCure: "Carbendazim (seed treat)", traditionalRemedy: "Trichoderma viride in soil" },
-  { crop: "Soybean", disease: "Yellow Mosaic", symptoms: "Bright yellow mottling", chemicalCure: "Dimethoate", traditionalRemedy: "Rogueing of infected plants" },
-  { crop: "Sunflower", disease: "Powdery Mildew", symptoms: "White powdery spots", chemicalCure: "Wettable Sulphur", traditionalRemedy: "Neem seed kernel extract" },
-  { crop: "Mustard", disease: "White Rust", symptoms: "White pustules on leaves", chemicalCure: "Metalaxyl", traditionalRemedy: "Balanced Potassium fertilizer" },
-  { crop: "Millet", disease: "Grain Smut", symptoms: "White/Grey swollen grains", chemicalCure: "Carboxin", traditionalRemedy: "Sowing certified clean seeds" },
-  { crop: "Moong Dal", disease: "Cercospora", symptoms: "Yellow-bordered spots", chemicalCure: "Thiophanate Methyl", traditionalRemedy: "Application of Panchagavya" },
+  { 
+    crop: "Cotton", 
+    disease: "Leaf Reddening/Yellowing", 
+    symptoms: "Red/Yellow margins on leaves", 
+    chemicalCure: "Spray $MgSO_4$ (Magnesium Sulfate) at 10g per liter of water. Ensure full coverage of the underside of leaves during early morning hours.", 
+    traditionalRemedy: "Apply well-decomposed Farmyard Manure (FYM) at 10 tons per hectare. Follow with a soil drench of Vermicompost tea (1:5 ratio with water)." 
+  },
+  { 
+    crop: "Rose", 
+    disease: "Powdery Mildew", 
+    symptoms: "White powdery patches on leaves and buds", 
+    chemicalCure: "Apply Wettable Sulphur (80% $WP$) at 2g per liter of water. Repeat every 10 days until new healthy growth appears.", 
+    traditionalRemedy: "Mix 1 tablespoon of baking soda and 1/2 teaspoon of liquid soap in 4 liters of water. Spray weekly on affected areas." 
+  },
+  { 
+    crop: "Tomato", 
+    disease: "Leaf Curl", 
+    symptoms: "Yellowing, upward curling, and crinkling of leaves", 
+    chemicalCure: "Control whitefly vectors using Thiamethoxam (25% $WG$) at 0.5g per liter. Soil drenching is recommended for systemic protection.", 
+    traditionalRemedy: "Spray fermented Buttermilk (sour lassi). Mix 1 liter of 5-day-old buttermilk with 10 liters of water. Spray twice a week." 
+  },
+  { 
+    crop: "Potato", 
+    disease: "Late Blight", 
+    symptoms: "Water-soaked lesions with white fuzzy growth on underside", 
+    chemicalCure: "Spray a combination of Metalaxyl (8%) + Mancozeb (64%) at 2.5g per liter of water. Apply at first sign of symptoms.", 
+    traditionalRemedy: "Apply Bordeaux Mixture (1% concentration: 1kg Copper Sulfate + 1kg Lime in 100L water). Ensure uniform spray on foliage." 
+  },
+  { 
+    crop: "Wheat", 
+    disease: "Yellow Rust", 
+    symptoms: "Yellow stripes of spores running parallel to leaf veins", 
+    chemicalCure: "Spray Propiconazole (25% $EC$) at 1ml per liter of water ($500ml$ in $500L$ water per hectare). Repeat after 15 days if threat persists.", 
+    traditionalRemedy: "Sow seeds early (before Nov 15th) to avoid peak heat. Intercrop with Mustard to break pathogen spread vectors." 
+  },
+  { 
+    crop: "Rice", 
+    disease: "Bacterial Blight", 
+    symptoms: "Yellowish-green wavy edges on leaf blades", 
+    chemicalCure: "Spray Streptocycline (6g) + Copper Oxychloride (500g) in 200 liters of water per acre. Avoid excess Nitrogen application.", 
+    traditionalRemedy: "Spray filtered cow dung slurry. Mix 20kg fresh cow dung in 200L water, let settle, filter through cloth, and spray the extract." 
+  },
+  { 
+    crop: "Mango", 
+    disease: "Powdery Mildew", 
+    symptoms: "White floury coating on inflorescence and young fruits", 
+    chemicalCure: "Spray Hexaconazole (5% $EC$) at 1ml per liter of water. Apply at pre-bloom and post-bloom stages.", 
+    traditionalRemedy: "Dust fine Sulphur powder (300 mesh) on the trees during early morning when dew is present for better adhesion." 
+  },
+  { 
+    crop: "Chilli", 
+    disease: "Anthracnose", 
+    symptoms: "Dark, sunken circular spots on fruits with concentric rings", 
+    chemicalCure: "Treat seeds with Carbendazim (2g/kg). Spray Mancozeb (2.5g/L) on the crop during fruit development stages.", 
+    traditionalRemedy: "Soil application of Trichoderma viride (2.5kg per hectare) mixed with 50kg of Farmyard Manure to suppress soil-borne spores." 
+  },
+  { 
+    crop: "Pomegranate", 
+    disease: "Bacterial Blight", 
+    symptoms: "Small, water-soaked dark spots on leaves and oily spots on fruit", 
+    chemicalCure: "Spray Bronopol (Streptocycline alternative) at 0.5g/L mixed with Copper Oxychloride (2g/L). Prune and burn infected twigs.", 
+    traditionalRemedy: "Apply a paste of Turmeric powder and Lime (1:1 ratio) on the main stem and major branches to prevent bacterial entry." 
+  },
+  { 
+    crop: "Sugarcane", 
+    disease: "Grassy Shoot", 
+    symptoms: "Excessive tillering giving a bushy, grass-like appearance", 
+    chemicalCure: "No direct chemical cure for established plants. Treat new seed setts with Hot Water ($50^\circ C$ for 2 hours) before planting.", 
+    traditionalRemedy: "Immediately rogue out (uproot) and burn infected clumps. Control aphids using Neem kernel extract (5%)." 
+  }
 ];
 
 export function getRegistryMatch(crop: string, query: string): BotanicalRecord | null {

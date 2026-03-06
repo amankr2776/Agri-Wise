@@ -420,10 +420,10 @@ export function DiagnosticTool() {
                           <FlaskConical className="h-5 w-5" /> Professional Neutralizer
                         </h4>
                         <div className="p-8 rounded-[2.5rem] bg-destructive/5 border border-destructive/10">
-                          <ul className="space-y-4">
+                          <ul className="space-y-6">
                             {result.suggestedChemicalRemedies.map((rem, i) => (
-                              <li key={i} className="text-xl font-black text-slate-900 leading-tight flex items-start gap-4">
-                                <div className="h-3 w-3 rounded-full bg-destructive mt-3 shrink-0 shadow-lg shadow-destructive/20" />
+                              <li key={i} className="text-lg font-bold text-slate-900 leading-relaxed flex items-start gap-4">
+                                <div className="h-3 w-3 rounded-full bg-destructive mt-2 shrink-0 shadow-lg shadow-destructive/20" />
                                 {rem}
                               </li>
                             ))}
@@ -436,10 +436,10 @@ export function DiagnosticTool() {
                           <Zap className="h-5 w-5" /> Heritage Wisdom (Desi Nuskha)
                         </h4>
                         <div className="p-8 rounded-[2.5rem] bg-primary/5 border border-primary/10">
-                          <ul className="space-y-4">
+                          <ul className="space-y-6">
                             {result.suggestedTraditionalRemedies.map((rem, i) => (
-                              <li key={i} className="text-xl font-medium text-primary italic leading-tight flex items-start gap-4">
-                                <div className="h-3 w-3 rounded-full bg-primary mt-3 shrink-0 shadow-lg shadow-primary/20" />
+                              <li key={i} className="text-lg font-bold text-primary italic leading-relaxed flex items-start gap-4">
+                                <div className="h-3 w-3 rounded-full bg-primary mt-2 shrink-0 shadow-lg shadow-primary/20" />
                                 "{rem}"
                               </li>
                             ))}

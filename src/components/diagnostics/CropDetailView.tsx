@@ -209,8 +209,9 @@ export function CropDetailView({ crop: initialCrop, onClose }: CropDetailViewPro
       <div className="relative h-64 shrink-0">
         <Image 
           src={crop.imageUrl || `https://picsum.photos/seed/${crop.id}/1200/600`} 
-          fill 
-          className="object-cover" 
+          width={1200}
+          height={600}
+          className="object-cover w-full h-full" 
           alt={crop.name} 
         />
         <div className="absolute inset-0 bg-gradient-to-t from-white via-transparent to-black/40" />
@@ -356,7 +357,7 @@ export function CropDetailView({ crop: initialCrop, onClose }: CropDetailViewPro
                     <h5 className="text-[10px] font-black text-destructive uppercase tracking-[0.2em] flex items-center gap-2">
                       <FlaskConical className="h-4 w-4" /> Professional Neutralizer
                     </h5>
-                    <div className="p-6 rounded-3xl bg-destructive/10 border border-destructive/20 text-xl font-black leading-tight text-white shadow-inner">
+                    <div className="p-6 rounded-3xl bg-destructive/10 border border-destructive/20 text-lg font-bold leading-relaxed text-white shadow-inner">
                       {crop.chemicalCure || "Waiting for diagnostic..."}
                     </div>
                   </div>
@@ -365,7 +366,7 @@ export function CropDetailView({ crop: initialCrop, onClose }: CropDetailViewPro
                     <h5 className="text-[10px] font-black text-primary uppercase tracking-[0.2em] flex items-center gap-2">
                       <Zap className="h-4 w-4" /> Heritage Wisdom (Desi Nuskha)
                     </h5>
-                    <div className="p-6 rounded-3xl bg-primary/10 border border-primary/20 text-lg font-medium italic leading-relaxed text-slate-200 shadow-inner">
+                    <div className="p-6 rounded-3xl bg-primary/10 border border-primary/20 text-lg font-bold italic leading-relaxed text-slate-200 shadow-inner">
                       "{crop.desiNuskha || "No organic data synchronized."}"
                     </div>
                   </div>
