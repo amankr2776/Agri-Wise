@@ -73,7 +73,7 @@ export const useAppState = create<AppState>()(
   persist(
     (set) => ({
       role: "Farmer",
-      isAuthenticated: true, // Always true in Open Mode
+      isAuthenticated: false, // Default false, set true on selection
       name: "Guest Farmer",
       city: "Bengaluru",
       state: "Karnataka",
@@ -86,7 +86,7 @@ export const useAppState = create<AppState>()(
       activeAlert: null,
       
       login: (role, name) => set({ role, name, isAuthenticated: true }),
-      logout: () => set({ role: "Farmer", isAuthenticated: true, name: "Guest Farmer" }),
+      logout: () => set({ role: "Farmer", isAuthenticated: false, name: "Guest Farmer" }),
       setName: (name) => set({ name }),
       setCity: (city) => set({ city }),
       setState: (state) => set({ state }),
@@ -112,7 +112,7 @@ export const useAppState = create<AppState>()(
       })),
     }),
     {
-      name: "kisan-mitra-storage-v8", // Bump version for open mode
+      name: "kisan-mitra-auth-v1", // New storage version for authenticated grid
     }
   )
 );

@@ -1,14 +1,86 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    /**
-     * KisanMitra National Grid - Open Mode
-     * 
-     * Security has been set to PUBLIC for demo and accessibility.
-     * All authenticated and unauthenticated users can read and write.
-     */
+    
+    // Helper functions for common checks
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // Role-based helper: checks existence in marker collections
+    function hasRole(role) {
+      return isAuthenticated() && exists(/databases/$(database)/documents/roles_$(role)/$(request.auth.uid));
+    }
+
+    // Reference Collections: Read-only for all authenticated users
+    match /crops/{cropId} {
+      allow read: if isAuthenticated();
+      allow write: if hasRole('experts') || hasRole('admins');
+    }
+    
+    match /pests/{pestId} {
+      allow read: if isAuthenticated();
+      allow write: if hasRole('experts') || hasRole('admins');
+    }
+    
+    match /diseases/{diseaseId} {
+      allow read: if isAuthenticated();
+      allow write: if hasRole('experts') || hasRole('admins');
+    }
+
+    match /mandiPrices/{priceId} {
+      allow read: if isAuthenticated();
+      allow write: if hasRole('governmentOfficials') || hasRole('admins');
+    }
+
+    match /pestOutbreaks/{outbreakId} {
+      allow read: if isAuthenticated();
+      allow write: if hasRole('experts') || hasRole('governmentOfficials');
+    }
+
+    // User Data & Profiles
+    match /userProfiles/{userId} {
+      allow read: if isOwner(userId) || hasRole('admins');
+      allow write: if isOwner(userId);
+    }
+
+    match /users/{userId}/{allPaths=**} {
+      allow read, write: if isOwner(userId);
+    }
+
+    // Community & Social
+    match /posts/{postId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update, delete: if isOwner(resource.data.authorId) || hasRole('experts');
+      
+      match /comments/{commentId} {
+        allow read: if isAuthenticated();
+        allow create: if isAuthenticated();
+        allow delete: if isOwner(resource.data.authorId);
+      }
+    }
+
+    // Logistics & Bookings
+    match /vehicles/{vehicleId} {
+      allow read: if isAuthenticated();
+      allow create: if hasRole('logisticsProviders');
+      allow update, delete: if isOwner(resource.data.ownerId);
+    }
+
+    match /bookings/{bookingId} {
+      allow read: if isAuthenticated() && (request.auth.uid == resource.data.farmerId || request.auth.uid == resource.data.vehicleOwnerId);
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated();
+    }
+
+    // Default: Deny all other access
     match /{document=**} {
-      allow read, write: if true;
+      allow read, write: if false;
     }
   }
 }

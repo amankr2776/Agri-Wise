@@ -47,8 +47,9 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useAppState, AppLanguage, Notification } from "@/lib/app-state";
 import { useTranslation } from "@/hooks/use-translation";
 import { cn } from "@/lib/utils";
-import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
+import { useFirestore, useCollection, useMemoFirebase, useAuth } from "@/firebase";
 import { collection, query, orderBy, limit, onSnapshot } from "firebase/firestore";
+import { signInAnonymously } from "firebase/auth";
 
 // Section Components
 import { DashboardHome } from "@/components/dashboard/DashboardHome";
@@ -69,6 +70,7 @@ export default function KisanMitraApp() {
   const router = useRouter();
   const { t } = useTranslation();
   const firestore = useFirestore();
+  const auth = useAuth();
   const { 
     role, 
     logout, 
@@ -79,37 +81,47 @@ export default function KisanMitraApp() {
     name,
     language,
     setLanguage,
-    profileImage
+    profileImage,
+    isAuthenticated
   } = useAppState();
   const [activeSection, setActiveSection] = useState("dashboard");
 
-  // Open Mode: Listen for notifications without requiring a Firebase User UID
+  // Initialize Grid Identity (Ensure auth.uid exists for security rules)
   useEffect(() => {
-    if (!firestore) return;
+    if (auth && !auth.currentUser) {
+      signInAnonymously(auth).catch(err => console.error("Grid Identity Failure:", err));
+    }
+  }, [auth]);
 
-    // Use a shared demo path for notifications in Open Mode, or use state-based mock
-    // For presentation fidelity, we listen to a specific demo node
-    const demoId = "demo-kisan-node";
+  // Listen for real-time notifications
+  useEffect(() => {
+    if (!firestore || !auth.currentUser) return;
+
     const notifQuery = query(
-      collection(firestore, "users", demoId, "notifications"), 
+      collection(firestore, "users", auth.currentUser.uid, "notifications"), 
       orderBy("createdAt", "desc"),
-      limit(1)
+      limit(5)
     );
 
     const unsubscribe = onSnapshot(notifQuery, (snapshot) => {
-      snapshot.docChanges().forEach((change) => {
-        if (change.type === "added") {
-          const newNotif = { id: change.doc.id, ...change.doc.data() } as Notification;
-          const isRecent = (Date.now() - new Date(newNotif.createdAt).getTime()) < 30000;
-          if (isRecent) {
-            setActiveAlert(newNotif);
-          }
-        }
+      const newNotifs: Notification[] = [];
+      snapshot.forEach((doc) => {
+        newNotifs.push({ id: doc.id, ...doc.data() } as Notification);
       });
+      setNotifications(newNotifs);
+
+      // Check for very recent alert to trigger top bar
+      const latest = newNotifs[0];
+      if (latest) {
+        const isRecent = (Date.now() - new Date(latest.createdAt).getTime()) < 30000;
+        if (isRecent && !latest.isRead) {
+          setActiveAlert(latest);
+        }
+      }
     });
 
     return () => unsubscribe();
-  }, [firestore, setActiveAlert]);
+  }, [firestore, auth.currentUser, setNotifications, setActiveAlert]);
 
   const handleLogout = () => {
     logout();
@@ -151,7 +163,7 @@ export default function KisanMitraApp() {
               </div>
               <div className="flex flex-col group-data-[collapsible=icon]:hidden">
                 <span className="font-black text-lg leading-none tracking-tight">KisanMitra</span>
-                <span className="text-[8px] font-bold text-muted-foreground uppercase tracking-widest mt-1">Grid Mode: Open Access</span>
+                <span className="text-[8px] font-bold text-muted-foreground uppercase tracking-widest mt-1">National Agricultural Grid</span>
               </div>
             </div>
           </SidebarHeader>
@@ -188,7 +200,7 @@ export default function KisanMitraApp() {
               <SidebarTrigger className="md:hidden" />
               <div className="hidden md:flex items-center gap-3">
                 <Fingerprint className="h-4 w-4 text-primary" />
-                <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Active Node: {name} | Identity Grid Open</h2>
+                <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Grid Node Active: {name} | Identity Secured</h2>
               </div>
             </div>
             <div className="flex items-center gap-4 md:gap-6">
@@ -274,7 +286,7 @@ export default function KisanMitraApp() {
                 </Avatar>
                 <div className="flex flex-col -space-y-1">
                   <span className="text-[10px] font-black text-slate-900 leading-tight">{name}</span>
-                  <span className="text-[8px] font-bold text-muted-foreground uppercase tracking-widest">{role} Perspective</span>
+                  <span className="text-[8px] font-bold text-muted-foreground uppercase tracking-widest">{role} Node</span>
                 </div>
               </div>
             </div>
