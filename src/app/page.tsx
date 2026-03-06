@@ -50,11 +50,11 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { useAppState, AppLanguage } from "@/lib/app-state";
+import { useAppState, AppLanguage, Notification } from "@/lib/app-state";
 import { useTranslation } from "@/hooks/use-translation";
 import { cn } from "@/lib/utils";
 import { useFirestore, useUser, useCollection, useMemoFirebase, useAuth } from "@/firebase";
-import { doc, collection, query, orderBy, limit } from "firebase/firestore";
+import { doc, collection, query, orderBy, limit, onSnapshot } from "firebase/firestore";
 import { setDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 import { initializeMessaging } from "@/firebase/messaging";
 import { getMessaging } from "firebase/messaging";
@@ -66,10 +66,8 @@ import { CropDiagnostics } from "@/components/diagnostics/CropDiagnostics";
 import { MarketIntelligence } from "@/components/market/MarketIntelligence";
 import { MandiLink } from "@/components/logistics/MandiLink";
 import { KisanNetwork } from "@/components/social/KisanNetwork";
-import { ExpertVerificationPortal } from "@/components/experts/ExpertVerificationPortal";
-import { FleetManagement } from "@/components/logistics/FleetManagement";
 import { SettingsView } from "@/components/settings/SettingsView";
-import { MinistryIntelligence } from "@/components/gov/MinistryIntelligence";
+import { NotificationBar } from "@/components/notifications/NotificationBar";
 
 const LANGUAGES: AppLanguage[] = [
   "English", "Hindi", "Bhojpuri", "Punjabi", "Haryanvi", 
@@ -89,6 +87,7 @@ export default function KisanMitraApp() {
     logout, 
     notifications, 
     setNotifications,
+    setActiveAlert,
     markNotificationsAsRead,
     name,
     city,
@@ -100,7 +99,6 @@ export default function KisanMitraApp() {
   const [activeSection, setActiveSection] = useState("dashboard");
 
   // --- PUBLIC ACCESS LOGIC ---
-  // If not authenticated, we auto-sign-in anonymously so farmers have instant access.
   useEffect(() => {
     if (!isAuthenticated && auth) {
       initiateAnonymousSignIn(auth);
@@ -126,7 +124,33 @@ export default function KisanMitraApp() {
     }
   }, [user, firestore, role, name, city]);
 
-  // Real-time Notification Listener
+  // Real-time Notification Listener & Slide-down Trigger
+  useEffect(() => {
+    if (!firestore || !user) return;
+
+    const notifQuery = query(
+      collection(firestore, "users", user.uid, "notifications"), 
+      orderBy("createdAt", "desc"),
+      limit(1)
+    );
+
+    const unsubscribe = onSnapshot(notifQuery, (snapshot) => {
+      snapshot.docChanges().forEach((change) => {
+        if (change.type === "added") {
+          const newNotif = { id: change.doc.id, ...change.doc.data() } as Notification;
+          // Only show slide-down for recent alerts (within last 30s)
+          const isRecent = (Date.now() - new Date(newNotif.createdAt).getTime()) < 30000;
+          if (isRecent) {
+            setActiveAlert(newNotif);
+          }
+        }
+      });
+    });
+
+    return () => unsubscribe();
+  }, [firestore, user, setActiveAlert]);
+
+  // Real-time Feed for the Bell Popover
   const notificationsQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
     return query(
@@ -176,6 +200,8 @@ export default function KisanMitraApp() {
   return (
     <SidebarProvider>
       <div className="flex min-h-screen w-full bg-background text-foreground">
+        <NotificationBar />
+        
         <Sidebar collapsible="icon" className="border-r border-border bg-card">
           <SidebarHeader className="h-16 flex items-center px-4 border-b">
             <div className="flex items-center gap-3">
@@ -225,7 +251,6 @@ export default function KisanMitraApp() {
               </div>
             </div>
             <div className="flex items-center gap-4 md:gap-6">
-              {/* Language Switcher Dropdown */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="sm" className="rounded-full h-10 px-4 gap-2 font-black text-[10px] uppercase bg-muted/30 hover:bg-muted border border-border/50">

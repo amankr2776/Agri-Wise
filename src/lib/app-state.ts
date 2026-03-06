@@ -52,6 +52,7 @@ interface AppState {
   langCode: string;
   theme: AppTheme;
   notifications: Notification[];
+  activeAlert: Notification | null;
   fleetActiveTab: string;
   
   // Actions
@@ -65,6 +66,7 @@ interface AppState {
   setTheme: (theme: AppTheme) => void;
   setFleetActiveTab: (tab: string) => void;
   setNotifications: (notifications: Notification[]) => void;
+  setActiveAlert: (alert: Notification | null) => void;
   markNotificationsAsRead: () => void;
 }
 
@@ -82,6 +84,7 @@ export const useAppState = create<AppState>()(
       theme: "farmer",
       fleetActiveTab: "bookings",
       notifications: [],
+      activeAlert: null,
       
       login: (role, name) => set({ role, name, isAuthenticated: true }),
       logout: () => set({ role: null, isAuthenticated: false, name: "Guest User" }),
@@ -104,12 +107,13 @@ export const useAppState = create<AppState>()(
       },
       setFleetActiveTab: (fleetActiveTab) => set({ fleetActiveTab }),
       setNotifications: (notifications) => set({ notifications }),
+      setActiveAlert: (activeAlert) => set({ activeAlert }),
       markNotificationsAsRead: () => set((state) => ({
         notifications: state.notifications.map(n => ({ ...n, isRead: true }))
       })),
     }),
     {
-      name: "kisan-mitra-storage-v6",
+      name: "kisan-mitra-storage-v7",
     }
   )
 );
