@@ -18,7 +18,8 @@ import {
   Wind,
   BrainCircuit,
   RefreshCw,
-  Info
+  Info,
+  CheckCircle2
 } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
