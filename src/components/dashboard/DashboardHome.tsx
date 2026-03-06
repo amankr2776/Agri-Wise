@@ -47,7 +47,7 @@ import { useTranslation } from "@/hooks/use-translation";
 import { cn } from "@/lib/utils";
 import { motion, animate, AnimatePresence } from "framer-motion";
 import { useFirestore, useCollection, useMemoFirebase, useUser } from "@/firebase";
-import { collection, query, where, orderBy, limit } from "firebase/firestore";
+import { collection, query, where, orderBy } from "firebase/firestore";
 import { FarmerOnboarding } from "./FarmerOnboarding";
 
 interface DashboardHomeProps {
@@ -110,8 +110,7 @@ export function DashboardHome({ onNavigate }: DashboardHomeProps) {
     return query(
       collection(firestore, "bookings"), 
       where("farmerId", "==", user.uid),
-      orderBy("createdAt", "desc"),
-      limit(10)
+      orderBy("createdAt", "desc")
     );
   }, [firestore, user, role]);
   const { data: farmerShipments } = useCollection(farmerShipmentsQuery);
@@ -122,15 +121,14 @@ export function DashboardHome({ onNavigate }: DashboardHomeProps) {
     return query(
       collection(firestore, "intelligence_directives"),
       where("status", "==", "active"),
-      orderBy("timestamp", "desc"),
-      limit(5)
+      orderBy("timestamp", "desc")
     );
   }, [firestore]);
   const { data: globalAlerts, isLoading: loadingAlerts } = useCollection(directivesQuery);
 
   const globalPostsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
-    return query(collection(firestore, "posts"), limit(20));
+    return query(collection(firestore, "posts"), orderBy("createdAt", "desc"));
   }, [firestore]);
   const { data: globalPosts, isLoading: loadingPosts } = useCollection(globalPostsQuery);
 
@@ -138,8 +136,7 @@ export function DashboardHome({ onNavigate }: DashboardHomeProps) {
     if (!firestore || (role !== "Expert" && role !== "Authority")) return null;
     return query(
       collection(firestore, "crops"), 
-      where("status", "==", "pending_expert_review"),
-      limit(15)
+      where("status", "==", "pending_expert_review")
     );
   }, [firestore, role]);
   const { data: pendingPosts, isLoading: loadingPending } = useCollection(pendingPostsQuery);
@@ -148,8 +145,7 @@ export function DashboardHome({ onNavigate }: DashboardHomeProps) {
     if (!firestore || !user || role !== "Logistics") return null;
     return query(
       collection(firestore, "vehicles"), 
-      where("ownerId", "==", user.uid),
-      limit(20)
+      where("ownerId", "==", user.uid)
     );
   }, [firestore, user, role]);
   const { data: myVehicles, isLoading: loadingVehicles } = useCollection(myVehiclesQuery);

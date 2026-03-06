@@ -35,7 +35,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useAppState, AppLanguage } from "@/lib/app-state";
-import { withRoleAuth } from "@/lib/hoc/with-role-auth";
 import { ExpertVerificationPortal } from "@/components/experts/ExpertVerificationPortal";
 import { cn } from "@/lib/utils";
 import { handleProfessionalLogout } from "@/app/actions/auth";
@@ -46,7 +45,7 @@ const LANGUAGES: AppLanguage[] = [
   "Kannada", "Tamil", "Telugu", "Malayalam", "Oriya", "Magahi"
 ];
 
-function ProExpertPanel() {
+export default function ProExpertPanel() {
   const router = useRouter();
   const { name, language, setLanguage, logout } = useAppState();
 
@@ -159,5 +158,3 @@ function ProExpertPanel() {
     </SidebarProvider>
   );
 }
-
-export default withRoleAuth(ProExpertPanel, 'Expert');

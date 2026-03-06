@@ -7,20 +7,18 @@ import { LogOut, Truck, Globe } from "lucide-react";
 import { handleProfessionalLogout } from "@/app/actions/auth";
 import { useRouter } from "next/navigation";
 import { useAppState } from "@/lib/app-state";
-import { withRoleAuth } from "@/lib/hoc/with-role-auth";
 
 /**
- * Locked Logistics Bridge Page
- * Uses withRoleAuth for strict component-level security.
+ * Logistics Bridge Page
  */
-function ProLogisticsBridge() {
+export default function ProLogisticsBridge() {
   const router = useRouter();
   const { logout } = useAppState();
 
   const handleLogout = async () => {
     await handleProfessionalLogout();
     logout();
-    router.push('/pro/login');
+    router.push('/login');
   };
 
   return (
@@ -54,5 +52,3 @@ function ProLogisticsBridge() {
     </div>
   );
 }
-
-export default withRoleAuth(ProLogisticsBridge, 'Logistics');

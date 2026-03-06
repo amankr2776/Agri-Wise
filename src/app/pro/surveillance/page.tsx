@@ -35,7 +35,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useAppState, AppLanguage } from "@/lib/app-state";
-import { withRoleAuth } from "@/lib/hoc/with-role-auth";
 import { MinistryIntelligence } from "@/components/gov/MinistryIntelligence";
 import { cn } from "@/lib/utils";
 import { handleProfessionalLogout } from "@/app/actions/auth";
@@ -46,7 +45,7 @@ const LANGUAGES: AppLanguage[] = [
   "Kannada", "Tamil", "Telugu", "Malayalam", "Oriya", "Magahi"
 ];
 
-function ProSurveillancePage() {
+export default function ProSurveillancePage() {
   const router = useRouter();
   const { name, language, setLanguage, logout } = useAppState();
 
@@ -159,5 +158,3 @@ function ProSurveillancePage() {
     </SidebarProvider>
   );
 }
-
-export default withRoleAuth(ProSurveillancePage, 'Expert');
