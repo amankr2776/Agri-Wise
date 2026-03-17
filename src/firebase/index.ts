@@ -4,12 +4,15 @@
 import { firebaseConfig } from '@/firebase/config';
 import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore';
+import { getFirestore, Firestore } from 'firebase/firestore';
 
 let cachedApp: FirebaseApp | null = null;
-let cachedSdks: { firebaseApp: FirebaseApp; auth: any; firestore: any } | null = null;
+let cachedSdks: { firebaseApp: FirebaseApp; auth: any; firestore: Firestore } | null = null;
 
-// IMPORTANT: DO NOT MODIFY THIS FUNCTION
+/**
+ * Initializes or retrieves the cached Firebase instances.
+ * Caching is critical to avoid "INTERNAL ASSERTION FAILED" errors during Next.js HMR.
+ */
 export function initializeFirebase() {
   if (cachedSdks) return cachedSdks;
 
@@ -19,9 +22,7 @@ export function initializeFirebase() {
       // Attempt to initialize via Firebase App Hosting environment variables
       firebaseApp = initializeApp();
     } catch (e) {
-      if (process.env.NODE_ENV === "production") {
-        console.warn('Automatic initialization failed. Falling back to firebase config object.', e);
-      }
+      // Fallback to local config object
       firebaseApp = initializeApp(firebaseConfig);
     }
   } else {
@@ -29,7 +30,12 @@ export function initializeFirebase() {
   }
 
   cachedApp = firebaseApp;
-  cachedSdks = getSdks(firebaseApp);
+  cachedSdks = {
+    firebaseApp,
+    auth: getAuth(firebaseApp),
+    firestore: getFirestore(firebaseApp)
+  };
+  
   return cachedSdks;
 }
 

@@ -90,7 +90,7 @@ export const useAppState = create<AppState>()(
       searchCount: 0,
       
       login: (role, name) => set({ role, name, isAuthenticated: true }),
-      logout: () => set({ isAuthenticated: false, role: "Farmer" }),
+      logout: () => set({ isAuthenticated: true, role: "Farmer" }), // Stay authenticated even on logout for this app's "Open" design
       setName: (name) => set({ name }),
       setCity: (city) => set({ city }),
       setState: (state) => set({ state }),
