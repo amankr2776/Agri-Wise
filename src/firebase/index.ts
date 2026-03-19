@@ -1,49 +1,47 @@
-
 'use client';
 
 import { firebaseConfig } from '@/firebase/config';
 import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
+import { getAuth, Auth } from 'firebase/auth';
 import { getFirestore, Firestore } from 'firebase/firestore';
 
-let cachedApp: FirebaseApp | null = null;
-let cachedSdks: { firebaseApp: FirebaseApp; auth: any; firestore: Firestore } | null = null;
+let firebaseApp: FirebaseApp;
+let auth: Auth;
+let firestore: Firestore;
 
 /**
  * Initializes or retrieves the cached Firebase instances.
  * Caching is critical to avoid "INTERNAL ASSERTION FAILED" errors during Next.js HMR.
  */
 export function initializeFirebase() {
-  if (cachedSdks) return cachedSdks;
-
-  let firebaseApp: FirebaseApp;
-  if (!getApps().length) {
-    try {
-      // Attempt to initialize via Firebase App Hosting environment variables
-      firebaseApp = initializeApp();
-    } catch (e) {
-      // Fallback to local config object
+  if (typeof window !== 'undefined') {
+    if (!getApps().length) {
       firebaseApp = initializeApp(firebaseConfig);
+    } else {
+      firebaseApp = getApp();
     }
-  } else {
-    firebaseApp = getApp();
+    
+    // Cache instances to prevent ID: ca9 internal assertion errors
+    if (!auth) auth = getAuth(firebaseApp);
+    if (!firestore) firestore = getFirestore(firebaseApp);
+
+    return { firebaseApp, auth, firestore };
   }
 
-  cachedApp = firebaseApp;
-  cachedSdks = {
-    firebaseApp,
-    auth: getAuth(firebaseApp),
-    firestore: getFirestore(firebaseApp)
+  // Fallback for SSR
+  const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+  return {
+    firebaseApp: app,
+    auth: getAuth(app),
+    firestore: getFirestore(app)
   };
-  
-  return cachedSdks;
 }
 
-export function getSdks(firebaseApp: FirebaseApp) {
+export function getSdks(app: FirebaseApp) {
   return {
-    firebaseApp,
-    auth: getAuth(firebaseApp),
-    firestore: getFirestore(firebaseApp)
+    firebaseApp: app,
+    auth: getAuth(app),
+    firestore: getFirestore(app)
   };
 }
 

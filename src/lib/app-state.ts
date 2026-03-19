@@ -1,4 +1,3 @@
-
 "use client";
 
 import { create } from "zustand";
@@ -76,7 +75,7 @@ export const useAppState = create<AppState>()(
   persist(
     (set) => ({
       role: "Farmer",
-      isAuthenticated: true, // Default to true to remove the mandatory login wall
+      isAuthenticated: true, 
       name: "Rajesh Kumar",
       city: "Bengaluru",
       state: "Karnataka",
@@ -90,7 +89,7 @@ export const useAppState = create<AppState>()(
       searchCount: 0,
       
       login: (role, name) => set({ role, name, isAuthenticated: true }),
-      logout: () => set({ isAuthenticated: true, role: "Farmer" }), // Stay authenticated even on logout for this app's "Open" design
+      logout: () => set({ isAuthenticated: true, role: "Farmer" }), 
       setName: (name) => set({ name }),
       setCity: (city) => set({ city }),
       setState: (state) => set({ state }),
