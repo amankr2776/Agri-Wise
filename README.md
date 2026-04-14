@@ -40,3 +40,4 @@ KisanMitra is a professional, AI-powered platform designed to provide a unified 
 *   **State:** Zustand (with Persist)
 
 For a detailed technical breakdown, see [docs/TECH_STACK.md](./docs/TECH_STACK.md).
+
