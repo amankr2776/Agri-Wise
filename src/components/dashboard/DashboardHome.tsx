@@ -8,7 +8,6 @@ import {
   Truck, 
   Users, 
   Leaf, 
-  Search, 
   ChevronRight,
   Zap,
   ShieldAlert,
@@ -28,7 +27,8 @@ import {
   Volume2,
   UserCheck,
   Building2,
-  CheckCircle2
+  CheckCircle2,
+  Sparkles
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -59,7 +59,7 @@ function Counter({ value }: { value: number }) {
 
   useEffect(() => {
     const controls = animate(0, value, {
-      duration: 1.5,
+      duration: 2,
       onUpdate(value) {
         setCount(Math.floor(value));
       },
@@ -104,25 +104,15 @@ export function DashboardHome({ onNavigate }: DashboardHomeProps) {
     return () => clearInterval(interval);
   }, []);
 
-  // Real-Time Data Fetching for Farmer Shipments (No limit)
   const farmerShipmentsQuery = useMemoFirebase(() => {
     if (!firestore || !user || role !== "Farmer") return null;
-    return query(
-      collection(firestore, "bookings"), 
-      where("farmerId", "==", user.uid),
-      orderBy("createdAt", "desc")
-    );
+    return query(collection(firestore, "bookings"), where("farmerId", "==", user.uid), orderBy("createdAt", "desc"));
   }, [firestore, user, role]);
   const { data: farmerShipments } = useCollection(farmerShipmentsQuery);
 
-  // Intelligence Directives Listener (No limit)
   const directivesQuery = useMemoFirebase(() => {
     if (!firestore) return null;
-    return query(
-      collection(firestore, "intelligence_directives"),
-      where("status", "==", "active"),
-      orderBy("timestamp", "desc")
-    );
+    return query(collection(firestore, "intelligence_directives"), where("status", "==", "active"), orderBy("timestamp", "desc"));
   }, [firestore]);
   const { data: globalAlerts, isLoading: loadingAlerts } = useCollection(directivesQuery);
 
@@ -134,27 +124,18 @@ export function DashboardHome({ onNavigate }: DashboardHomeProps) {
 
   const pendingPostsQuery = useMemoFirebase(() => {
     if (!firestore || (role !== "Expert" && role !== "Authority")) return null;
-    return query(
-      collection(firestore, "crops"), 
-      where("status", "==", "pending_expert_review")
-    );
+    return query(collection(firestore, "crops"), where("status", "==", "pending_expert_review"));
   }, [firestore, role]);
   const { data: pendingPosts, isLoading: loadingPending } = useCollection(pendingPostsQuery);
 
   const myVehiclesQuery = useMemoFirebase(() => {
     if (!firestore || !user || role !== "Logistics") return null;
-    return query(
-      collection(firestore, "vehicles"), 
-      where("ownerId", "==", user.uid)
-    );
+    return query(collection(firestore, "vehicles"), where("ownerId", "==", user.uid));
   }, [firestore, user, role]);
   const { data: myVehicles, isLoading: loadingVehicles } = useCollection(myVehiclesQuery);
 
   const handleDeepNavigate = (item: any) => {
-    if (item.url) {
-      router.push(item.url);
-      return;
-    }
+    if (item.url) { router.push(item.url); return; }
     if (item.tab) setFleetActiveTab(item.tab);
     onNavigate(item.id);
   };
@@ -162,10 +143,8 @@ export function DashboardHome({ onNavigate }: DashboardHomeProps) {
   const handlePlayAlert = async (e: React.MouseEvent, alert: any) => {
     e.stopPropagation();
     if (isSpeaking) return;
-    
-    const text = `${alert.title} directive for ${alert.locationNode}. Expert advice: ${alert.description}`;
+    const text = `${alert.title}. ${alert.description}`;
     setIsSpeaking(true);
-    
     try {
       const response = await fetch('/api/bhashini', {
         method: 'POST',
@@ -183,32 +162,29 @@ export function DashboardHome({ onNavigate }: DashboardHomeProps) {
         ut.onend = () => setIsSpeaking(false);
         window.speechSynthesis.speak(ut);
       }
-    } catch (err) {
-      setIsSpeaking(false);
-    }
+    } catch (err) { setIsSpeaking(false); }
   };
 
   const stats = useMemo(() => {
     if (role === "Farmer") {
       return [
-        { id: "diagnostics", label: t("active_alerts"), value: globalAlerts?.length ?? 0, isLoading: loadingAlerts, icon: AlertTriangle, color: "text-destructive", bg: "bg-destructive/10" },
+        { id: "diagnostics", label: t("active_alerts"), value: globalAlerts?.length ?? 0, isLoading: loadingAlerts, icon: AlertTriangle, color: "text-rose-500", bg: "bg-rose-500/10" },
         { id: "market", label: t("best_price"), value: "₹2,450", sub: "Wheat (Nashik)", icon: TrendingUp, color: "text-primary", bg: "bg-primary/10" },
-        { id: "logistics", label: "My Shipments", value: farmerShipments?.length ?? 0, icon: Truck, color: "text-blue-500", bg: "bg-blue-500/10" },
-        { id: "network", label: "Network Posts", value: globalPosts?.length ?? 0, isLoading: loadingPosts, icon: Users, color: "text-amber-500", bg: "bg-amber-500/10" },
+        { id: "logistics", label: "Shipments", value: farmerShipments?.length ?? 0, icon: Truck, color: "text-blue-500", bg: "bg-blue-500/10" },
+        { id: "network", label: "Network Activity", value: globalPosts?.length ?? 0, isLoading: loadingPosts, icon: Users, color: "text-amber-500", bg: "bg-amber-500/10" },
       ];
     } else if (role === "Expert" || role === "Authority") {
       return [
         { id: "expert-portal", url: "/pro/expert-panel", label: "Audit Queue", value: pendingPosts?.length ?? 0, isLoading: loadingPending, icon: FlaskConical, color: "text-blue-500", bg: "bg-blue-500/10" },
-        { id: "surveillance", url: "/pro/surveillance", label: "Active Threats", value: globalAlerts?.length ?? 0, isLoading: loadingAlerts, icon: Bug, color: "text-cyan-500", bg: "bg-cyan-500/10" },
-        { id: "network", label: "Expert Insights", value: 45, icon: ClipboardCheck, color: "text-teal-500", bg: "bg-teal-500/10" },
-        { id: "network", label: "Farmer Queries", value: 24, icon: MessageCircle, color: "text-sky-500", bg: "bg-sky-500/10" },
+        { id: "surveillance", url: "/pro/surveillance", label: "Bio-Threats", value: globalAlerts?.length ?? 0, isLoading: loadingAlerts, icon: Bug, color: "text-rose-500", bg: "bg-rose-500/10" },
+        { id: "network", label: "Expert Insights", value: 45, icon: ClipboardCheck, color: "text-emerald-500", bg: "bg-emerald-500/10" },
+        { id: "network", label: "Farmer Queries", value: 24, icon: MessageCircle, color: "text-indigo-500", bg: "bg-indigo-500/10" },
       ];
     } else if (role === "Logistics") {
-      const totalFleet = myVehicles?.length ?? 0;
       return [
-        { id: "logistics-bridge", url: "/pro/logistics-bridge", label: "Total Fleet", value: totalFleet, isLoading: loadingVehicles, icon: Truck, color: "text-primary", bg: "bg-primary/10" },
+        { id: "logistics-bridge", url: "/pro/logistics-bridge", label: "Fleet Count", value: myVehicles?.length ?? 0, isLoading: loadingVehicles, icon: Truck, color: "text-primary", bg: "bg-primary/10" },
         { id: "logistics-bridge", url: "/pro/logistics-bridge", label: "Active Loads", value: 12, icon: Package, color: "text-blue-500", bg: "bg-blue-500/10" },
-        { id: "logistics-bridge", url: "/pro/logistics-bridge", label: "Available Units", value: 8, icon: Activity, color: "text-green-500", bg: "bg-green-500/10" },
+        { id: "logistics-bridge", url: "/pro/logistics-bridge", label: "Operational", value: 8, icon: Activity, color: "text-emerald-500", bg: "bg-emerald-500/10" },
         { id: "logistics-bridge", url: "/pro/logistics-bridge", label: "Maintenance", value: 2, icon: RefreshCw, color: "text-amber-500", bg: "bg-amber-500/10" },
       ];
     }
@@ -219,70 +195,67 @@ export function DashboardHome({ onNavigate }: DashboardHomeProps) {
     if (role === "Farmer") {
       return [
         { id: "diagnostics", label: t("ai_scan"), icon: Leaf, desc: "Multimodal Analysis", color: "text-primary", bg: "bg-primary/10" },
-        { id: "market", label: "Market Trends", icon: Search, desc: "Price Forecasting", color: "text-blue-500", bg: "bg-blue-500/10" },
+        { id: "market", label: "Market Trends", icon: TrendingUp, desc: "Price Forecasting", color: "text-blue-500", bg: "bg-blue-500/10" },
         { id: "logistics", label: "Book Transport", icon: Truck, desc: "Mandi-Link Pro", color: "text-amber-500", bg: "bg-amber-500/10" },
-        { id: "network", label: "Network Hub", icon: Users, desc: "Collaborate", color: "text-purple-500", bg: "bg-purple-500/10" },
+        { id: "network", label: "Kisan Network", icon: Users, desc: "Grid Intelligence", color: "text-indigo-500", bg: "bg-indigo-500/10" },
       ];
     } else if (role === "Expert" || role === "Authority") {
       return [
-        { id: "expert-portal", url: "/pro/expert-panel", label: "Verify Protocols", icon: FlaskConical, desc: "Scientific Validation", color: "text-blue-500", bg: "bg-blue-500/10" },
-        { id: "surveillance", url: "/pro/surveillance", label: "Outbreak Monitor", icon: Radio, desc: "Geospatial Intelligence", color: "text-cyan-500", bg: "bg-cyan-500/10" },
-        { id: "network", label: "Publish Advisory", icon: ShieldCheck, desc: "Grid Broadcast", color: "text-teal-500", bg: "bg-teal-500/10" },
-        { id: "settings", label: "Expert Profile", icon: Microscope, desc: "Professional Identity", color: "text-slate-500", bg: "bg-slate-500/10" },
-      ];
-    } else if (role === "Logistics") {
-      return [
-        { id: "logistics-bridge", url: "/pro/logistics-bridge", label: "Manage Fleet", icon: Truck, desc: "All-India Units", color: "text-primary", bg: "bg-primary/10" },
-        { id: "logistics-bridge", url: "/pro/logistics-bridge", label: "Agency Profile", icon: Building2, desc: "Sync Rates", color: "text-amber-500", bg: "bg-amber-500/10" },
+        { id: "expert-portal", url: "/pro/expert-panel", label: "Protocol Audit", icon: FlaskConical, desc: "Scientific Validation", color: "text-blue-500", bg: "bg-blue-500/10" },
+        { id: "surveillance", url: "/pro/surveillance", label: "Live Heatmap", icon: Radio, desc: "Outbreak Surveillance", color: "text-rose-500", bg: "bg-rose-500/10" },
+        { id: "network", label: "Broadcast Advice", icon: ShieldCheck, desc: "National Directives", color: "text-emerald-500", bg: "bg-emerald-500/10" },
+        { id: "settings", label: "Scientist Profile", icon: Microscope, desc: "Professional Sync", color: "text-slate-500", bg: "bg-slate-500/10" },
       ];
     }
     return [];
   }, [role, t]);
 
   return (
-    <div className="space-y-10">
+    <div className="space-y-12 pb-20">
       <motion.div 
-        initial={{ opacity: 0, y: 20 }} 
-        animate={{ opacity: 1, y: 0 }}
+        initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }}
         className={cn(
-          "relative overflow-hidden rounded-[3rem] p-12 md:p-16 text-white shadow-2xl transition-all duration-700",
-          (role === 'Expert' || role === 'Authority') ? "bg-slate-900" : "bg-primary"
+          "relative overflow-hidden rounded-[3.5rem] p-12 md:p-20 text-white shadow-[0_32px_64px_rgba(0,0,0,0.15)] group transition-all duration-700",
+          (role === 'Expert' || role === 'Authority') ? "bg-slate-950" : "bg-primary"
         )}
       >
-        <div className="absolute top-0 right-0 p-10 opacity-10">
-          {(role === 'Expert' || role === 'Authority') ? <Microscope className="h-64 w-64 rotate-12" /> : <Leaf className="h-64 w-64 rotate-12" />}
+        <div className="absolute inset-0 bg-[url('https://picsum.photos/seed/texture/1200/800')] opacity-5 mix-blend-overlay animate-slow-pan" />
+        <div className="absolute top-0 right-0 p-16 opacity-10 transform scale-150 transition-transform group-hover:scale-[1.6] duration-1000">
+          {(role === 'Expert' || role === 'Authority') ? <Microscope className="h-64 w-64" /> : <Leaf className="h-64 w-64 rotate-12" />}
         </div>
-        <div className="relative z-10 space-y-6">
-          <div className="flex flex-wrap gap-3">
-            <Badge className="bg-white/20 text-white border-none px-4 py-1.5 font-bold uppercase tracking-widest text-[10px]">{currentDate || "Loading..."}</Badge>
-            <Badge className="bg-white/10 text-white border-none px-4 py-1.5 font-bold uppercase tracking-widest text-[10px] flex items-center gap-2">
-              <Clock className="h-3 w-3" /> {t("last_updated")}: {currentTime || "--:--"}
+        <div className="relative z-10 space-y-8">
+          <div className="flex flex-wrap gap-4">
+            <Badge className="bg-white/20 backdrop-blur-md text-white border-none px-5 py-2 font-black uppercase tracking-[0.2em] text-[10px] shadow-lg">{currentDate || "SYNCING..."}</Badge>
+            <Badge className="bg-white/10 backdrop-blur-md text-white border-none px-5 py-2 font-black uppercase tracking-[0.2em] text-[10px] flex items-center gap-2 shadow-lg">
+              <Clock className="h-3.5 w-3.5 text-white/60" /> {currentTime || "--:--"}
             </Badge>
           </div>
-          <div className="space-y-2">
-            <h1 className="text-5xl md:text-7xl font-black tracking-tighter">
-              {role === 'Expert' ? 'Scientist' : role === 'Authority' ? 'Authority' : t("welcome")}, {name} Ji!
+          <div className="space-y-3">
+            <h1 className="text-6xl md:text-8xl font-black tracking-tighter leading-[0.9]">
+              {role === 'Expert' ? 'Scientist Node' : role === 'Authority' ? 'Authority Hub' : t("welcome")}, <br />
+              <span className="text-white/90">{name} Ji</span>
             </h1>
-            <p className="text-xl md:text-2xl text-white/80 font-medium italic">
-              {role === 'Expert' ? 'Surveillance grid active. Monitoring regional pathogens.' : `Your professional agricultural grid in ${city} is active.`}
+            <p className="text-2xl md:text-3xl text-white/70 font-medium italic tracking-tight">
+              {role === 'Expert' ? 'Regional surveillance active. Bio-security grid secure.' : `National agricultural intelligence active in ${city}.`}
             </p>
           </div>
-          {role === 'Farmer' && <FarmerOnboarding />}
+          {role === 'Farmer' && <div className="pt-4"><FarmerOnboarding /></div>}
         </div>
       </motion.div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
         {stats.map((stat, i) => (
           <motion.div key={i} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}>
-            <Card className="glass-card cursor-pointer group hover:scale-105 transition-transform active:scale-95 rounded-[2.5rem]" onClick={() => handleDeepNavigate(stat)}>
-              <CardContent className="p-8 flex items-center justify-between">
-                <div>
-                  <p className="text-[10px] font-black uppercase text-muted-foreground tracking-widest mb-1">{stat.label}</p>
-                  <p className="text-3xl font-black">{stat.isLoading ? '...' : typeof stat.value === 'number' ? <Counter value={stat.value} /> : stat.value}</p>
-                  {stat.sub && <p className="text-[10px] font-bold text-primary mt-1">{stat.sub}</p>}
+            <Card className="glass-card cursor-pointer group hover:-translate-y-2 transition-all duration-500 rounded-[2.5rem] relative overflow-hidden" onClick={() => handleDeepNavigate(stat)}>
+              <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+              <CardContent className="p-10 flex items-center justify-between relative z-10">
+                <div className="space-y-1">
+                  <p className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em] mb-2">{stat.label}</p>
+                  <p className="text-4xl font-black tracking-tighter">{stat.isLoading ? '...' : typeof stat.value === 'number' ? <Counter value={stat.value} /> : stat.value}</p>
+                  {stat.sub && <p className="text-[11px] font-bold text-primary mt-2 flex items-center gap-1.5"><Sparkles className="h-3 w-3" /> {stat.sub}</p>}
                 </div>
-                <div className={cn("two-tone-icon", stat.bg, stat.color)}>
-                  <stat.icon className="h-8 w-8 group-hover:scale-110 transition-transform" />
+                <div className={cn("two-tone-icon h-16 w-16 rounded-[1.25rem] shadow-lg", stat.bg, stat.color)}>
+                  <stat.icon className="h-8 w-8 group-hover:scale-110 transition-transform duration-500" />
                 </div>
               </CardContent>
             </Card>
@@ -290,47 +263,52 @@ export function DashboardHome({ onNavigate }: DashboardHomeProps) {
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 pt-4">
         <div className="lg:col-span-8 space-y-10">
-          <h2 className="text-2xl font-black flex items-center gap-3">
-            <Zap className={cn("h-7 w-7", (role === 'Expert' || role === 'Authority') ? "text-blue-500" : "text-primary")} /> 
-            Professional Command Tools
-          </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+          <div className="flex items-center justify-between px-2">
+            <h2 className="text-3xl font-black tracking-tighter flex items-center gap-4">
+              <Zap className={cn("h-8 w-8", (role === 'Expert' || role === 'Authority') ? "text-blue-500" : "text-primary")} /> 
+              Grid Command Center
+            </h2>
+            <div className="h-px flex-1 bg-border/50 mx-8 hidden sm:block" />
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
             {quickActions.map((action, i) => (
               <motion.button 
                 key={i} 
                 onClick={() => handleDeepNavigate(action)} 
                 className={cn(
-                  "flex items-center gap-8 p-10 glass-card rounded-[3rem] group transition-all text-left hover:scale-105 active:scale-95",
-                  (role === 'Expert' || role === 'Authority') ? "hover:bg-slate-900" : "hover:bg-primary"
+                  "flex items-center gap-10 p-12 glass-card rounded-[3.5rem] group transition-all duration-500 text-left relative overflow-hidden cinematic-shadow",
+                  (role === 'Expert' || role === 'Authority') ? "hover:bg-slate-950 hover:text-white" : "hover:bg-primary hover:text-white"
                 )}
               >
-                <div className={cn("two-tone-icon shrink-0 group-hover:bg-white/20", action.bg)}>
-                  <action.icon className={cn("h-8 w-8 group-hover:text-white group-hover:rotate-12 transition-all", action.color)} />
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+                <div className={cn("two-tone-icon h-20 w-20 rounded-[1.75rem] shrink-0 group-hover:bg-white/20 shadow-xl", action.bg)}>
+                  <action.icon className={cn("h-10 w-10 group-hover:scale-110 group-hover:rotate-6 transition-all duration-500", action.color, "group-hover:text-white")} />
                 </div>
                 <div>
-                  <p className="font-black text-2xl group-hover:text-white tracking-tight">{action.label}</p>
-                  <p className="text-[10px] font-black uppercase opacity-60 group-hover:text-white tracking-widest">{action.desc}</p>
+                  <p className="font-black text-3xl tracking-tighter mb-1">{action.label}</p>
+                  <p className="text-[11px] font-black uppercase opacity-60 tracking-[0.2em]">{action.desc}</p>
                 </div>
-                <ChevronRight className="h-6 w-6 ml-auto opacity-20 group-hover:opacity-100 group-hover:text-white transition-all" />
+                <ChevronRight className="h-8 w-8 ml-auto opacity-20 group-hover:opacity-100 group-hover:translate-x-2 transition-all duration-500" />
               </motion.button>
             ))}
           </div>
         </div>
 
         <div className="lg:col-span-4 space-y-8">
-          <h2 className="text-2xl font-black flex items-center gap-3">
-            <ShieldAlert className="h-7 w-7 text-destructive" /> Intelligence Alerts
+          <h2 className="text-3xl font-black tracking-tighter flex items-center gap-4">
+            <ShieldAlert className="h-8 w-8 text-rose-500" /> 
+            Live Intelligence
           </h2>
-          <ScrollArea className="h-[600px] pr-4">
-            <div className="space-y-6">
+          <ScrollArea className="h-[650px] pr-6 -mr-6 custom-scrollbar">
+            <div className="space-y-8">
               {loadingAlerts ? (
-                [1, 2, 3].map(i => <div key={i} className="h-40 rounded-[2.5rem] bg-muted/20 animate-pulse" />)
+                [1, 2, 3].map(i => <div key={i} className="h-48 rounded-[3rem] bg-muted/20 animate-pulse" />)
               ) : !globalAlerts?.length ? (
-                <div className="p-10 text-center opacity-40 border-2 border-dashed rounded-[3rem]">
-                  <ShieldCheck className="h-12 w-12 mx-auto mb-4" />
-                  <p className="text-sm font-bold">No active expert directives in your sector.</p>
+                <div className="p-16 text-center opacity-30 border-2 border-dashed rounded-[3.5rem] flex flex-col items-center gap-4">
+                  <ShieldCheck className="h-16 w-16" />
+                  <p className="text-xs font-black uppercase tracking-[0.2em]">All sectors clear</p>
                 </div>
               ) : (
                 <AnimatePresence mode="popLayout">
@@ -344,45 +322,45 @@ export function DashboardHome({ onNavigate }: DashboardHomeProps) {
                       <Card 
                         onClick={() => setSelectedAlert(alert)} 
                         className={cn(
-                          "glass-card border-none cursor-pointer group hover:bg-muted/50 transition-all rounded-[2.5rem] border-l-8 overflow-hidden",
-                          alert.severity === 'CRITICAL' ? "border-destructive shadow-lg shadow-destructive/5" : "border-blue-500"
+                          "glass-card border-none cursor-pointer group hover:shadow-2xl transition-all duration-500 rounded-[3rem] border-l-[12px] overflow-hidden cinematic-shadow",
+                          alert.severity === 'CRITICAL' ? "border-rose-500" : "border-indigo-500"
                         )}
                       >
-                        <CardContent className="p-8 space-y-4">
+                        <CardContent className="p-10 space-y-6">
                           <div className="flex justify-between items-start">
                             <div className="flex gap-2">
                               {alert.severity === 'CRITICAL' && (
-                                <Badge variant="destructive" className="font-black uppercase tracking-widest text-[9px]">Critical</Badge>
+                                <Badge variant="destructive" className="font-black uppercase tracking-[0.2em] text-[9px] px-3 py-1 animate-pulse shadow-lg shadow-rose-500/20">Critical</Badge>
                               )}
-                              <Badge className="bg-primary/10 text-primary border-none font-black text-[9px] uppercase tracking-widest">
-                                <UserCheck className="h-3 w-3 mr-1" /> Expert Verified
+                              <Badge className="bg-primary/10 text-primary border-none font-black text-[9px] uppercase tracking-[0.2em] px-3 py-1">
+                                <UserCheck className="h-3 w-3 mr-1.5" /> Scientist Verified
                               </Badge>
                             </div>
-                            <span className="text-[10px] font-bold text-muted-foreground">
-                              {alert.timestamp?.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) || 'Just now'}
+                            <span className="text-[10px] font-black text-muted-foreground/60 uppercase">
+                              {alert.timestamp?.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) || 'JUST NOW'}
                             </span>
                           </div>
-                          <div className="space-y-1">
-                            <h3 className="text-xl font-black tracking-tight">{alert.title}</h3>
-                            <p className="text-sm text-muted-foreground line-clamp-2 leading-relaxed italic">"{alert.description}"</p>
+                          <div className="space-y-2">
+                            <h3 className="text-2xl font-black tracking-tight leading-tight group-hover:text-primary transition-colors">{alert.title}</h3>
+                            <p className="text-sm text-muted-foreground line-clamp-3 leading-relaxed font-medium italic">"{alert.description}"</p>
                           </div>
-                          <div className="pt-4 border-t flex items-center justify-between">
-                            <div className="flex items-center gap-2 text-[10px] font-black uppercase text-primary">
-                              <MapPin className="h-3 w-3" /> {alert.locationNode}
+                          <div className="pt-6 border-t border-border/30 flex items-center justify-between">
+                            <div className="flex items-center gap-2.5 text-[10px] font-black uppercase tracking-widest text-primary bg-primary/5 px-4 py-2 rounded-full">
+                              <MapPin className="h-3.5 w-3.5" /> {alert.locationNode}
                             </div>
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-3">
                               <Button 
                                 variant="ghost" 
                                 size="icon" 
                                 onClick={(e) => handlePlayAlert(e, alert)}
                                 className={cn(
-                                  "h-10 w-10 rounded-full bg-primary/5 text-primary hover:bg-primary hover:text-white transition-all",
+                                  "h-11 w-11 rounded-full bg-primary/5 text-primary hover:bg-primary hover:text-white transition-all shadow-sm",
                                   isSpeaking && "animate-pulse"
                                 )}
                               >
                                 <Volume2 className="h-5 w-5" />
                               </Button>
-                              <ArrowRight className="h-4 w-4 opacity-40 group-hover:translate-x-1 transition-transform" />
+                              <ArrowRight className="h-5 w-5 opacity-30 group-hover:opacity-100 group-hover:translate-x-1.5 transition-all" />
                             </div>
                           </div>
                         </CardContent>
@@ -397,63 +375,68 @@ export function DashboardHome({ onNavigate }: DashboardHomeProps) {
       </div>
 
       <Dialog open={!!selectedAlert} onOpenChange={() => setSelectedAlert(null)}>
-        <DialogContent className="rounded-[3rem] sm:max-w-2xl p-0 overflow-hidden border-none shadow-2xl bg-white">
-          <div className="bg-slate-900 p-10 text-white relative">
-            <div className="absolute top-0 right-0 p-8 opacity-10"><Microscope className="h-32 w-32 rotate-12" /></div>
+        <DialogContent className="rounded-[4rem] sm:max-w-3xl p-0 overflow-hidden border-none shadow-[0_64px_128px_rgba(0,0,0,0.3)] bg-white">
+          <div className="bg-slate-950 p-12 text-white relative overflow-hidden">
+            <div className="absolute inset-0 bg-[url('https://picsum.photos/seed/alert/1200/800')] opacity-10 grayscale" />
+            <div className="absolute top-0 right-0 p-12 opacity-10 transform scale-150 rotate-12"><Microscope className="h-48 w-48" /></div>
             <DialogHeader className="relative z-10">
-              <div className="flex items-center gap-4 mb-4">
+              <div className="flex items-center gap-6 mb-6">
                 <div className={cn(
-                  "h-16 w-16 rounded-2xl flex items-center justify-center shadow-lg",
-                  selectedAlert?.severity === 'CRITICAL' ? "bg-destructive" : "bg-blue-500"
+                  "h-20 w-20 rounded-3xl flex items-center justify-center shadow-2xl transform -rotate-3",
+                  selectedAlert?.severity === 'CRITICAL' ? "bg-rose-600 shadow-rose-500/40" : "bg-indigo-600 shadow-indigo-500/40"
                 )}>
-                  <AlertTriangle className="h-10 w-10 text-white" />
+                  <AlertTriangle className="h-12 w-12 text-white" />
                 </div>
                 <div>
-                  <DialogTitle className="text-4xl font-black tracking-tighter">{selectedAlert?.title}</DialogTitle>
-                  <DialogDescription className="text-slate-400 font-bold uppercase tracking-widest text-[10px]">
-                    National Grid Directive | Verified Hub
+                  <DialogTitle className="text-5xl font-black tracking-tighter leading-none mb-2">{selectedAlert?.title}</DialogTitle>
+                  <DialogDescription className="text-white/50 font-black uppercase tracking-[0.3em] text-[10px]">
+                    National Grid Directive • Sector Authorized
                   </DialogDescription>
                 </div>
               </div>
             </DialogHeader>
           </div>
 
-          <div className="p-10 space-y-8">
-            <div className="grid grid-cols-2 gap-6">
-              <div className="p-6 bg-slate-50 rounded-[2rem] border space-y-2">
-                <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Region Affected</p>
-                <p className="text-lg font-black">{selectedAlert?.locationNode}</p>
+          <div className="p-12 space-y-10">
+            <div className="grid grid-cols-2 gap-8">
+              <div className="p-8 bg-slate-50 rounded-[2.5rem] border border-border/50 space-y-3 cinematic-shadow">
+                <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">Target Sector</p>
+                <p className="text-2xl font-black tracking-tight">{selectedAlert?.locationNode}</p>
               </div>
-              <div className="p-6 bg-slate-50 rounded-[2rem] border space-y-2">
-                <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Directive Status</p>
-                <p className="text-lg font-black text-primary uppercase">{selectedAlert?.status || 'Active'}</p>
+              <div className="p-8 bg-slate-50 rounded-[2.5rem] border border-border/50 space-y-3 cinematic-shadow">
+                <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">Grid Priority</p>
+                <p className={cn("text-2xl font-black uppercase tracking-tighter", selectedAlert?.severity === 'CRITICAL' ? "text-rose-600" : "text-indigo-600")}>
+                  {selectedAlert?.severity || 'Standard'}
+                </p>
               </div>
             </div>
 
-            <div className="space-y-4">
-              <h4 className="text-[10px] font-black text-primary uppercase tracking-widest flex items-center gap-2">
-                <ShieldCheck className="h-4 w-4" /> Professional Containment Strategy
+            <div className="space-y-6">
+              <h4 className="text-[11px] font-black text-primary uppercase tracking-[0.3em] flex items-center gap-3 px-2">
+                <ShieldCheck className="h-5 w-5" /> Professional Containment Strategy
               </h4>
-              <div className="p-8 rounded-[2.5rem] bg-primary/5 border border-primary/10 relative overflow-hidden">
-                <div className="absolute top-0 right-0 p-4 opacity-5"><Zap className="h-20 w-20" /></div>
-                <p className="text-xl font-bold text-slate-800 leading-relaxed italic relative z-10">
+              <div className="p-12 rounded-[3.5rem] bg-primary/5 border border-primary/10 relative overflow-hidden group">
+                <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:scale-110 transition-transform duration-1000"><Zap className="h-32 w-32" /></div>
+                <p className="text-2xl font-bold text-slate-800 leading-[1.6] italic relative z-10 pr-12">
                   "{selectedAlert?.description}"
                 </p>
               </div>
             </div>
 
-            <div className="flex items-center gap-4 p-6 bg-muted/30 rounded-2xl border border-dashed">
-              <UserCheck className="h-6 w-6 text-primary" />
-              <div className="text-[10px] font-bold text-muted-foreground leading-tight">
-                This directive was issued by a <span className="text-primary">Scientist Node</span>. 
-                Follow all protocols to minimize regional pathogen spread.
+            <div className="flex items-center gap-6 p-8 bg-muted/30 rounded-[2.5rem] border border-dashed border-primary/20">
+              <div className="h-14 w-14 bg-white rounded-2xl shadow-md flex items-center justify-center shrink-0">
+                <UserCheck className="h-8 w-8 text-primary" />
+              </div>
+              <div className="text-xs font-bold text-muted-foreground leading-relaxed">
+                Directive authenticated via <span className="text-primary font-black uppercase tracking-widest">Scientist Node 442</span>. 
+                Immediate implementation requested to minimize regional pathogen propagation.
               </div>
             </div>
           </div>
 
-          <DialogFooter className="p-10 pt-0">
-            <Button onClick={() => setSelectedAlert(null)} className="w-full h-16 rounded-[2rem] font-black text-xl shadow-xl shadow-primary/20">
-              Acknowledge Directive
+          <DialogFooter className="p-12 pt-0">
+            <Button onClick={() => setSelectedAlert(null)} className="w-full h-20 rounded-[2.5rem] font-black text-2xl shadow-2xl shadow-primary/30 active:scale-[0.98] transition-all">
+              Acknowledge & Sync Grid
             </Button>
           </DialogFooter>
         </DialogContent>

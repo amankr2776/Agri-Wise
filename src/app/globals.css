@@ -1,68 +1,44 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   :root {
-    --background: 120 100% 97.5%; /* Honeydew #F0FFF0 */
-    --foreground: 162 84% 14%; /* Forest Green #064E3B */
+    --background: 120 100% 98.5%; /* Lighter Honeydew */
+    --foreground: 162 84% 10%; /* Deeper Forest Green */
     --card: 0 0% 100%;
-    --card-foreground: 162 84% 14%;
+    --card-foreground: 162 84% 10%;
     --popover: 0 0% 100%;
-    --popover-foreground: 162 84% 14%;
+    --popover-foreground: 162 84% 10%;
     --primary: 142 45% 44%; 
-    --primary-foreground: 120 100% 97.5%;
-    --secondary: 120 40% 92%;
-    --secondary-foreground: 162 84% 14%;
-    --muted: 120 20% 94%;
+    --primary-foreground: 120 100% 98.5%;
+    --secondary: 120 40% 94%;
+    --secondary-foreground: 162 84% 10%;
+    --muted: 120 20% 96%;
     --muted-foreground: 162 20% 30%;
     --accent: 38 92% 50%;
-    --accent-foreground: 120 100% 97.5%;
+    --accent-foreground: 120 100% 98.5%;
     --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 120 100% 97.5%;
-    --border: 120 20% 88%;
-    --input: 120 20% 88%;
+    --destructive-foreground: 120 100% 98.5%;
+    --border: 120 20% 90%;
+    --input: 120 20% 90%;
     --ring: 142 45% 44%;
-    --radius: 1.5rem;
+    --radius: 1.75rem;
   }
 
   [data-theme='dark'] {
-    --background: 162 84% 5%;
-    --foreground: 120 100% 97.5%;
-    --card: 162 84% 8%;
-    --card-foreground: 120 100% 97.5%;
-    --border: 162 20% 20%;
-    --muted: 162 20% 15%;
-  }
-
-  [data-theme='contrast'] {
-    --background: 0 0% 100%;
-    --foreground: 0 0% 0%;
-    --primary: 0 0% 0%;
-    --primary-foreground: 0 0% 100%;
-    --border: 0 0% 0%;
+    --background: 162 84% 4%;
+    --foreground: 120 100% 98.5%;
+    --card: 162 84% 6%;
+    --card-foreground: 120 100% 98.5%;
+    --border: 162 20% 15%;
+    --muted: 162 20% 10%;
   }
 
   /* Regional Font Optimization */
   [data-lang="Hindi"], [data-lang="Marathi"], [data-lang="Bhojpuri"], [data-lang="Haryanvi"], [data-lang="Rajasthani"], [data-lang="Magahi"], [data-lang="Pahadi"] {
     font-family: 'Mukta', sans-serif !important;
     line-height: 1.6;
-  }
-
-  [data-lang="Kannada"], [data-lang="Telugu"] {
-    font-family: 'Noto Sans Kannada', sans-serif !important;
-    line-height: 1.85; 
-  }
-
-  [data-lang="Tamil"] {
-    font-family: 'Noto Sans Tamil', sans-serif !important;
-    line-height: 1.8;
-  }
-
-  [data-lang="Malayalam"] {
-    font-family: 'Noto Sans Malayalam', sans-serif !important;
-    line-height: 1.9;
   }
 }
 
@@ -71,34 +47,49 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground font-sans transition-colors duration-300;
+    @apply bg-background text-foreground font-sans transition-colors duration-500 selection:bg-primary/20;
+    background-image: 
+      radial-gradient(at 0% 0%, hsla(142, 45%, 44%, 0.03) 0, transparent 50%),
+      radial-gradient(at 100% 100%, hsla(38, 92%, 50%, 0.02) 0, transparent 50%);
   }
 }
 
 .glass-card {
-  @apply bg-white/70 backdrop-blur-md border border-white/20 shadow-2xl;
+  @apply bg-white/60 backdrop-blur-xl border border-white/40 shadow-[0_8px_32px_rgba(0,0,0,0.04)];
+}
+
+.cinematic-shadow {
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(255, 255, 255, 0.1) inset;
 }
 
 .two-tone-icon {
-  @apply h-14 w-14 rounded-2xl flex items-center justify-center;
+  @apply h-14 w-14 rounded-2xl flex items-center justify-center transition-all duration-300;
 }
 
-.animate-pulse-engagement {
-  animation: pulse-engagement 1.5s infinite;
-}
-
-@keyframes pulse-engagement {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.8; transform: scale(1.05); }
+.grid-mesh {
+  background-image: radial-gradient(circle at 2px 2px, rgba(0,0,0,0.03) 1px, transparent 0);
+  background-size: 24px 24px;
 }
 
 .custom-scrollbar::-webkit-scrollbar {
-  width: 6px;
+  width: 5px;
 }
 .custom-scrollbar::-webkit-scrollbar-track {
   background: transparent;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: hsl(var(--primary) / 0.2);
+  background: hsl(var(--primary) / 0.15);
   border-radius: 10px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--primary) / 0.3);
+}
+
+@keyframes slow-pan {
+  from { background-position: 0% 50%; }
+  to { background-position: 100% 50%; }
+}
+
+.animate-slow-pan {
+  animation: slow-pan 30s linear infinite alternate;
 }
